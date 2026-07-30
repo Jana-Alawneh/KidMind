@@ -62,8 +62,9 @@ const Children = () => {
                 {openModal && (
 
                     <AddChildModal
-                        close={() => setOpenModal(false)}
-                    />
+    close={() => setOpenModal(false)}
+    onSuccess={loadChildren}
+/>
 
                 )}
 
