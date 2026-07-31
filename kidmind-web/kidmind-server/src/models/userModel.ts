@@ -1,4 +1,5 @@
 import db from "../database/db";
+import type { ResultSetHeader } from "mysql2";
 
 export const getAllUsers = async () => {
   const [rows] = await db.query("SELECT * FROM children");
@@ -49,4 +50,35 @@ export const deleteChild = async (id: number) => {
 
   return result;
 
+};
+export const updateChild = async (
+  id: number,
+  fullName: string,
+  age: number,
+  gender: string,
+  parentName: string,
+  notes: string | null
+) => {
+  const [result] = await db.query<ResultSetHeader>(
+    `
+      UPDATE children
+      SET
+        full_name = ?,
+        age = ?,
+        gender = ?,
+        parent_name = ?,
+        notes = ?
+      WHERE id = ?
+    `,
+    [
+      fullName,
+      age,
+      gender,
+      parentName,
+      notes,
+      id,
+    ]
+  );
+
+  return result.affectedRows;
 };

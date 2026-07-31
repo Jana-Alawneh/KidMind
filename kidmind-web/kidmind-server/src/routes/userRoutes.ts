@@ -4,6 +4,7 @@ import {
   fetchUsers,
   createChild,
   removeChild,
+  editChild,
 } from "../controllers/userController";
 
 
@@ -14,6 +15,9 @@ router.get("/", fetchUsers);
 
 
 router.post("/", createChild);
+
+
+router.put("/:id", editChild);
 
 
 router.delete("/:id", removeChild);

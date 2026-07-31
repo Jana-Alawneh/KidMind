@@ -9,8 +9,11 @@ import {
 import { useNavigate } from "react-router-dom";
 
 
-const ChildrenTable = ({ children = [], onDelete }) => {
-
+const ChildrenTable = ({
+    children = [],
+    onDelete,
+    onEdit
+}) => {
 
     const navigate = useNavigate();
 
@@ -265,23 +268,24 @@ const ChildrenTable = ({ children = [], onDelete }) => {
 
 
                                         <button
-
-                                            className="
-                                            w-10
-                                            h-10
-                                            rounded-xl
-                                            bg-blue-100
-                                            text-blue-600
-                                            flex
-                                            justify-center
-                                            items-center
-                                            "
-
-                                        >
-
-                                            <Pencil size={18}/>
-
-                                        </button>
+    type="button"
+    onClick={() => onEdit(child)}
+    className="
+    w-10
+    h-10
+    rounded-xl
+    bg-blue-100
+    text-blue-600
+    flex
+    justify-center
+    items-center
+    hover:bg-blue-200
+    cursor-pointer
+    transition
+    "
+>
+    <Pencil size={18}/>
+</button>
 
 
 
@@ -332,10 +336,5 @@ const ChildrenTable = ({ children = [], onDelete }) => {
 
 };
 
-export const deleteChild = async (id) => {
-  const response = await API.delete(`/children/${id}`);
-
-  return response.data;
-};
 
 export default ChildrenTable;

@@ -4,6 +4,7 @@ import Navbar from "../components/layout/Navbar";
 import ChildrenHeader from "../components/children/ChildrenHeader";
 import ChildrenTable from "../components/children/ChildrenTable";
 import AddChildModal from "../components/children/AddChildModal";
+import EditChildModal from "../components/children/EditChildModal";
 
 import { useEffect, useState } from "react";
 
@@ -16,7 +17,7 @@ import {
 const Children = () => {
 
     const [openModal, setOpenModal] = useState(false);
-
+    const [editingChild, setEditingChild] = useState(null);
     const [children, setChildren] = useState([]);
 
 
@@ -80,7 +81,12 @@ const Children = () => {
     }
 
 };
+    
+    const handleEdit = (child) => {
 
+    setEditingChild(child);
+
+};
 
     const handleDelete = async (id) => {
 
@@ -131,9 +137,10 @@ const Children = () => {
                 <div className="mt-8">
 
                     <ChildrenTable
-                        children={children}
-                        onDelete={handleDelete}
-                    />
+    children={children}
+    onDelete={handleDelete}
+    onEdit={handleEdit}
+/>
 
                 </div>
 
@@ -145,6 +152,16 @@ const Children = () => {
                     />
 
                 )}
+
+                {editingChild && (
+
+    <EditChildModal
+        child={editingChild}
+        close={() => setEditingChild(null)}
+        onSuccess={loadChildren}
+    />
+
+)}
 
             </main>
 
