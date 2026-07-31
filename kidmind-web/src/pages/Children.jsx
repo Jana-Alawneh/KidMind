@@ -7,7 +7,11 @@ import AddChildModal from "../components/children/AddChildModal";
 
 import { useEffect, useState } from "react";
 
-import { getChildren } from "../api/childrenApi";
+import {
+    deleteChild,
+    getChildren
+} from "../api/childrenApi";
+
 
 const Children = () => {
 
@@ -15,27 +19,100 @@ const Children = () => {
 
     const [children, setChildren] = useState([]);
 
+
     useEffect(() => {
 
         loadChildren();
 
     }, []);
 
+
     const loadChildren = async () => {
+
+    try {
+
+        const data = await getChildren();
+
+        const formattedChildren = data.map((child) => ({
+
+            ...child,
+
+  
+            name:
+                child.full_name ||
+                child.name ||
+                "Unnamed Child",
+
+
+            image:
+                child.image ||
+                `https://i.pravatar.cc/100?u=kidmind-${child.id}`,
+
+ 
+            score:
+                child.score !== null &&
+                child.score !== undefined
+                    ? String(child.score).includes("%")
+                        ? child.score
+                        : `${child.score}%`
+                    : "—",
+
+            lastAssessment:
+                child.last_assessment ||
+                child.lastAssessment ||
+                "Not assessed",
+
+            status:
+                child.status ||
+                "Active",
+
+        }));
+
+        setChildren(formattedChildren);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load children:",
+            error
+        );
+
+    }
+
+};
+
+
+    const handleDelete = async (id) => {
+
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this child?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
 
         try {
 
-            const data = await getChildren();
+            await deleteChild(id);
 
-            setChildren(data);
+            await loadChildren();
 
         } catch (error) {
 
-            console.error("Failed to load children:", error);
+            console.error(
+                "Failed to delete child:",
+                error
+            );
+
+            window.alert(
+                "Failed to delete the child. Please try again."
+            );
 
         }
 
     };
+
 
     return (
 
@@ -55,6 +132,7 @@ const Children = () => {
 
                     <ChildrenTable
                         children={children}
+                        onDelete={handleDelete}
                     />
 
                 </div>
@@ -62,9 +140,9 @@ const Children = () => {
                 {openModal && (
 
                     <AddChildModal
-    close={() => setOpenModal(false)}
-    onSuccess={loadChildren}
-/>
+                        close={() => setOpenModal(false)}
+                        onSuccess={loadChildren}
+                    />
 
                 )}
 
@@ -75,5 +153,6 @@ const Children = () => {
     );
 
 };
+
 
 export default Children;

@@ -24,3 +24,15 @@ export const addChild = async (child) => {
 
     return await response.json();
 };
+
+export const deleteChild = async (id) => {
+  const response = await fetch(`http://localhost:5000/children/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete child");
+  }
+
+  return response.json();
+};
