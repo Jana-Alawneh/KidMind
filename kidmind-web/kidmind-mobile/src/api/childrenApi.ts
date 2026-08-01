@@ -55,6 +55,16 @@ export const getChildren =
     return handleResponse(response);
   };
 
+  export const getChildById = async (
+  id: number
+): Promise<Child> => {
+
+  const response = await fetch(
+    `${API_URL}/children/${id}`
+  );
+
+  return handleResponse(response);
+};
 
 export const addChild = async (
   child: ChildPayload

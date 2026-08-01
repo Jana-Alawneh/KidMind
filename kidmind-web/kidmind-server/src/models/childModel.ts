@@ -1,9 +1,30 @@
 import db from "../database/db";
-import type { ResultSetHeader } from "mysql2";
+import type {
+  ResultSetHeader,
+  RowDataPacket,
+} from "mysql2";
 
 export const getAllUsers = async () => {
   const [rows] = await db.query("SELECT * FROM children");
   return rows;
+};
+
+export const getChildById = async (
+  id: number
+) => {
+
+  const [rows] =
+    await db.query<RowDataPacket[]>(
+      `
+      SELECT *
+      FROM children
+      WHERE id = ?
+      `,
+      [id]
+    );
+
+  return rows[0] ?? null;
+
 };
 
 export const addChild = async (

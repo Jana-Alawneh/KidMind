@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 
 import {
   getAllUsers,
+  getChildById,
   addChild,
   deleteChild,
   updateChild as updateChildInDatabase,
-} from "../models/userModel";
+} from "../models/childModel";
 
 export const fetchUsers = async (
   req: Request,
@@ -26,6 +27,51 @@ export const fetchUsers = async (
     });
 
   }
+};
+
+export const fetchChildById = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const id = Number(req.params.id);
+
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
+
+      return res.status(400).json({
+        message: "Invalid child ID",
+      });
+
+    }
+
+    const child =
+      await getChildById(id);
+
+    if (!child) {
+
+      return res.status(404).json({
+        message: "Child not found",
+      });
+
+    }
+
+    return res.json(child);
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Server Error",
+    });
+
+  }
+
 };
 
 export const createChild = async (
