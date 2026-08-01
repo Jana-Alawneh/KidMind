@@ -27,11 +27,13 @@ import type {
 
 type Props = {
   child: Child;
+  onEdit: () => void;
 };
 
 
 const ChildInfoCard = ({
   child,
+  onEdit,
 }: Props) => {
 
   const childImage =
@@ -187,8 +189,9 @@ const ChildInfoCard = ({
 
 
         <TouchableOpacity
-          style={styles.editButton}
-        >
+  style={styles.editButton}
+  onPress={onEdit}
+>
 
           <Pencil
             size={18}

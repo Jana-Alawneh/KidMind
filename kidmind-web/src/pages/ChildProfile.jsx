@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 import {
   useNavigate,
@@ -18,6 +22,8 @@ import ProgressChart from "../components/childProfile/ProgressChart";
 import SessionsTimeline from "../components/childProfile/SessionsTimeline";
 import ReportsTable from "../components/childProfile/ReportsTable";
 import AIInsights from "../components/childProfile/AIInsights";
+
+import EditChildModal from "../components/children/EditChildModal";
 
 import {
   getChildById,
@@ -39,10 +45,12 @@ const ChildProfile = () => {
   const [error, setError] =
     useState("");
 
+  const [editModalOpen, setEditModalOpen] =
+    useState(false);
 
-  useEffect(() => {
 
-    const loadChild = async () => {
+  const loadChild = useCallback(
+    async () => {
 
       try {
 
@@ -54,15 +62,15 @@ const ChildProfile = () => {
 
         setChild(childData);
 
-      } catch (error) {
+      } catch (loadError) {
 
         console.error(
           "Failed to load child:",
-          error
+          loadError
         );
 
         setError(
-          error.response?.data?.message ||
+          loadError.response?.data?.message ||
           "Failed to load child information"
         );
 
@@ -72,14 +80,18 @@ const ChildProfile = () => {
 
       }
 
-    };
+    },
+    [id]
+  );
 
+
+  useEffect(() => {
 
     if (id) {
       loadChild();
     }
 
-  }, [id]);
+  }, [id, loadChild]);
 
 
   return (
@@ -91,6 +103,7 @@ const ChildProfile = () => {
       <main className="flex-1 p-10 overflow-y-auto">
 
         <Navbar />
+
 
         <button
           onClick={() => navigate("/children")}
@@ -203,6 +216,9 @@ const ChildProfile = () => {
 
               <ChildInfoCard
                 child={child}
+                onEdit={() => {
+                  setEditModalOpen(true);
+                }}
               />
 
               <CognitiveScores />
@@ -236,6 +252,19 @@ const ChildProfile = () => {
             </div>
 
           </>
+
+        )}
+
+
+        {editModalOpen && child && (
+
+          <EditChildModal
+            child={child}
+            close={() => {
+              setEditModalOpen(false);
+            }}
+            onSuccess={loadChild}
+          />
 
         )}
 

@@ -8,6 +8,7 @@ import {
 } from "react-native";
 
 import {
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -30,6 +31,7 @@ import CognitiveScores from "@/components/childProfile/CognitiveScores";
 import ProgressChart from "@/components/childProfile/ProgressChart";
 import ReportsTable from "@/components/childProfile/ReportsTable";
 import SessionsTimeline from "@/components/childProfile/SessionsTimeline";
+import EditChildModal from "@/components/children/EditChildModal";
 
 import {
   getChildById,
@@ -64,66 +66,71 @@ export default function ChildProfile() {
   const [error, setError] =
     useState("");
 
+  const [editModalOpen, setEditModalOpen] =
+  useState(false);
+  
+  const loadChild = useCallback(
+  async () => {
 
-  useEffect(() => {
+    const numericId =
+      Number(childId);
 
-    const loadChild = async () => {
+    if (
+      !Number.isInteger(numericId) ||
+      numericId <= 0
+    ) {
 
-      const numericId =
-        Number(childId);
+      setError(
+        "Invalid child ID"
+      );
 
-      if (
-        !Number.isInteger(numericId) ||
-        numericId <= 0
-      ) {
+      setLoading(false);
 
-        setError(
-          "Invalid child ID"
+      return;
+    }
+
+
+    try {
+
+      setLoading(true);
+      setError("");
+
+      const childData =
+        await getChildById(
+          numericId
         );
 
-        setLoading(false);
+      setChild(childData);
 
-        return;
-      }
+    } catch (loadError) {
 
+      console.error(
+        "Failed to load child:",
+        loadError
+      );
 
-      try {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Failed to load child information"
+      );
 
-        setLoading(true);
-        setError("");
+    } finally {
 
-        const childData =
-          await getChildById(
-            numericId
-          );
+      setLoading(false);
 
-        setChild(childData);
+    }
 
-      } catch (loadError) {
-
-        console.error(
-          "Failed to load child:",
-          loadError
-        );
-
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Failed to load child information"
-        );
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    };
+  },
+  [childId]
+);
 
 
-    loadChild();
+useEffect(() => {
 
-  }, [childId]);
+  loadChild();
+
+}, [loadChild]);
 
 
   return (
@@ -213,8 +220,11 @@ export default function ChildProfile() {
           <>
 
             <ChildInfoCard
-              child={child}
-            />
+  child={child}
+  onEdit={() => {
+    setEditModalOpen(true);
+  }}
+/>
 
             <CognitiveScores />
 
@@ -232,7 +242,17 @@ export default function ChildProfile() {
 
       </ScrollView>
 
+      {editModalOpen && child && (
 
+  <EditChildModal
+    child={child}
+    close={() => {
+      setEditModalOpen(false);
+    }}
+    onSuccess={loadChild}
+  />
+
+)}
       <Sidebar
         visible={sidebarVisible}
         onClose={() => {

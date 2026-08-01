@@ -13,6 +13,7 @@ import {
 
 const ChildInfoCard = ({
   child,
+   onEdit,
 }) => {
 
   const childImage =
@@ -235,19 +236,21 @@ const ChildInfoCard = ({
         </button>
 
 
-        <button
-          className="
-            border
-            rounded-xl
-            py-3
-            flex
-            justify-center
-            items-center
-            gap-2
-            hover:bg-gray-50
-            transition
-          "
-        >
+<button
+  type="button"
+  onClick={onEdit}
+  className="
+    border
+    rounded-xl
+    py-3
+    flex
+    justify-center
+    items-center
+    gap-2
+    hover:bg-gray-50
+    transition
+  "
+>
 
           <Pencil size={18} />
 
