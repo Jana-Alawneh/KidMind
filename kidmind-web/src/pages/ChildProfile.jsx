@@ -24,6 +24,8 @@ import ReportsTable from "../components/childProfile/ReportsTable";
 import AIInsights from "../components/childProfile/AIInsights";
 
 import EditChildModal from "../components/children/EditChildModal";
+import StartSessionModal
+  from "../components/sessions/StartSessionModal";
 
 import {
   getChildById,
@@ -48,6 +50,10 @@ const ChildProfile = () => {
   const [editModalOpen, setEditModalOpen] =
     useState(false);
 
+    const [
+  startSessionModalOpen,
+  setStartSessionModalOpen,
+] = useState(false);
 
   const loadChild = useCallback(
     async () => {
@@ -215,11 +221,14 @@ const ChildProfile = () => {
             <div className="grid grid-cols-3 gap-6 mt-8">
 
               <ChildInfoCard
-                child={child}
-                onEdit={() => {
-                  setEditModalOpen(true);
-                }}
-              />
+  child={child}
+  onEdit={() => {
+    setEditModalOpen(true);
+  }}
+  onStartSession={() => {
+    setStartSessionModalOpen(true);
+  }}
+/>
 
               <CognitiveScores />
 
@@ -267,6 +276,24 @@ const ChildProfile = () => {
           />
 
         )}
+
+        {startSessionModalOpen && child && (
+
+  <StartSessionModal
+    child={child}
+    close={() => {
+      setStartSessionModalOpen(false);
+    }}
+    onStarted={(session) => {
+
+      navigate(
+        `/sessions/${session.id}`
+      );
+
+    }}
+  />
+
+)}
 
       </main>
 

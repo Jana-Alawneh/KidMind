@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+
+html,
+body,
+#root{
+
+    width:100%;
+    min-height:100%;
+
+}
+
+
+body{
+
+    font-family:'Poppins',sans-serif;
+
+    color:#2B2E4A;
+
+
+    background:
+
+    radial-gradient(
+        circle at top left,
+        rgba(249,231,243,0.8),
+        transparent 30%
+    ),
+
+    radial-gradient(
+        circle at top right,
+        rgba(232,240,255,0.9),
+        transparent 35%
+    ),
+
+    radial-gradient(
+        circle at bottom,
+        rgba(220,203,255,0.7),
+        transparent 40%
+    ),
+
+    #F8F8FC;
+
+
+    overflow-x:hidden;
+
+}
+
+
+
+button{
+
+    cursor:pointer;
+
+    font-family:'Poppins',sans-serif;
+
+}
+
+
+
+input{
+
+    font-family:'Poppins',sans-serif;
+
+}
+
+
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+
+
+::-webkit-scrollbar-track{
+
+    background:transparent;
+
+}
+
+
+
+::-webkit-scrollbar-thumb{
+
+    background:#D9D6F8;
+
+    border-radius:20px;
+
+}
+
+
+
+::selection{
+
+    background:#7C6CFF;
+
+    color:white;
+
+}

@@ -13,7 +13,8 @@ import {
 
 const ChildInfoCard = ({
   child,
-   onEdit,
+  onEdit,
+  onStartSession,
 }) => {
 
   const childImage =
@@ -193,19 +194,21 @@ const ChildInfoCard = ({
       <div className="grid grid-cols-1 gap-3 mt-10">
 
         <button
-          className="
-            bg-[#7B6EF6]
-            hover:bg-[#6959F5]
-            text-white
-            rounded-xl
-            py-3
-            flex
-            justify-center
-            items-center
-            gap-2
-            transition
-          "
-        >
+  type="button"
+  onClick={onStartSession}
+  className="
+    bg-[#7B6EF6]
+    hover:bg-[#6959F5]
+    text-white
+    rounded-xl
+    py-3
+    flex
+    justify-center
+    items-center
+    gap-2
+    transition
+  "
+>
 
           <Play size={18} />
 
