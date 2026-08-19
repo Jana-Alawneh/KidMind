@@ -1,51 +1,1073 @@
+import {
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
+
+import {
+    useNavigate,
+} from "react-router-dom";
+
+import {
+    Activity,
+    CalendarDays,
+    CheckCircle2,
+    ChevronRight,
+    Clock3,
+    RefreshCw,
+    Target,
+} from "lucide-react";
+
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 
-import SessionsHeader from "../components/sessions/SessionsHeader";
-import TodaySessions from "../components/sessions/TodaySessions";
-import UpcomingSessions from "../components/sessions/UpcomingSessions";
+import {
+    getSessions,
+} from "../api/sessionsApi";
+
+
+const formatDuration = (
+    seconds
+) => {
+
+    const totalSeconds =
+        Number(seconds) || 0;
+
+    const minutes =
+        Math.floor(
+            totalSeconds / 60
+        );
+
+    const remainingSeconds =
+        totalSeconds % 60;
+
+    if (minutes === 0) {
+        return `${remainingSeconds}s`;
+    }
+
+    return `${minutes}m ${remainingSeconds}s`;
+
+};
+
+
+const formatDate = (
+    value
+) => {
+
+    if (!value) {
+        return "No date";
+    }
+
+    const date =
+        new Date(
+            String(value).replace(
+                " ",
+                "T"
+            )
+        );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "No date";
+    }
+
+    return date.toLocaleString(
+        "en-US",
+        {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+        }
+    );
+
+};
+
+
+const getStatusStyle = (
+    status
+) => {
+
+    switch (status) {
+
+        case "Completed":
+            return {
+                background:
+                    "bg-[#E7F8EF]",
+                text:
+                    "text-[#2E9B63]",
+                dot:
+                    "bg-[#2E9B63]",
+            };
+
+        case "In Progress":
+            return {
+                background:
+                    "bg-[#EEEAFE]",
+                text:
+                    "text-[#6F5CE7]",
+                dot:
+                    "bg-[#7B6EF6]",
+            };
+
+        case "Paused":
+            return {
+                background:
+                    "bg-[#FFF4DF]",
+                text:
+                    "text-[#C78320]",
+                dot:
+                    "bg-[#E5A23E]",
+            };
+
+        case "Ended":
+            return {
+                background:
+                    "bg-[#FFE8E8]",
+                text:
+                    "text-[#D95757]",
+                dot:
+                    "bg-[#E36464]",
+            };
+
+        case "Cancelled":
+            return {
+                background:
+                    "bg-[#F1F2F6]",
+                text:
+                    "text-[#777C8C]",
+                dot:
+                    "bg-[#8B8F9C]",
+            };
+
+        case "Scheduled":
+            return {
+                background:
+                    "bg-[#EAF4FF]",
+                text:
+                    "text-[#4388D0]",
+                dot:
+                    "bg-[#4D9AE8]",
+            };
+
+        default:
+            return {
+                background:
+                    "bg-[#F1F2F6]",
+                text:
+                    "text-[#777C8C]",
+                dot:
+                    "bg-[#8B8F9C]",
+            };
+
+    }
+
+};
+
+
+const getGamesText = (
+    games
+) => {
+
+    if (
+        !Array.isArray(games) ||
+        games.length === 0
+    ) {
+        return "No games";
+    }
+
+    return games
+        .map(
+            (game) =>
+                game.game_name
+        )
+        .filter(Boolean)
+        .join(" • ");
+
+};
 
 
 const Sessions = () => {
+
+    const navigate =
+        useNavigate();
+
+    const [
+        sessions,
+        setSessions,
+    ] = useState([]);
+
+    const [
+        loading,
+        setLoading,
+    ] = useState(true);
+
+    const [
+        refreshing,
+        setRefreshing,
+    ] = useState(false);
+
+    const [
+        error,
+        setError,
+    ] = useState("");
+
+
+    const loadSessions = async (
+        refresh = false
+    ) => {
+
+        try {
+
+            if (refresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
+
+            setError("");
+
+            const data =
+                await getSessions();
+
+            setSessions(
+                Array.isArray(data)
+                    ? data
+                    : []
+            );
+
+        } catch (loadError) {
+
+            console.error(
+                "Failed to load sessions:",
+                loadError
+            );
+
+            setError(
+                loadError?.message ||
+                "Failed to load sessions"
+            );
+
+        } finally {
+
+            setLoading(false);
+            setRefreshing(false);
+
+        }
+
+    };
+
+
+    useEffect(() => {
+
+        loadSessions();
+
+    }, []);
+
+
+    const stats =
+        useMemo(() => {
+
+            const total =
+                sessions.length;
+
+            const active =
+                sessions.filter(
+                    (session) =>
+                        session.status ===
+                            "In Progress" ||
+                        session.status ===
+                            "Paused"
+                ).length;
+
+            const completed =
+                sessions.filter(
+                    (session) =>
+                        session.status ===
+                        "Completed"
+                ).length;
+
+            return {
+                total,
+                active,
+                completed,
+            };
+
+        }, [sessions]);
 
 
     return (
 
         <div className="flex bg-[#F7F8FC] min-h-screen">
 
-
             <Sidebar />
-
 
             <main className="flex-1 p-10 overflow-y-auto">
 
-
                 <Navbar />
 
+                <div
+                    className="
+                        mt-8
+                        flex
+                        items-center
+                        justify-between
+                        gap-5
+                        flex-wrap
+                    "
+                >
 
-                <SessionsHeader />
+                    <div>
+
+                        <h1
+                            className="
+                                text-[30px]
+                                font-bold
+                                text-[#25263A]
+                            "
+                        >
+                            Assessment Sessions
+                        </h1>
+
+                        <p
+                            className="
+                                text-[#8A8DA0]
+                                mt-1
+                            "
+                        >
+                            View and manage all child assessment sessions
+                        </p>
+
+                    </div>
 
 
-                <div className="
-                    grid
-                    grid-cols-2
-                    gap-6
-                    mt-8
-                ">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            loadSessions(true);
+                        }}
+                        disabled={refreshing}
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                            bg-white
+                            border
+                            border-[#E8E9F1]
+                            text-[#6F63E8]
+                            font-semibold
+                            px-5
+                            py-3
+                            rounded-xl
+                            hover:bg-[#F7F5FF]
+                            transition
+                            disabled:opacity-60
+                        "
+                    >
 
+                        <RefreshCw
+                            size={18}
+                            className={
+                                refreshing
+                                    ? "animate-spin"
+                                    : ""
+                            }
+                        />
 
-                    <TodaySessions />
+                        Refresh
 
-
-                    <UpcomingSessions />
-
+                    </button>
 
                 </div>
 
 
+                <div
+                    className="
+                        grid
+                        grid-cols-1
+                        md:grid-cols-3
+                        gap-5
+                        mt-8
+                    "
+                >
+
+                    <div
+                        className="
+                            bg-white
+                            rounded-2xl
+                            border
+                            border-[#ECECF3]
+                            p-6
+                            flex
+                            items-center
+                            gap-4
+                        "
+                    >
+
+                        <div
+                            className="
+                                w-12
+                                h-12
+                                rounded-xl
+                                bg-[#EEEAFE]
+                                flex
+                                items-center
+                                justify-center
+                                text-[#7B6EF6]
+                            "
+                        >
+                            <Target size={23} />
+                        </div>
+
+                        <div>
+
+                            <p
+                                className="
+                                    text-sm
+                                    text-[#8B8E9E]
+                                "
+                            >
+                                Total Sessions
+                            </p>
+
+                            <p
+                                className="
+                                    text-2xl
+                                    font-bold
+                                    text-[#25263A]
+                                    mt-1
+                                "
+                            >
+                                {stats.total}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        className="
+                            bg-white
+                            rounded-2xl
+                            border
+                            border-[#ECECF3]
+                            p-6
+                            flex
+                            items-center
+                            gap-4
+                        "
+                    >
+
+                        <div
+                            className="
+                                w-12
+                                h-12
+                                rounded-xl
+                                bg-[#FFF3E4]
+                                flex
+                                items-center
+                                justify-center
+                                text-[#D99132]
+                            "
+                        >
+                            <Activity size={23} />
+                        </div>
+
+                        <div>
+
+                            <p
+                                className="
+                                    text-sm
+                                    text-[#8B8E9E]
+                                "
+                            >
+                                Active
+                            </p>
+
+                            <p
+                                className="
+                                    text-2xl
+                                    font-bold
+                                    text-[#25263A]
+                                    mt-1
+                                "
+                            >
+                                {stats.active}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        className="
+                            bg-white
+                            rounded-2xl
+                            border
+                            border-[#ECECF3]
+                            p-6
+                            flex
+                            items-center
+                            gap-4
+                        "
+                    >
+
+                        <div
+                            className="
+                                w-12
+                                h-12
+                                rounded-xl
+                                bg-[#E7F8EF]
+                                flex
+                                items-center
+                                justify-center
+                                text-[#2E9B63]
+                            "
+                        >
+                            <CheckCircle2
+                                size={23}
+                            />
+                        </div>
+
+                        <div>
+
+                            <p
+                                className="
+                                    text-sm
+                                    text-[#8B8E9E]
+                                "
+                            >
+                                Completed
+                            </p>
+
+                            <p
+                                className="
+                                    text-2xl
+                                    font-bold
+                                    text-[#25263A]
+                                    mt-1
+                                "
+                            >
+                                {stats.completed}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div className="mt-8">
+
+                    {loading && (
+
+                        <div
+                            className="
+                                bg-white
+                                border
+                                border-[#ECECF3]
+                                rounded-2xl
+                                min-h-[320px]
+                                flex
+                                items-center
+                                justify-center
+                            "
+                        >
+
+                            <div className="text-center">
+
+                                <div
+                                    className="
+                                        w-11
+                                        h-11
+                                        border-4
+                                        border-[#E9E5FF]
+                                        border-t-[#7B6EF6]
+                                        rounded-full
+                                        animate-spin
+                                        mx-auto
+                                    "
+                                />
+
+                                <p
+                                    className="
+                                        text-[#8A8DA0]
+                                        mt-4
+                                    "
+                                >
+                                    Loading sessions...
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    )}
+
+
+                    {!loading && error && (
+
+                        <div
+                            className="
+                                bg-white
+                                border
+                                border-[#ECECF3]
+                                rounded-2xl
+                                min-h-[280px]
+                                flex
+                                items-center
+                                justify-center
+                                text-center
+                                p-8
+                            "
+                        >
+
+                            <div>
+
+                                <p
+                                    className="
+                                        text-[#D95757]
+                                        font-semibold
+                                        text-lg
+                                    "
+                                >
+                                    {error}
+                                </p>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        loadSessions();
+                                    }}
+                                    className="
+                                        mt-5
+                                        bg-[#7B6EF6]
+                                        text-white
+                                        px-6
+                                        py-3
+                                        rounded-xl
+                                        font-semibold
+                                        hover:bg-[#6A5DE5]
+                                        transition
+                                    "
+                                >
+                                    Try Again
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    )}
+
+
+                    {!loading &&
+                        !error &&
+                        sessions.length === 0 && (
+
+                            <div
+                                className="
+                                    bg-white
+                                    border
+                                    border-[#ECECF3]
+                                    rounded-2xl
+                                    min-h-[280px]
+                                    flex
+                                    items-center
+                                    justify-center
+                                    text-center
+                                    p-8
+                                "
+                            >
+
+                                <div>
+
+                                    <Target
+                                        size={42}
+                                        className="
+                                            text-[#B7B1EC]
+                                            mx-auto
+                                        "
+                                    />
+
+                                    <h2
+                                        className="
+                                            text-xl
+                                            font-bold
+                                            text-[#25263A]
+                                            mt-4
+                                        "
+                                    >
+                                        No sessions yet
+                                    </h2>
+
+                                    <p
+                                        className="
+                                            text-[#8A8DA0]
+                                            mt-2
+                                        "
+                                    >
+                                        Assessment sessions will appear here once they are created.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+
+                    {!loading &&
+                        !error &&
+                        sessions.length > 0 && (
+
+                            <div
+                                className="
+                                    grid
+                                    grid-cols-1
+                                    xl:grid-cols-2
+                                    gap-5
+                                "
+                            >
+
+                                {sessions.map(
+                                    (session) => {
+
+                                        const statusStyle =
+                                            getStatusStyle(
+                                                session.status
+                                            );
+
+                                        const displayDate =
+                                            session.started_at ||
+                                            session.scheduled_at ||
+                                            session.created_at;
+
+                                        return (
+
+                                            <button
+                                                key={
+                                                    session.id
+                                                }
+                                                type="button"
+                                                onClick={() => {
+                                                    navigate(
+                                                        `/sessions/${session.id}`
+                                                    );
+                                                }}
+                                                className="
+                                                    bg-white
+                                                    border
+                                                    border-[#ECECF3]
+                                                    rounded-2xl
+                                                    p-6
+                                                    text-left
+                                                    hover:border-[#CFC9FF]
+                                                    hover:shadow-md
+                                                    transition-all
+                                                    group
+                                                "
+                                            >
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        items-start
+                                                        justify-between
+                                                        gap-4
+                                                    "
+                                                >
+
+                                                    <div
+                                                        className="
+                                                            flex
+                                                            items-center
+                                                            gap-4
+                                                            min-w-0
+                                                        "
+                                                    >
+
+                                                        <div
+                                                            className="
+                                                                w-12
+                                                                h-12
+                                                                min-w-12
+                                                                rounded-full
+                                                                bg-[#EEEAFE]
+                                                                text-[#7B6EF6]
+                                                                flex
+                                                                items-center
+                                                                justify-center
+                                                                font-bold
+                                                                text-lg
+                                                            "
+                                                        >
+                                                            {session
+                                                                .child_name
+                                                                ?.charAt(0)
+                                                                ?.toUpperCase() ||
+                                                                "C"}
+                                                        </div>
+
+                                                        <div className="min-w-0">
+
+                                                            <h2
+                                                                className="
+                                                                    text-lg
+                                                                    font-bold
+                                                                    text-[#25263A]
+                                                                    truncate
+                                                                "
+                                                            >
+                                                                {session.child_name ||
+                                                                    "Child"}
+                                                            </h2>
+
+                                                            <p
+                                                                className="
+                                                                    text-sm
+                                                                    text-[#9699A9]
+                                                                    mt-1
+                                                                "
+                                                            >
+                                                                Session #{session.id}
+                                                            </p>
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    <div
+                                                        className={`
+                                                            flex
+                                                            items-center
+                                                            gap-2
+                                                            px-3
+                                                            py-2
+                                                            rounded-full
+                                                            text-xs
+                                                            font-semibold
+                                                            ${statusStyle.background}
+                                                            ${statusStyle.text}
+                                                        `}
+                                                    >
+
+                                                        <span
+                                                            className={`
+                                                                w-2
+                                                                h-2
+                                                                rounded-full
+                                                                ${statusStyle.dot}
+                                                            `}
+                                                        />
+
+                                                        {session.status}
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                <div
+                                                    className="
+                                                        mt-5
+                                                        bg-[#F8F8FC]
+                                                        rounded-xl
+                                                        px-4
+                                                        py-3
+                                                    "
+                                                >
+
+                                                    <p
+                                                        className="
+                                                            text-xs
+                                                            font-semibold
+                                                            text-[#A0A2B0]
+                                                            uppercase
+                                                        "
+                                                    >
+                                                        Games
+                                                    </p>
+
+                                                    <p
+                                                        className="
+                                                            text-sm
+                                                            font-medium
+                                                            text-[#55586B]
+                                                            mt-1
+                                                            leading-6
+                                                        "
+                                                    >
+                                                        {getGamesText(
+                                                            session.games
+                                                        )}
+                                                    </p>
+
+                                                </div>
+
+
+                                                <div
+                                                    className="
+                                                        grid
+                                                        grid-cols-3
+                                                        gap-3
+                                                        mt-5
+                                                    "
+                                                >
+
+                                                    <div>
+
+                                                        <div
+                                                            className="
+                                                                flex
+                                                                items-center
+                                                                gap-1.5
+                                                                text-[#A0A2B0]
+                                                                text-xs
+                                                            "
+                                                        >
+                                                            <CalendarDays
+                                                                size={14}
+                                                            />
+                                                            Date
+                                                        </div>
+
+                                                        <p
+                                                            className="
+                                                                text-sm
+                                                                font-semibold
+                                                                text-[#55586B]
+                                                                mt-2
+                                                            "
+                                                        >
+                                                            {formatDate(
+                                                                displayDate
+                                                            )}
+                                                        </p>
+
+                                                    </div>
+
+
+                                                    <div>
+
+                                                        <div
+                                                            className="
+                                                                flex
+                                                                items-center
+                                                                gap-1.5
+                                                                text-[#A0A2B0]
+                                                                text-xs
+                                                            "
+                                                        >
+                                                            <Clock3
+                                                                size={14}
+                                                            />
+                                                            Duration
+                                                        </div>
+
+                                                        <p
+                                                            className="
+                                                                text-sm
+                                                                font-semibold
+                                                                text-[#55586B]
+                                                                mt-2
+                                                            "
+                                                        >
+                                                            {formatDuration(
+                                                                session.duration_seconds
+                                                            )}
+                                                        </p>
+
+                                                    </div>
+
+
+                                                    <div>
+
+                                                        <div
+                                                            className="
+                                                                flex
+                                                                items-center
+                                                                gap-1.5
+                                                                text-[#A0A2B0]
+                                                                text-xs
+                                                            "
+                                                        >
+                                                            <Target
+                                                                size={14}
+                                                            />
+                                                            Score
+                                                        </div>
+
+                                                        <p
+                                                            className="
+                                                                text-sm
+                                                                font-semibold
+                                                                text-[#55586B]
+                                                                mt-2
+                                                            "
+                                                        >
+                                                            {session.score !==
+                                                                null &&
+                                                            session.score !==
+                                                                undefined
+                                                                ? `${Math.round(
+                                                                      Number(
+                                                                          session.score
+                                                                      )
+                                                                  )}%`
+                                                                : "--"}
+                                                        </p>
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        items-center
+                                                        justify-end
+                                                        gap-2
+                                                        text-[#7B6EF6]
+                                                        font-semibold
+                                                        text-sm
+                                                        mt-6
+                                                    "
+                                                >
+                                                    View Session
+
+                                                    <ChevronRight
+                                                        size={18}
+                                                        className="
+                                                            group-hover:translate-x-1
+                                                            transition-transform
+                                                        "
+                                                    />
+                                                </div>
+
+                                            </button>
+
+                                        );
+
+                                    }
+                                )}
+
+                            </div>
+
+                        )}
+
+                </div>
 
             </main>
-
 
         </div>
 

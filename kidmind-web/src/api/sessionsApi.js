@@ -45,6 +45,24 @@ export const createSession = async (
 };
 
 
+export const getSessions = async () => {
+
+  const response = await fetch(
+    `${API_URL}/sessions`
+  );
+
+  const data =
+    await handleResponse(response);
+
+  return Array.isArray(
+    data?.sessions
+  )
+    ? data.sessions
+    : [];
+
+};
+
+
 export const getSessionById = async (
   id
 ) => {
