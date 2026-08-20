@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -12,6 +13,10 @@ import {
 import {
   createSession,
 } from "../../api/sessionsApi";
+
+import {
+  getChildren,
+} from "../../api/childrenApi";
 
 
 const availableGames = [
@@ -53,10 +58,40 @@ const availableGames = [
 
 
 const StartSessionModal = ({
-  child,
+  child = null,
   close,
   onStarted,
 }) => {
+
+  const [
+    children,
+    setChildren,
+  ] = useState([]);
+
+
+  const [
+    selectedChildId,
+    setSelectedChildId,
+  ] = useState(
+    child?.id
+      ? String(child.id)
+      : ""
+  );
+
+
+  const [
+    loadingChildren,
+    setLoadingChildren,
+  ] = useState(
+    !child
+  );
+
+
+  const [
+    childrenError,
+    setChildrenError,
+  ] = useState("");
+
 
   const [
     selectedGames,
@@ -76,6 +111,113 @@ const StartSessionModal = ({
     saving,
     setSaving,
   ] = useState(false);
+
+
+  useEffect(() => {
+
+    if (child) {
+
+      setSelectedChildId(
+        String(
+          child.id
+        )
+      );
+
+      setLoadingChildren(
+        false
+      );
+
+      return;
+
+    }
+
+
+    const loadChildren =
+      async () => {
+
+        try {
+
+          setLoadingChildren(
+            true
+          );
+
+          setChildrenError(
+            ""
+          );
+
+
+          const data =
+            await getChildren();
+
+
+          const childrenData =
+            Array.isArray(
+              data
+            )
+              ? data
+              : [];
+
+
+          setChildren(
+            childrenData
+          );
+
+
+          if (
+            childrenData.length ===
+            1
+          ) {
+
+            setSelectedChildId(
+              String(
+                childrenData[0].id
+              )
+            );
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "Failed to load children:",
+            error
+          );
+
+
+          setChildrenError(
+            error instanceof Error
+              ? error.message
+              : "Failed to load children"
+          );
+
+        } finally {
+
+          setLoadingChildren(
+            false
+          );
+
+        }
+
+      };
+
+
+    loadChildren();
+
+  }, [
+    child,
+  ]);
+
+
+  const selectedChild =
+    child ||
+    children.find(
+      (item) =>
+        String(
+          item.id
+        ) ===
+        selectedChildId
+    ) ||
+    null;
 
 
   const isGameSelected = (
@@ -164,6 +306,17 @@ const StartSessionModal = ({
       event.preventDefault();
 
 
+      if (!selectedChild) {
+
+        window.alert(
+          "Please select a child."
+        );
+
+        return;
+
+      }
+
+
       if (
         selectedGames.length ===
         0
@@ -188,7 +341,7 @@ const StartSessionModal = ({
         const result =
           await createSession({
             child_id:
-              child.id,
+              selectedChild.id,
 
             games:
               selectedGames,
@@ -211,8 +364,9 @@ const StartSessionModal = ({
 
 
         window.alert(
-          error.message ||
-          "Failed to start session"
+          error instanceof Error
+            ? error.message
+            : "Failed to start session"
         );
 
       } finally {
@@ -310,9 +464,13 @@ const StartSessionModal = ({
                   text-slate-500
                 "
               >
-                Child:{" "}
-                {child.full_name ||
-                  child.name}
+                {selectedChild
+                  ? `Child: ${
+                      selectedChild.full_name ||
+                      selectedChild.name
+                    }`
+                  : "Select a child and assessment games"
+                }
               </p>
 
             </div>
@@ -322,8 +480,12 @@ const StartSessionModal = ({
 
           <button
             type="button"
-            onClick={close}
-            disabled={saving}
+            onClick={
+              close
+            }
+            disabled={
+              saving
+            }
           >
 
             <X
@@ -342,6 +504,164 @@ const StartSessionModal = ({
             handleSubmit
           }
         >
+
+          {!child && (
+
+            <div
+              className="
+                mb-7
+                bg-[#F8FAFC]
+                rounded-2xl
+                p-5
+              "
+            >
+
+              <label
+                className="
+                  block
+                  font-semibold
+                  text-base
+                "
+              >
+                Select Child
+              </label>
+
+
+              <p
+                className="
+                  text-sm
+                  text-slate-500
+                  mt-1
+                "
+              >
+                Choose the child who will complete this assessment session.
+              </p>
+
+
+              {loadingChildren ? (
+
+                <div
+                  className="
+                    mt-4
+                    h-12
+                    rounded-xl
+                    bg-white
+                    border
+                    border-slate-200
+                    flex
+                    items-center
+                    px-4
+                    text-sm
+                    text-slate-400
+                  "
+                >
+                  Loading children...
+                </div>
+
+              ) : childrenError ? (
+
+                <div
+                  className="
+                    mt-4
+                    rounded-xl
+                    bg-red-50
+                    border
+                    border-red-100
+                    px-4
+                    py-3
+                    text-sm
+                    text-red-600
+                  "
+                >
+                  {childrenError}
+                </div>
+
+              ) : children.length ===
+                0 ? (
+
+                <div
+                  className="
+                    mt-4
+                    rounded-xl
+                    bg-amber-50
+                    border
+                    border-amber-100
+                    px-4
+                    py-3
+                    text-sm
+                    text-amber-700
+                  "
+                >
+                  No children are registered yet.
+                </div>
+
+              ) : (
+
+                <select
+                  value={
+                    selectedChildId
+                  }
+                  onChange={(
+                    event
+                  ) => {
+
+                    setSelectedChildId(
+                      event.target
+                        .value
+                    );
+
+                  }}
+                  className="
+                    w-full
+                    mt-4
+                    h-12
+                    rounded-xl
+                    border
+                    border-slate-200
+                    px-4
+                    bg-white
+                    outline-none
+                    focus:border-[#7B6EF6]
+                  "
+                >
+
+                  <option
+                    value=""
+                  >
+                    Choose a child
+                  </option>
+
+
+                  {children.map(
+                    (item) => (
+
+                      <option
+                        key={
+                          item.id
+                        }
+                        value={
+                          String(
+                            item.id
+                          )
+                        }
+                      >
+                        {item.full_name ||
+                          item.name}
+                        {" — "}
+                        ID #{item.id}
+                      </option>
+
+                    )
+                  )}
+
+                </select>
+
+              )}
+
+            </div>
+
+          )}
+
 
           <div>
 
@@ -673,8 +993,12 @@ const StartSessionModal = ({
 
             <button
               type="button"
-              onClick={close}
-              disabled={saving}
+              onClick={
+                close
+              }
+              disabled={
+                saving
+              }
               className="
                 flex-1
                 h-12
@@ -691,6 +1015,8 @@ const StartSessionModal = ({
               type="submit"
               disabled={
                 saving ||
+                loadingChildren ||
+                !selectedChild ||
                 selectedGames.length ===
                 0
               }
@@ -712,6 +1038,7 @@ const StartSessionModal = ({
               <Play
                 size={18}
               />
+
 
               {saving
                 ? "Starting..."

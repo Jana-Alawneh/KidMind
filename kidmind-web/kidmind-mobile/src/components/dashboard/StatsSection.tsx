@@ -1,33 +1,289 @@
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
-    StyleSheet,
-    View,
+  StyleSheet,
+  View,
 } from "react-native";
 
-
 import {
-    Bot,
-    CalendarCheck,
-    FileText,
-    Users,
+  Bot,
+  CalendarCheck,
+  FileText,
+  Users,
 } from "lucide-react-native";
-
 
 import StatCard from "../ui/StatCard";
 
+import {
+  getChildren,
+} from "@/api/childrenApi";
+
+import {
+  getSessions,
+} from "@/api/sessionsApi";
+
+
+const parseDate = (
+  value:
+    | string
+    | null
+    | undefined
+) => {
+
+  if (!value) {
+    return null;
+  }
+
+
+  const date =
+    new Date(
+      String(value).replace(
+        " ",
+        "T"
+      )
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+
+  return date;
+
+};
+
+
+const getSessionDate = (
+  session: any
+) => {
+
+  return (
+    parseDate(
+      session.created_at
+    ) ||
+    parseDate(
+      session.scheduled_at
+    ) ||
+    parseDate(
+      session.started_at
+    ) ||
+    parseDate(
+      session.ended_at
+    )
+  );
+
+};
 
 
 const StatsSection = () => {
 
+  const [
+    childrenCount,
+    setChildrenCount,
+  ] = useState<number | null>(
+    null
+  );
+
+
+  const [
+    sessionsThisMonth,
+    setSessionsThisMonth,
+  ] = useState<number | null>(
+    null
+  );
+
+
+  const [
+    reportsCount,
+    setReportsCount,
+  ] = useState<number | null>(
+    null
+  );
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  const [
+    error,
+    setError,
+  ] = useState(false);
+
+
+  useEffect(() => {
+
+    const loadStats =
+      async () => {
+
+        try {
+
+          setLoading(true);
+          setError(false);
+
+
+          const [
+            childrenData,
+            sessionsData,
+          ] =
+            await Promise.all([
+              getChildren(),
+              getSessions(),
+            ]);
+
+
+          const children =
+            Array.isArray(
+              childrenData
+            )
+              ? childrenData
+              : [];
+
+
+          const sessions =
+            Array.isArray(
+              sessionsData
+            )
+              ? sessionsData
+              : [];
+
+
+          const now =
+            new Date();
+
+
+          const currentYear =
+            now.getFullYear();
+
+
+          const currentMonth =
+            now.getMonth();
+
+
+          const monthlySessions =
+            sessions.filter(
+              (session) => {
+
+                const date =
+                  getSessionDate(
+                    session
+                  );
+
+
+                if (!date) {
+                  return false;
+                }
+
+
+                return (
+                  date.getFullYear() ===
+                    currentYear &&
+                  date.getMonth() ===
+                    currentMonth
+                );
+
+              }
+            );
+
+
+          const completedReports =
+            sessions.filter(
+              (session) =>
+                session.status ===
+                "Completed"
+            );
+
+
+          setChildrenCount(
+            children.length
+          );
+
+
+          setSessionsThisMonth(
+            monthlySessions.length
+          );
+
+
+          setReportsCount(
+            completedReports.length
+          );
+
+        } catch (loadError) {
+
+          console.error(
+            "Failed to load dashboard stats:",
+            loadError
+          );
+
+
+          setError(true);
+
+        } finally {
+
+          setLoading(false);
+
+        }
+
+      };
+
+
+    loadStats();
+
+  }, []);
+
+
+  const getValue = (
+    value: number | null
+  ) => {
+
+    if (loading) {
+      return "...";
+    }
+
+
+    if (
+      error ||
+      value === null
+    ) {
+      return "—";
+    }
+
+
+    return String(
+      value
+    );
+
+  };
 
 
   const stats = [
 
     {
-      title:"Children",
-      value:"24",
-      subtitle:"Registered children",
-      trend:"+12%",
+      title:
+        "Children",
+
+      value:
+        getValue(
+          childrenCount
+        ),
+
+      subtitle:
+        "Registered children",
+
+      trend:
+        loading || error
+          ? "—"
+          : "Live",
 
       icon:
         <Users
@@ -38,11 +294,21 @@ const StatsSection = () => {
 
 
     {
-      title:"Sessions",
-      value:"18",
-      subtitle:"This month",
-      trend:"+8%",
+      title:
+        "Sessions",
 
+      value:
+        getValue(
+          sessionsThisMonth
+        ),
+
+      subtitle:
+        "This month",
+
+      trend:
+        loading || error
+          ? "—"
+          : "Live",
 
       icon:
         <CalendarCheck
@@ -52,13 +318,22 @@ const StatsSection = () => {
     },
 
 
-
     {
-      title:"Reports",
-      value:"46",
-      subtitle:"Generated reports",
-      trend:"+15%",
+      title:
+        "Reports",
 
+      value:
+        getValue(
+          reportsCount
+        ),
+
+      subtitle:
+        "Generated reports",
+
+      trend:
+        loading || error
+          ? "—"
+          : "Live",
 
       icon:
         <FileText
@@ -68,13 +343,18 @@ const StatsSection = () => {
     },
 
 
-
     {
-      title:"AI Insights",
-      value:"18",
-      subtitle:"Recommendations",
-      trend:"+20%",
+      title:
+        "AI Insights",
 
+      value:
+        "—",
+
+      subtitle:
+        "AI integration pending",
+
+      trend:
+        "Pending",
 
       icon:
         <Bot
@@ -83,37 +363,37 @@ const StatsSection = () => {
         />,
     },
 
-
   ];
-
-
 
 
   return (
 
-    <View style={styles.container}>
+    <View
+      style={
+        styles.container
+      }
+    >
 
-
-      {
-        stats.map((item)=>(
-
+      {stats.map(
+        (item) => (
 
           <View
-            key={item.title}
-            style={styles.cardWrapper}
+            key={
+              item.title
+            }
+            style={
+              styles.cardWrapper
+            }
           >
 
             <StatCard
               {...item}
             />
 
-
           </View>
 
-
-        ))
-      }
-
+        )
+      )}
 
     </View>
 
@@ -122,34 +402,34 @@ const StatsSection = () => {
 };
 
 
+const styles =
+  StyleSheet.create({
+
+    container: {
+
+      flexDirection:
+        "row",
+
+      flexWrap:
+        "wrap",
+
+      gap:
+        16,
+
+      marginTop:
+        32,
+
+    },
 
 
+    cardWrapper: {
 
-const styles = StyleSheet.create({
+      width:
+        "47%",
 
+    },
 
-  container:{
-
-    flexDirection:"row",
-
-    flexWrap:"wrap",
-
-    gap:16,
-
-    marginTop:32,
-
-  },
-
-
-  cardWrapper:{
-
-    width:"47%",
-
-  },
-
-
-});
-
+  });
 
 
 export default StatsSection;

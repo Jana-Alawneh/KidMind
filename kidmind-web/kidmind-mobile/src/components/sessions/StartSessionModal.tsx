@@ -17,13 +17,19 @@ import {
 import {
   Brain,
   Check,
+  ChevronDown,
   Play,
+  User,
   X,
 } from "lucide-react-native";
 
 import {
   createSession,
 } from "@/api/sessionsApi";
+
+import {
+  getChildren,
+} from "@/api/childrenApi";
 
 import type {
   Child,
@@ -37,7 +43,7 @@ import type {
 type StartSessionModalProps = {
   visible: boolean;
 
-  child: Child;
+  child?: Child | null;
 
   onClose: () => void;
 
@@ -99,7 +105,7 @@ const difficultyLevels = [
 
 export default function StartSessionModal({
   visible,
-  child,
+  child = null,
   onClose,
   onStarted,
 }: StartSessionModalProps) {
@@ -124,6 +130,40 @@ export default function StartSessionModal({
   ] = useState(false);
 
 
+  const [
+    children,
+    setChildren,
+  ] = useState<Child[]>([]);
+
+
+  const [
+    selectedChildId,
+    setSelectedChildId,
+  ] = useState<number | null>(
+    child
+      ? Number(child.id)
+      : null
+  );
+
+
+  const [
+    loadingChildren,
+    setLoadingChildren,
+  ] = useState(false);
+
+
+  const [
+    childrenError,
+    setChildrenError,
+  ] = useState("");
+
+
+  const [
+    childListOpen,
+    setChildListOpen,
+  ] = useState(false);
+
+
   useEffect(() => {
 
     if (!visible) {
@@ -141,9 +181,126 @@ export default function StartSessionModal({
       },
     ]);
 
+
+    setChildListOpen(
+      false
+    );
+
+
+    setChildrenError(
+      ""
+    );
+
+
+    if (child) {
+
+      setSelectedChildId(
+        Number(
+          child.id
+        )
+      );
+
+
+      return;
+
+    }
+
+
+    setSelectedChildId(
+      null
+    );
+
+
+    const loadChildren =
+      async () => {
+
+        try {
+
+          setLoadingChildren(
+            true
+          );
+
+
+          const result =
+            await getChildren();
+
+
+          const loadedChildren =
+            Array.isArray(
+              result
+            )
+              ? result
+              : [];
+
+
+          setChildren(
+            loadedChildren
+          );
+
+
+          if (
+            loadedChildren.length ===
+            1
+          ) {
+
+            setSelectedChildId(
+              Number(
+                loadedChildren[0].id
+              )
+            );
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "Failed to load children:",
+            error
+          );
+
+
+          setChildren(
+            []
+          );
+
+
+          setChildrenError(
+            error instanceof Error
+              ? error.message
+              : "Failed to load children"
+          );
+
+        } finally {
+
+          setLoadingChildren(
+            false
+          );
+
+        }
+
+      };
+
+
+    loadChildren();
+
   }, [
     visible,
+    child,
   ]);
+
+
+  const selectedChild =
+    child ||
+    children.find(
+      (item) =>
+        Number(
+          item.id
+        ) ===
+        Number(
+          selectedChildId
+        )
+    ) ||
+    null;
 
 
   const isGameSelected = (
@@ -253,6 +410,21 @@ export default function StartSessionModal({
 
 
       if (
+        !selectedChild
+      ) {
+
+        Alert.alert(
+          "No Child Selected",
+          "Please select a child before starting the session."
+        );
+
+
+        return;
+
+      }
+
+
+      if (
         selectedGames.length ===
         0
       ) {
@@ -278,7 +450,7 @@ export default function StartSessionModal({
         const result =
           await createSession({
             child_id:
-              child.id,
+              selectedChild.id,
 
             games:
               selectedGames,
@@ -421,8 +593,12 @@ export default function StartSessionModal({
                     }
                     numberOfLines={2}
                   >
-                    Child:{" "}
-                    {child.full_name}
+
+                    {selectedChild
+                      ? `Child: ${selectedChild.full_name}`
+                      : "Select a child and assessment games"
+                    }
+
                   </Text>
 
                 </View>
@@ -452,10 +628,327 @@ export default function StartSessionModal({
             </View>
 
 
+            {!child && (
+
+              <View
+                style={
+                  styles.childSection
+                }
+              >
+
+                <Text
+                  style={
+                    styles.sectionTitle
+                  }
+                >
+                  Select Child
+                </Text>
+
+
+                <Text
+                  style={
+                    styles.sectionDescription
+                  }
+                >
+                  Choose the child who will complete this assessment session.
+                </Text>
+
+
+                {loadingChildren && (
+
+                  <View
+                    style={
+                      styles.childrenLoading
+                    }
+                  >
+
+                    <ActivityIndicator
+                      size="small"
+                      color="#7B6EF6"
+                    />
+
+
+                    <Text
+                      style={
+                        styles.childrenLoadingText
+                      }
+                    >
+                      Loading children...
+                    </Text>
+
+                  </View>
+
+                )}
+
+
+                {!loadingChildren &&
+                  childrenError !== "" && (
+
+                  <View
+                    style={
+                      styles.childrenError
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.childrenErrorText
+                      }
+                    >
+                      {childrenError}
+                    </Text>
+
+                  </View>
+
+                )}
+
+
+                {!loadingChildren &&
+                  childrenError === "" &&
+                  children.length ===
+                    0 && (
+
+                  <View
+                    style={
+                      styles.noChildren
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.noChildrenTitle
+                      }
+                    >
+                      No children available
+                    </Text>
+
+
+                    <Text
+                      style={
+                        styles.noChildrenText
+                      }
+                    >
+                      Add a child profile before creating an assessment session.
+                    </Text>
+
+                  </View>
+
+                )}
+
+
+                {!loadingChildren &&
+                  childrenError === "" &&
+                  children.length >
+                    0 && (
+
+                  <View
+                    style={
+                      styles.childSelector
+                    }
+                  >
+
+                    <TouchableOpacity
+                      style={[
+                        styles.childSelectButton,
+
+                        selectedChild &&
+                          styles.childSelectButtonActive,
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => {
+
+                        setChildListOpen(
+                          (current) =>
+                            !current
+                        );
+
+                      }}
+                      disabled={
+                        saving
+                      }
+                    >
+
+                      <View
+                        style={
+                          styles.childSelectLeft
+                        }
+                      >
+
+                        <View
+                          style={
+                            styles.childIcon
+                          }
+                        >
+
+                          <User
+                            size={18}
+                            color="#7B6EF6"
+                          />
+
+                        </View>
+
+
+                        <View
+                          style={
+                            styles.childSelectTextContainer
+                          }
+                        >
+
+                          <Text
+                            style={
+                              styles.childSelectLabel
+                            }
+                          >
+                            {selectedChild
+                              ? selectedChild.full_name
+                              : "Select child"
+                            }
+                          </Text>
+
+
+                          {selectedChild && (
+
+                            <Text
+                              style={
+                                styles.childSelectMeta
+                              }
+                            >
+                              ID #{selectedChild.id}
+                              {" · "}
+                              Age {selectedChild.age}
+                            </Text>
+
+                          )}
+
+                        </View>
+
+                      </View>
+
+
+                      <ChevronDown
+                        size={20}
+                        color="#64748B"
+                      />
+
+                    </TouchableOpacity>
+
+
+                    {childListOpen && (
+
+                      <View
+                        style={
+                          styles.childList
+                        }
+                      >
+
+                        {children.map(
+                          (item) => {
+
+                            const active =
+                              Number(
+                                item.id
+                              ) ===
+                              Number(
+                                selectedChildId
+                              );
+
+
+                            return (
+
+                              <TouchableOpacity
+                                key={
+                                  item.id
+                                }
+                                style={[
+                                  styles.childOption,
+
+                                  active &&
+                                    styles.childOptionActive,
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => {
+
+                                  setSelectedChildId(
+                                    Number(
+                                      item.id
+                                    )
+                                  );
+
+
+                                  setChildListOpen(
+                                    false
+                                  );
+
+                                }}
+                              >
+
+                                <View
+                                  style={
+                                    styles.childOptionInfo
+                                  }
+                                >
+
+                                  <Text
+                                    style={[
+                                      styles.childOptionName,
+
+                                      active &&
+                                        styles.childOptionNameActive,
+                                    ]}
+                                  >
+                                    {item.full_name}
+                                  </Text>
+
+
+                                  <Text
+                                    style={
+                                      styles.childOptionMeta
+                                    }
+                                  >
+                                    ID #{item.id}
+                                    {" · "}
+                                    Age {item.age}
+                                  </Text>
+
+                                </View>
+
+
+                                {active && (
+
+                                  <Check
+                                    size={18}
+                                    color="#7B6EF6"
+                                  />
+
+                                )}
+
+                              </TouchableOpacity>
+
+                            );
+
+                          }
+                        )}
+
+                      </View>
+
+                    )}
+
+                  </View>
+
+                )}
+
+              </View>
+
+            )}
+
+
             <Text
-              style={
-                styles.sectionTitle
-              }
+              style={[
+                styles.sectionTitle,
+
+                !child &&
+                  styles.gamesSectionTitle,
+              ]}
             >
               Select Session Games
             </Text>
@@ -781,6 +1274,8 @@ export default function StartSessionModal({
 
                   (
                     saving ||
+                    loadingChildren ||
+                    !selectedChild ||
                     selectedGames.length ===
                       0
                   ) &&
@@ -791,6 +1286,8 @@ export default function StartSessionModal({
                 }
                 disabled={
                   saving ||
+                  loadingChildren ||
+                  !selectedChild ||
                   selectedGames.length ===
                     0
                 }
@@ -948,6 +1445,11 @@ const styles =
     },
 
 
+    childSection: {
+      marginTop: 27,
+    },
+
+
     sectionTitle: {
       color: "#172554",
 
@@ -959,12 +1461,276 @@ const styles =
     },
 
 
+    gamesSectionTitle: {
+      marginTop: 25,
+    },
+
+
     sectionDescription: {
       color: "#64748B",
 
       lineHeight: 21,
 
       marginTop: 5,
+    },
+
+
+    childrenLoading: {
+      minHeight: 90,
+
+      borderRadius: 16,
+
+      backgroundColor:
+        "#F8FAFC",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      marginTop: 15,
+    },
+
+
+    childrenLoadingText: {
+      color: "#64748B",
+
+      fontSize: 13,
+
+      marginTop: 8,
+    },
+
+
+    childrenError: {
+      borderRadius: 16,
+
+      backgroundColor:
+        "#FEF2F2",
+
+      padding: 15,
+
+      marginTop: 15,
+    },
+
+
+    childrenErrorText: {
+      color: "#DC2626",
+
+      fontSize: 13,
+
+      textAlign:
+        "center",
+    },
+
+
+    noChildren: {
+      borderRadius: 16,
+
+      backgroundColor:
+        "#F8FAFC",
+
+      padding: 18,
+
+      marginTop: 15,
+
+      alignItems:
+        "center",
+    },
+
+
+    noChildrenTitle: {
+      color: "#334155",
+
+      fontSize: 15,
+
+      fontWeight: "700",
+    },
+
+
+    noChildrenText: {
+      color: "#94A3B8",
+
+      fontSize: 13,
+
+      textAlign:
+        "center",
+
+      marginTop: 5,
+
+      lineHeight: 19,
+    },
+
+
+    childSelector: {
+      marginTop: 15,
+    },
+
+
+    childSelectButton: {
+      minHeight: 64,
+
+      borderRadius: 16,
+
+      borderWidth: 1,
+
+      borderColor:
+        "#CBD5E1",
+
+      backgroundColor:
+        "#FFFFFF",
+
+      paddingHorizontal: 14,
+
+      flexDirection: "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap: 12,
+    },
+
+
+    childSelectButtonActive: {
+      borderColor:
+        "#7B6EF6",
+
+      backgroundColor:
+        "#F8F6FF",
+    },
+
+
+    childSelectLeft: {
+      flex: 1,
+
+      flexDirection: "row",
+
+      alignItems:
+        "center",
+
+      gap: 11,
+    },
+
+
+    childIcon: {
+      width: 38,
+
+      height: 38,
+
+      borderRadius: 12,
+
+      backgroundColor:
+        "#EEE9FF",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+    },
+
+
+    childSelectTextContainer: {
+      flex: 1,
+    },
+
+
+    childSelectLabel: {
+      color: "#172554",
+
+      fontSize: 15,
+
+      fontWeight: "700",
+    },
+
+
+    childSelectMeta: {
+      color: "#64748B",
+
+      fontSize: 12,
+
+      marginTop: 3,
+    },
+
+
+    childList: {
+      borderWidth: 1,
+
+      borderColor:
+        "#E2E8F0",
+
+      borderRadius: 16,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      marginTop: 8,
+
+      overflow:
+        "hidden",
+    },
+
+
+    childOption: {
+      minHeight: 60,
+
+      paddingHorizontal: 14,
+
+      paddingVertical: 10,
+
+      borderBottomWidth: 1,
+
+      borderBottomColor:
+        "#F1F5F9",
+
+      flexDirection: "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap: 10,
+    },
+
+
+    childOptionActive: {
+      backgroundColor:
+        "#F8F6FF",
+    },
+
+
+    childOptionInfo: {
+      flex: 1,
+    },
+
+
+    childOptionName: {
+      color: "#334155",
+
+      fontSize: 14,
+
+      fontWeight: "600",
+    },
+
+
+    childOptionNameActive: {
+      color: "#6D5CE7",
+
+      fontWeight: "800",
+    },
+
+
+    childOptionMeta: {
+      color: "#94A3B8",
+
+      fontSize: 12,
+
+      marginTop: 2,
     },
 
 
