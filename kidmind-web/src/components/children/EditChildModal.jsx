@@ -19,26 +19,45 @@ const EditChildModal = ({
             child.full_name ||
             child.name ||
             "",
-        age: child.age || "",
-        gender: child.gender || "Female",
-        parent_name: child.parent_name || "",
-        notes: child.notes || "",
+        age:
+            child.age ||
+            "",
+        gender:
+            child.gender ||
+            "Female",
+        parent_name:
+            child.parent_name ||
+            "",
+        region:
+            child.region ||
+            "",
+        notes:
+            child.notes ||
+            "",
     });
 
-    const [saving, setSaving] = useState(false);
+    const [
+        saving,
+        setSaving
+    ] = useState(false);
 
 
-    const handleChange = (event) => {
+    const handleChange = (
+        event
+    ) => {
 
         setFormData({
             ...formData,
-            [event.target.name]: event.target.value,
+            [event.target.name]:
+                event.target.value,
         });
 
     };
 
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (
+        event
+    ) => {
 
         event.preventDefault();
 
@@ -50,7 +69,23 @@ const EditChildModal = ({
                 child.id,
                 {
                     ...formData,
-                    age: Number(formData.age),
+
+                    full_name:
+                        formData.full_name.trim(),
+
+                    age:
+                        Number(
+                            formData.age
+                        ),
+
+                    parent_name:
+                        formData.parent_name.trim(),
+
+                    region:
+                        formData.region.trim(),
+
+                    notes:
+                        formData.notes.trim(),
                 }
             );
 
@@ -66,7 +101,7 @@ const EditChildModal = ({
             );
 
             alert(
-                error.message ||
+                error?.message ||
                 "Failed to update child"
             );
 
@@ -114,7 +149,13 @@ const EditChildModal = ({
                     "
                 >
 
-                    <div className="flex items-center gap-3">
+                    <div
+                        className="
+                        flex
+                        items-center
+                        gap-3
+                        "
+                    >
 
                         <div
                             className="
@@ -128,34 +169,51 @@ const EditChildModal = ({
                             "
                         >
 
-                            <Pencil className="text-blue-600" />
+                            <Pencil
+                                className="
+                                text-blue-600
+                                "
+                            />
 
                         </div>
 
+
                         <div>
 
-                            <h2 className="text-2xl font-bold">
-
+                            <h2
+                                className="
+                                text-2xl
+                                font-bold
+                                "
+                            >
                                 Edit Child
-
                             </h2>
 
-                            <p className="text-sm text-slate-500">
-
+                            <p
+                                className="
+                                text-sm
+                                text-slate-500
+                                "
+                            >
                                 Update child information
-
                             </p>
 
                         </div>
 
                     </div>
 
+
                     <button
                         type="button"
                         onClick={close}
+                        disabled={saving}
                     >
 
-                        <X className="text-slate-400" />
+                        <X
+                            className="
+                            text-slate-400
+                            "
+                        />
 
                     </button>
 
@@ -163,23 +221,34 @@ const EditChildModal = ({
 
 
                 <form
-                    onSubmit={handleSubmit}
-                    className="space-y-5"
+                    onSubmit={
+                        handleSubmit
+                    }
+                    className="
+                    space-y-5
+                    "
                 >
 
                     <div>
 
-                        <label className="text-sm text-slate-500">
-
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
                             Child Name
-
                         </label>
 
                         <input
                             type="text"
                             name="full_name"
-                            value={formData.full_name}
-                            onChange={handleChange}
+                            value={
+                                formData.full_name
+                            }
+                            onChange={
+                                handleChange
+                            }
                             placeholder="Enter name"
                             className="
                             w-full
@@ -192,26 +261,40 @@ const EditChildModal = ({
                             focus:border-[#7B6EF6]
                             "
                             required
+                            disabled={saving}
                         />
 
                     </div>
 
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div
+                        className="
+                        grid
+                        grid-cols-2
+                        gap-4
+                        "
+                    >
 
                         <div>
 
-                            <label className="text-sm text-slate-500">
-
+                            <label
+                                className="
+                                text-sm
+                                text-slate-500
+                                "
+                            >
                                 Age
-
                             </label>
 
                             <input
                                 type="number"
                                 name="age"
-                                value={formData.age}
-                                onChange={handleChange}
+                                value={
+                                    formData.age
+                                }
+                                onChange={
+                                    handleChange
+                                }
                                 placeholder="Age"
                                 min="1"
                                 className="
@@ -225,6 +308,7 @@ const EditChildModal = ({
                                 focus:border-[#7B6EF6]
                                 "
                                 required
+                                disabled={saving}
                             />
 
                         </div>
@@ -232,16 +316,23 @@ const EditChildModal = ({
 
                         <div>
 
-                            <label className="text-sm text-slate-500">
-
+                            <label
+                                className="
+                                text-sm
+                                text-slate-500
+                                "
+                            >
                                 Gender
-
                             </label>
 
                             <select
                                 name="gender"
-                                value={formData.gender}
-                                onChange={handleChange}
+                                value={
+                                    formData.gender
+                                }
+                                onChange={
+                                    handleChange
+                                }
                                 className="
                                 w-full
                                 mt-2
@@ -252,13 +343,18 @@ const EditChildModal = ({
                                 outline-none
                                 focus:border-[#7B6EF6]
                                 "
+                                disabled={saving}
                             >
 
-                                <option value="Female">
+                                <option
+                                    value="Female"
+                                >
                                     Female
                                 </option>
 
-                                <option value="Male">
+                                <option
+                                    value="Male"
+                                >
                                     Male
                                 </option>
 
@@ -271,17 +367,24 @@ const EditChildModal = ({
 
                     <div>
 
-                        <label className="text-sm text-slate-500">
-
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
                             Parent Name
-
                         </label>
 
                         <input
                             type="text"
                             name="parent_name"
-                            value={formData.parent_name}
-                            onChange={handleChange}
+                            value={
+                                formData.parent_name
+                            }
+                            onChange={
+                                handleChange
+                            }
                             placeholder="Parent name"
                             className="
                             w-full
@@ -294,6 +397,7 @@ const EditChildModal = ({
                             focus:border-[#7B6EF6]
                             "
                             required
+                            disabled={saving}
                         />
 
                     </div>
@@ -301,16 +405,61 @@ const EditChildModal = ({
 
                     <div>
 
-                        <label className="text-sm text-slate-500">
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
+                            Region
+                        </label>
 
+                        <input
+                            type="text"
+                            name="region"
+                            value={
+                                formData.region
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            placeholder="Enter region"
+                            className="
+                            w-full
+                            mt-2
+                            h-12
+                            rounded-xl
+                            border
+                            px-4
+                            outline-none
+                            focus:border-[#7B6EF6]
+                            "
+                            required
+                            disabled={saving}
+                        />
+
+                    </div>
+
+
+                    <div>
+
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
                             Notes
-
                         </label>
 
                         <textarea
                             name="notes"
-                            value={formData.notes}
-                            onChange={handleChange}
+                            value={
+                                formData.notes
+                            }
+                            onChange={
+                                handleChange
+                            }
                             placeholder="Additional notes"
                             rows="3"
                             className="
@@ -323,12 +472,19 @@ const EditChildModal = ({
                             outline-none
                             focus:border-[#7B6EF6]
                             "
+                            disabled={saving}
                         />
 
                     </div>
 
 
-                    <div className="flex gap-4 pt-4">
+                    <div
+                        className="
+                        flex
+                        gap-4
+                        pt-4
+                        "
+                    >
 
                         <button
                             type="button"
@@ -342,10 +498,9 @@ const EditChildModal = ({
                             disabled:opacity-50
                             "
                         >
-
                             Cancel
-
                         </button>
+
 
                         <button
                             type="submit"
@@ -361,9 +516,10 @@ const EditChildModal = ({
                             "
                         >
 
-                            {saving
-                                ? "Saving..."
-                                : "Save Changes"
+                            {
+                                saving
+                                    ? "Saving..."
+                                    : "Save Changes"
                             }
 
                         </button>

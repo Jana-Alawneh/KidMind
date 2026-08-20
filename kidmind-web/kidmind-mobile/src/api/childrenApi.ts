@@ -4,21 +4,24 @@ export type Child = {
   age: number;
   gender: "Female" | "Male";
   parent_name: string;
+  region: string | null;
   notes: string | null;
-
   score?: number | string | null;
   status?: string | null;
   last_assessment?: string | null;
   image?: string | null;
 };
 
+
 export type ChildPayload = {
   full_name: string;
   age: number;
   gender: "Female" | "Male";
   parent_name: string;
+  region: string;
   notes: string;
 };
+
 
 const API_URL = (
   process.env.EXPO_PUBLIC_API_URL ||
@@ -35,13 +38,16 @@ const handleResponse = async (
     .catch(() => null);
 
   if (!response.ok) {
+
     throw new Error(
       data?.message ||
       "Request failed"
     );
+
   }
 
   return data;
+
 };
 
 
@@ -52,10 +58,14 @@ export const getChildren =
       `${API_URL}/children`
     );
 
-    return handleResponse(response);
+    return handleResponse(
+      response
+    );
+
   };
 
-  export const getChildById = async (
+
+export const getChildById = async (
   id: number
 ): Promise<Child> => {
 
@@ -63,64 +73,38 @@ export const getChildren =
     `${API_URL}/children/${id}`
   );
 
-  return handleResponse(response);
+  return handleResponse(
+    response
+  );
+
 };
+
 
 export const addChild = async (
   child: ChildPayload
 ) => {
 
-  const url = `${API_URL}/children`;
-
-  console.log("POST URL:", url);
-  console.log("POST CHILD:", child);
-
   const response = await fetch(
-    url,
+    `${API_URL}/children`,
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":
+          "application/json",
       },
-      body: JSON.stringify(child),
+      body:
+        JSON.stringify(
+          child
+        ),
     }
   );
 
-  const responseText =
-    await response.text();
-
-  console.log(
-    "POST STATUS:",
-    response.status
+  return handleResponse(
+    response
   );
-
-  console.log(
-    "POST RESPONSE:",
-    responseText
-  );
-
-  let data = null;
-
-  if (responseText) {
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      data = responseText;
-    }
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      typeof data === "object" &&
-      data?.message
-        ? data.message
-        : "Failed to add child"
-    );
-  }
-
-  return data;
 
 };
+
 
 export const updateChild = async (
   id: number,
@@ -135,11 +119,17 @@ export const updateChild = async (
         "Content-Type":
           "application/json",
       },
-      body: JSON.stringify(child),
+      body:
+        JSON.stringify(
+          child
+        ),
     }
   );
 
-  return handleResponse(response);
+  return handleResponse(
+    response
+  );
+
 };
 
 
@@ -154,5 +144,8 @@ export const deleteChild = async (
     }
   );
 
-  return handleResponse(response);
+  return handleResponse(
+    response
+  );
+
 };

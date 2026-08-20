@@ -298,7 +298,7 @@ const SessionsTimeline = () => {
               )
               .slice(
                 0,
-                5
+                3
               );
 
 

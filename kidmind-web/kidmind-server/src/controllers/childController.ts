@@ -1,4 +1,7 @@
-import { Request, Response } from "express";
+import {
+  Request,
+  Response,
+} from "express";
 
 import {
   getAllUsers,
@@ -8,26 +11,31 @@ import {
   updateChild as updateChildInDatabase,
 } from "../models/childModel";
 
+
 export const fetchUsers = async (
   req: Request,
   res: Response
 ) => {
+
   try {
 
-    const users = await getAllUsers();
+    const users =
+      await getAllUsers();
 
-    res.json(users);
+    return res.json(users);
 
   } catch (error) {
 
     console.error(error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server Error",
     });
 
   }
+
 };
+
 
 export const fetchChildById = async (
   req: Request,
@@ -36,7 +44,9 @@ export const fetchChildById = async (
 
   try {
 
-    const id = Number(req.params.id);
+    const id =
+      Number(req.params.id);
+
 
     if (
       !Number.isInteger(id) ||
@@ -49,8 +59,10 @@ export const fetchChildById = async (
 
     }
 
+
     const child =
       await getChildById(id);
+
 
     if (!child) {
 
@@ -59,6 +71,7 @@ export const fetchChildById = async (
       });
 
     }
+
 
     return res.json(child);
 
@@ -74,6 +87,7 @@ export const fetchChildById = async (
 
 };
 
+
 export const createChild = async (
   req: Request,
   res: Response
@@ -86,32 +100,65 @@ export const createChild = async (
       age,
       gender,
       parent_name,
+      region,
       notes,
     } = req.body;
 
+
+    const numericAge =
+      Number(age);
+
+
+    if (
+      !full_name ||
+      !String(full_name).trim() ||
+      !Number.isInteger(numericAge) ||
+      numericAge <= 0 ||
+      !gender ||
+      !String(gender).trim() ||
+      !parent_name ||
+      !String(parent_name).trim() ||
+      !region ||
+      !String(region).trim()
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Please provide all required fields",
+      });
+
+    }
+
+
     await addChild(
-      full_name,
-      age,
-      gender,
-      parent_name,
+      String(full_name).trim(),
+      numericAge,
+      String(gender).trim(),
+      String(parent_name).trim(),
+      String(region).trim(),
       notes
+        ? String(notes).trim()
+        : ""
     );
 
-    res.status(201).json({
-      message: "Child added successfully",
+
+    return res.status(201).json({
+      message:
+        "Child added successfully",
     });
 
   } catch (error) {
 
     console.error(error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server Error",
     });
 
   }
 
 };
+
 
 export const removeChild = async (
   req: Request,
@@ -120,85 +167,139 @@ export const removeChild = async (
 
   try {
 
-    const { id } = req.params;
+    const id =
+      Number(req.params.id);
 
-    await deleteChild(Number(id));
+
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
+
+      return res.status(400).json({
+        message: "Invalid child ID",
+      });
+
+    }
 
 
-    res.json({
-      message: "Child deleted successfully",
+    await deleteChild(id);
+
+
+    return res.json({
+      message:
+        "Child deleted successfully",
     });
 
-
-  } catch(error){
+  } catch (error) {
 
     console.error(error);
 
-    res.status(500).json({
-      message:"Server Error"
+    return res.status(500).json({
+      message: "Server Error",
     });
 
   }
 
 };
 
+
 export const editChild = async (
   req: Request,
   res: Response
 ) => {
+
   try {
-    const id = Number(req.params.id);
+
+    const id =
+      Number(req.params.id);
+
 
     const {
       full_name,
       age,
       gender,
       parent_name,
+      region,
       notes,
     } = req.body;
 
-    if (!Number.isInteger(id) || id <= 0) {
+
+    const numericAge =
+      Number(age);
+
+
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
+
       return res.status(400).json({
         message: "Invalid child ID",
       });
+
     }
+
 
     if (
       !full_name ||
-      age === undefined ||
+      !String(full_name).trim() ||
+      !Number.isInteger(numericAge) ||
+      numericAge <= 0 ||
       !gender ||
-      !parent_name
+      !String(gender).trim() ||
+      !parent_name ||
+      !String(parent_name).trim() ||
+      !region ||
+      !String(region).trim()
     ) {
+
       return res.status(400).json({
-        message: "Please provide all required fields",
+        message:
+          "Please provide all required fields",
       });
+
     }
+
 
     const affectedRows =
       await updateChildInDatabase(
         id,
-        full_name,
-        Number(age),
-        gender,
-        parent_name,
-        notes ?? null
+        String(full_name).trim(),
+        numericAge,
+        String(gender).trim(),
+        String(parent_name).trim(),
+        String(region).trim(),
+        notes
+          ? String(notes).trim()
+          : null
       );
 
-    if (affectedRows === 0) {
+
+    if (
+      affectedRows === 0
+    ) {
+
       return res.status(404).json({
         message: "Child not found",
       });
+
     }
 
+
     return res.json({
-      message: "Child updated successfully",
+      message:
+        "Child updated successfully",
     });
 
   } catch (error) {
+
     console.error(error);
 
     return res.status(500).json({
       message: "Server Error",
     });
+
   }
+
 };

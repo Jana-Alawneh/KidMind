@@ -4,7 +4,11 @@ import {
 } from "lucide-react";
 
 
-const ChildrenHeader = ({onAdd}) => {
+const ChildrenHeader = ({
+    onAdd,
+    searchQuery = "",
+    onSearchChange = () => {}
+}) => {
 
 
     return (
@@ -56,11 +60,22 @@ const ChildrenHeader = ({onAdd}) => {
 
                     <input
 
-                        placeholder="Search child..."
+                        type="text"
+
+                        value={searchQuery}
+
+                        onChange={(event) => {
+                            onSearchChange(
+                                event.target.value
+                            );
+                        }}
+
+                        placeholder="Search by ID, child, parent or region..."
 
                         className="
                         outline-none
                         bg-transparent
+                        w-[280px]
                         "
 
                     />

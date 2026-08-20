@@ -1,28 +1,28 @@
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
-    Pencil,
-    X,
+  Pencil,
+  X,
 } from "lucide-react-native";
 
 import { useState } from "react";
 
 import {
-    updateChild,
+  updateChild,
 } from "@/api/childrenApi";
 
 import type {
-    Child,
-    ChildPayload,
+  Child,
+  ChildPayload,
 } from "@/api/childrenApi";
 
 
@@ -39,113 +39,188 @@ const EditChildModal = ({
   onSuccess,
 }: Props) => {
 
-  const [fullName, setFullName] =
-    useState(child.full_name);
+  const [
+    fullName,
+    setFullName,
+  ] = useState(
+    child.full_name
+  );
 
-  const [age, setAge] =
-    useState(String(child.age));
+  const [
+    age,
+    setAge,
+  ] = useState(
+    String(child.age)
+  );
 
-  const [gender, setGender] =
-    useState<"Female" | "Male">(
-      child.gender
-    );
+  const [
+    gender,
+    setGender,
+  ] = useState<
+    "Female" | "Male"
+  >(
+    child.gender
+  );
 
-  const [parentName, setParentName] =
-    useState(child.parent_name || "");
+  const [
+    parentName,
+    setParentName,
+  ] = useState(
+    child.parent_name || ""
+  );
 
-  const [notes, setNotes] =
-    useState(child.notes || "");
+  const [
+    region,
+    setRegion,
+  ] = useState(
+    child.region || ""
+  );
 
-  const [saving, setSaving] =
-    useState(false);
+  const [
+    notes,
+    setNotes,
+  ] = useState(
+    child.notes || ""
+  );
 
-
-  const handleSubmit = async () => {
-
-    const numericAge = Number(age);
-
-    if (!fullName.trim()) {
-
-      Alert.alert(
-        "Missing Information",
-        "Please enter the child name."
-      );
-
-      return;
-    }
-
-    if (
-      !Number.isInteger(numericAge) ||
-      numericAge <= 0
-    ) {
-
-      Alert.alert(
-        "Invalid Age",
-        "Please enter a valid age."
-      );
-
-      return;
-    }
-
-    if (!parentName.trim()) {
-
-      Alert.alert(
-        "Missing Information",
-        "Please enter the parent name."
-      );
-
-      return;
-    }
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
 
 
-    const childData: ChildPayload = {
-      full_name: fullName.trim(),
-      age: numericAge,
-      gender,
-      parent_name: parentName.trim(),
-      notes: notes.trim(),
+  const handleSubmit =
+    async () => {
+
+      const numericAge =
+        Number(age);
+
+
+      if (
+        !fullName.trim()
+      ) {
+
+        Alert.alert(
+          "Missing Information",
+          "Please enter the child name."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !Number.isInteger(
+          numericAge
+        ) ||
+        numericAge <= 0
+      ) {
+
+        Alert.alert(
+          "Invalid Age",
+          "Please enter a valid age."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !parentName.trim()
+      ) {
+
+        Alert.alert(
+          "Missing Information",
+          "Please enter the parent name."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !region.trim()
+      ) {
+
+        Alert.alert(
+          "Missing Information",
+          "Please enter the region."
+        );
+
+        return;
+
+      }
+
+
+      const childData:
+        ChildPayload = {
+
+        full_name:
+          fullName.trim(),
+
+        age:
+          numericAge,
+
+        gender,
+
+        parent_name:
+          parentName.trim(),
+
+        region:
+          region.trim(),
+
+        notes:
+          notes.trim(),
+
+      };
+
+
+      try {
+
+        setSaving(true);
+
+
+        await updateChild(
+          child.id,
+          childData
+        );
+
+
+        await onSuccess();
+
+        close();
+
+
+        Alert.alert(
+          "Success",
+          "Child updated successfully"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Failed to update child:",
+          error
+        );
+
+
+        Alert.alert(
+          "Error",
+          error instanceof Error
+            ? error.message
+            : "Failed to update child"
+        );
+
+      } finally {
+
+        setSaving(false);
+
+      }
+
     };
-
-
-    try {
-
-      setSaving(true);
-
-      await updateChild(
-        child.id,
-        childData
-      );
-
-      await onSuccess();
-
-      close();
-
-      Alert.alert(
-        "Success",
-        "Child updated successfully"
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Failed to update child:",
-        error
-      );
-
-      Alert.alert(
-        "Error",
-        error instanceof Error
-          ? error.message
-          : "Failed to update child"
-      );
-
-    } finally {
-
-      setSaving(false);
-
-    }
-
-  };
 
 
   return (
@@ -153,18 +228,40 @@ const EditChildModal = ({
     <Modal
       transparent
       animationType="fade"
-      onRequestClose={close}
+      onRequestClose={
+        close
+      }
     >
 
-      <View style={styles.overlay}>
+      <View
+        style={
+          styles.overlay
+        }
+      >
 
-        <View style={styles.container}>
+        <View
+          style={
+            styles.container
+          }
+        >
 
-          <View style={styles.header}>
+          <View
+            style={
+              styles.header
+            }
+          >
 
-            <View style={styles.titleSection}>
+            <View
+              style={
+                styles.titleSection
+              }
+            >
 
-              <View style={styles.iconBox}>
+              <View
+                style={
+                  styles.iconBox
+                }
+              >
 
                 <Pencil
                   size={24}
@@ -173,13 +270,22 @@ const EditChildModal = ({
 
               </View>
 
+
               <View>
 
-                <Text style={styles.title}>
+                <Text
+                  style={
+                    styles.title
+                  }
+                >
                   Edit Child
                 </Text>
 
-                <Text style={styles.subtitle}>
+                <Text
+                  style={
+                    styles.subtitle
+                  }
+                >
                   Update child information
                 </Text>
 
@@ -189,8 +295,12 @@ const EditChildModal = ({
 
 
             <TouchableOpacity
-              onPress={close}
-              disabled={saving}
+              onPress={
+                close
+              }
+              disabled={
+                saving
+              }
             >
 
               <X
@@ -204,59 +314,118 @@ const EditChildModal = ({
 
 
           <ScrollView
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={
+              false
+            }
           >
 
-            <View style={styles.field}>
+            <View
+              style={
+                styles.field
+              }
+            >
 
-              <Text style={styles.label}>
+              <Text
+                style={
+                  styles.label
+                }
+              >
                 Child Name
               </Text>
 
               <TextInput
-                value={fullName}
-                onChangeText={setFullName}
+                value={
+                  fullName
+                }
+                onChangeText={
+                  setFullName
+                }
                 placeholder="Enter name"
-                style={styles.input}
+                style={
+                  styles.input
+                }
+                editable={
+                  !saving
+                }
               />
 
             </View>
 
 
-            <View style={styles.row}>
+            <View
+              style={
+                styles.row
+              }
+            >
 
-              <View style={styles.half}>
+              <View
+                style={
+                  styles.half
+                }
+              >
 
-                <Text style={styles.label}>
+                <Text
+                  style={
+                    styles.label
+                  }
+                >
                   Age
                 </Text>
 
                 <TextInput
-                  value={age}
-                  onChangeText={setAge}
+                  value={
+                    age
+                  }
+                  onChangeText={
+                    setAge
+                  }
                   placeholder="Age"
                   keyboardType="numeric"
-                  style={styles.input}
+                  style={
+                    styles.input
+                  }
+                  editable={
+                    !saving
+                  }
                 />
 
               </View>
 
 
-              <View style={styles.half}>
+              <View
+                style={
+                  styles.half
+                }
+              >
 
-                <Text style={styles.label}>
+                <Text
+                  style={
+                    styles.label
+                  }
+                >
                   Gender
                 </Text>
 
-                <View style={styles.genderRow}>
+                <View
+                  style={
+                    styles.genderRow
+                  }
+                >
 
                   <TouchableOpacity
-                    onPress={() =>
-                      setGender("Female")
+                    onPress={() => {
+                      setGender(
+                        "Female"
+                      );
+                    }}
+                    disabled={
+                      saving
                     }
                     style={[
                       styles.genderButton,
-                      gender === "Female" &&
+
+                      gender ===
+                        "Female" &&
                         styles.genderButtonActive,
                     ]}
                   >
@@ -264,7 +433,9 @@ const EditChildModal = ({
                     <Text
                       style={[
                         styles.genderText,
-                        gender === "Female" &&
+
+                        gender ===
+                          "Female" &&
                           styles.genderTextActive,
                       ]}
                     >
@@ -275,12 +446,19 @@ const EditChildModal = ({
 
 
                   <TouchableOpacity
-                    onPress={() =>
-                      setGender("Male")
+                    onPress={() => {
+                      setGender(
+                        "Male"
+                      );
+                    }}
+                    disabled={
+                      saving
                     }
                     style={[
                       styles.genderButton,
-                      gender === "Male" &&
+
+                      gender ===
+                        "Male" &&
                         styles.genderButtonActive,
                     ]}
                   >
@@ -288,7 +466,9 @@ const EditChildModal = ({
                     <Text
                       style={[
                         styles.genderText,
-                        gender === "Male" &&
+
+                        gender ===
+                          "Male" &&
                           styles.genderTextActive,
                       ]}
                     >
@@ -304,46 +484,123 @@ const EditChildModal = ({
             </View>
 
 
-            <View style={styles.field}>
+            <View
+              style={
+                styles.field
+              }
+            >
 
-              <Text style={styles.label}>
+              <Text
+                style={
+                  styles.label
+                }
+              >
                 Parent Name
               </Text>
 
               <TextInput
-                value={parentName}
-                onChangeText={setParentName}
+                value={
+                  parentName
+                }
+                onChangeText={
+                  setParentName
+                }
                 placeholder="Parent name"
-                style={styles.input}
+                style={
+                  styles.input
+                }
+                editable={
+                  !saving
+                }
               />
 
             </View>
 
 
-            <View style={styles.field}>
+            <View
+              style={
+                styles.field
+              }
+            >
 
-              <Text style={styles.label}>
+              <Text
+                style={
+                  styles.label
+                }
+              >
+                Region
+              </Text>
+
+              <TextInput
+                value={
+                  region
+                }
+                onChangeText={
+                  setRegion
+                }
+                placeholder="Enter region"
+                style={
+                  styles.input
+                }
+                editable={
+                  !saving
+                }
+              />
+
+            </View>
+
+
+            <View
+              style={
+                styles.field
+              }
+            >
+
+              <Text
+                style={
+                  styles.label
+                }
+              >
                 Notes
               </Text>
 
               <TextInput
-                value={notes}
-                onChangeText={setNotes}
+                value={
+                  notes
+                }
+                onChangeText={
+                  setNotes
+                }
                 placeholder="Additional notes"
                 multiline
                 numberOfLines={3}
-                style={styles.textArea}
+                style={
+                  styles.textArea
+                }
+                editable={
+                  !saving
+                }
               />
 
             </View>
 
 
-            <View style={styles.buttons}>
+            <View
+              style={
+                styles.buttons
+              }
+            >
 
               <TouchableOpacity
-                style={styles.cancel}
-                onPress={close}
-                disabled={saving}
+                style={
+                  styles.cancel
+                }
+                onPress={
+                  close
+                }
+                disabled={
+                  saving
+                }
               >
 
                 <Text>
@@ -356,18 +613,28 @@ const EditChildModal = ({
               <TouchableOpacity
                 style={[
                   styles.save,
+
                   saving &&
                     styles.disabledButton,
                 ]}
-                onPress={handleSubmit}
-                disabled={saving}
+                onPress={
+                  handleSubmit
+                }
+                disabled={
+                  saving
+                }
               >
 
-                <Text style={styles.saveText}>
+                <Text
+                  style={
+                    styles.saveText
+                  }
+                >
 
-                  {saving
-                    ? "Saving..."
-                    : "Save Changes"
+                  {
+                    saving
+                      ? "Saving..."
+                      : "Save Changes"
                   }
 
                 </Text>
@@ -389,160 +656,198 @@ const EditChildModal = ({
 };
 
 
-const styles = StyleSheet.create({
+const styles =
+  StyleSheet.create({
 
-  overlay: {
-    flex: 1,
-    backgroundColor:
-      "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    overlay: {
+      flex: 1,
+      backgroundColor:
+        "rgba(0,0,0,0.3)",
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
 
-  container: {
-    width: "90%",
-    maxHeight: "90%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 24,
-  },
+    container: {
+      width: "90%",
+      maxHeight: "90%",
+      backgroundColor:
+        "#FFFFFF",
+      borderRadius: 24,
+      padding: 24,
+    },
 
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 25,
-  },
+    header: {
+      flexDirection:
+        "row",
+      justifyContent:
+        "space-between",
+      alignItems:
+        "center",
+      marginBottom: 25,
+    },
 
-  titleSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
+    titleSection: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap: 12,
+    },
 
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "#DBEAFE",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    iconBox: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor:
+        "#DBEAFE",
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-  },
+    title: {
+      fontSize: 22,
+      fontWeight:
+        "700",
+    },
 
-  subtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    marginTop: 3,
-  },
+    subtitle: {
+      fontSize: 14,
+      color:
+        "#64748B",
+      marginTop: 3,
+    },
 
-  field: {
-    marginBottom: 18,
-  },
+    field: {
+      marginBottom: 18,
+    },
 
-  label: {
-    fontSize: 14,
-    color: "#64748B",
-    marginBottom: 8,
-  },
+    label: {
+      fontSize: 14,
+      color:
+        "#64748B",
+      marginBottom: 8,
+    },
 
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    backgroundColor: "#FFFFFF",
-  },
+    input: {
+      height: 48,
+      borderWidth: 1,
+      borderColor:
+        "#E2E8F0",
+      borderRadius: 12,
+      paddingHorizontal: 15,
+      backgroundColor:
+        "#FFFFFF",
+    },
 
-  row: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 18,
-  },
+    row: {
+      flexDirection:
+        "row",
+      gap: 12,
+      marginBottom: 18,
+    },
 
-  half: {
-    flex: 1,
-  },
+    half: {
+      flex: 1,
+    },
 
-  genderRow: {
-    height: 48,
-    flexDirection: "row",
-    gap: 6,
-  },
+    genderRow: {
+      height: 48,
+      flexDirection:
+        "row",
+      gap: 6,
+    },
 
-  genderButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    genderButton: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor:
+        "#E2E8F0",
+      borderRadius: 12,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
 
-  genderButtonActive: {
-    backgroundColor: "#EEE9FF",
-    borderColor: "#7B6EF6",
-  },
+    genderButtonActive: {
+      backgroundColor:
+        "#EEE9FF",
+      borderColor:
+        "#7B6EF6",
+    },
 
-  genderText: {
-    fontSize: 12,
-    color: "#64748B",
-  },
+    genderText: {
+      fontSize: 12,
+      color:
+        "#64748B",
+    },
 
-  genderTextActive: {
-    color: "#7B6EF6",
-    fontWeight: "700",
-  },
+    genderTextActive: {
+      color:
+        "#7B6EF6",
+      fontWeight:
+        "700",
+    },
 
-  textArea: {
-    height: 90,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    padding: 15,
-    textAlignVertical: "top",
-  },
+    textArea: {
+      height: 90,
+      borderWidth: 1,
+      borderColor:
+        "#E2E8F0",
+      borderRadius: 12,
+      padding: 15,
+      textAlignVertical:
+        "top",
+    },
 
-  buttons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 10,
-  },
+    buttons: {
+      flexDirection:
+        "row",
+      gap: 12,
+      marginTop: 10,
+    },
 
-  cancel: {
-    flex: 1,
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    cancel: {
+      flex: 1,
+      height: 48,
+      borderWidth: 1,
+      borderColor:
+        "#E2E8F0",
+      borderRadius: 12,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
 
-  save: {
-    flex: 1,
-    height: 48,
-    backgroundColor: "#7B6EF6",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    save: {
+      flex: 1,
+      height: 48,
+      backgroundColor:
+        "#7B6EF6",
+      borderRadius: 12,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
 
-  disabledButton: {
-    opacity: 0.6,
-  },
+    disabledButton: {
+      opacity: 0.6,
+    },
 
-  saveText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
+    saveText: {
+      color:
+        "#FFFFFF",
+      fontWeight:
+        "600",
+    },
 
-});
+  });
 
 
 export default EditChildModal;

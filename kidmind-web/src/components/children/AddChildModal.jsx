@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import {
     X,
     UserPlus
@@ -6,22 +7,40 @@ import {
 
 import { addChild } from "../../api/childrenApi";
 
-const AddChildModal = ({ close, onSuccess }) => {
 
-    const [formData, setFormData] = useState({
+const AddChildModal = ({
+    close,
+    onSuccess
+}) => {
+
+    const [
+        formData,
+        setFormData
+    ] = useState({
         full_name: "",
         age: "",
         gender: "Female",
         parent_name: "",
+        region: "",
         notes: "",
     });
 
+    const [
+        saving,
+        setSaving
+    ] = useState(false);
+
+
     const handleChange = (e) => {
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value,
+            [e.target.name]:
+                e.target.value,
         });
+
     };
+
 
     const handleSubmit = async (e) => {
 
@@ -29,24 +48,51 @@ const AddChildModal = ({ close, onSuccess }) => {
 
         try {
 
+            setSaving(true);
+
             await addChild({
                 ...formData,
-                age: Number(formData.age),
+
+                full_name:
+                    formData.full_name.trim(),
+
+                age:
+                    Number(formData.age),
+
+                parent_name:
+                    formData.parent_name.trim(),
+
+                region:
+                    formData.region.trim(),
+
+                notes:
+                    formData.notes.trim(),
             });
 
-            onSuccess();
+            await onSuccess();
 
             close();
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Failed to add child:",
+                error
+            );
 
-            alert("Failed to add child");
+            alert(
+                error?.message ||
+                "Failed to add child"
+            );
+
+        } finally {
+
+            setSaving(false);
 
         }
 
     };
+
 
     return (
 
@@ -66,6 +112,8 @@ const AddChildModal = ({ close, onSuccess }) => {
                 className="
                 bg-white
                 w-[520px]
+                max-h-[90vh]
+                overflow-y-auto
                 rounded-3xl
                 p-8
                 shadow-xl
@@ -81,7 +129,13 @@ const AddChildModal = ({ close, onSuccess }) => {
                     "
                 >
 
-                    <div className="flex items-center gap-3">
+                    <div
+                        className="
+                        flex
+                        items-center
+                        gap-3
+                        "
+                    >
 
                         <div
                             className="
@@ -95,17 +149,32 @@ const AddChildModal = ({ close, onSuccess }) => {
                             "
                         >
 
-                            <UserPlus className="text-[#7B6EF6]" />
+                            <UserPlus
+                                className="
+                                text-[#7B6EF6]
+                                "
+                            />
 
                         </div>
 
+
                         <div>
 
-                            <h2 className="text-2xl font-bold">
+                            <h2
+                                className="
+                                text-2xl
+                                font-bold
+                                "
+                            >
                                 Add Child
                             </h2>
 
-                            <p className="text-sm text-slate-500">
+                            <p
+                                className="
+                                text-sm
+                                text-slate-500
+                                "
+                            >
                                 Create new child profile
                             </p>
 
@@ -113,11 +182,23 @@ const AddChildModal = ({ close, onSuccess }) => {
 
                     </div>
 
-                    <button onClick={close}>
-                        <X className="text-slate-400" />
+
+                    <button
+                        type="button"
+                        onClick={close}
+                        disabled={saving}
+                    >
+
+                        <X
+                            className="
+                            text-slate-400
+                            "
+                        />
+
                     </button>
 
                 </div>
+
 
                 <form
                     onSubmit={handleSubmit}
@@ -126,16 +207,25 @@ const AddChildModal = ({ close, onSuccess }) => {
 
                     <div>
 
-                        <label className="text-sm text-slate-500">
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
                             Child Name
                         </label>
 
                         <input
                             type="text"
                             name="full_name"
-                            value={formData.full_name}
-                            onChange={handleChange}
-                            placeholder="Enter name"
+                            value={
+                                formData.full_name
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            placeholder="Enter child name"
                             className="
                             w-full
                             mt-2
@@ -147,24 +237,42 @@ const AddChildModal = ({ close, onSuccess }) => {
                             focus:border-[#7B6EF6]
                             "
                             required
+                            disabled={saving}
                         />
 
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div
+                        className="
+                        grid
+                        grid-cols-2
+                        gap-4
+                        "
+                    >
 
                         <div>
 
-                            <label className="text-sm text-slate-500">
+                            <label
+                                className="
+                                text-sm
+                                text-slate-500
+                                "
+                            >
                                 Age
                             </label>
 
                             <input
                                 type="number"
                                 name="age"
-                                value={formData.age}
-                                onChange={handleChange}
+                                value={
+                                    formData.age
+                                }
+                                onChange={
+                                    handleChange
+                                }
                                 placeholder="Age"
+                                min="1"
                                 className="
                                 w-full
                                 mt-2
@@ -172,22 +280,35 @@ const AddChildModal = ({ close, onSuccess }) => {
                                 rounded-xl
                                 border
                                 px-4
+                                outline-none
+                                focus:border-[#7B6EF6]
                                 "
                                 required
+                                disabled={saving}
                             />
 
                         </div>
 
+
                         <div>
 
-                            <label className="text-sm text-slate-500">
+                            <label
+                                className="
+                                text-sm
+                                text-slate-500
+                                "
+                            >
                                 Gender
                             </label>
 
                             <select
                                 name="gender"
-                                value={formData.gender}
-                                onChange={handleChange}
+                                value={
+                                    formData.gender
+                                }
+                                onChange={
+                                    handleChange
+                                }
                                 className="
                                 w-full
                                 mt-2
@@ -195,11 +316,19 @@ const AddChildModal = ({ close, onSuccess }) => {
                                 rounded-xl
                                 border
                                 px-4
+                                outline-none
+                                focus:border-[#7B6EF6]
                                 "
+                                disabled={saving}
                             >
 
-                                <option>Female</option>
-                                <option>Male</option>
+                                <option value="Female">
+                                    Female
+                                </option>
+
+                                <option value="Male">
+                                    Male
+                                </option>
 
                             </select>
 
@@ -207,18 +336,28 @@ const AddChildModal = ({ close, onSuccess }) => {
 
                     </div>
 
+
                     <div>
 
-                        <label className="text-sm text-slate-500">
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
                             Parent Name
                         </label>
 
                         <input
                             type="text"
                             name="parent_name"
-                            value={formData.parent_name}
-                            onChange={handleChange}
-                            placeholder="Parent name"
+                            value={
+                                formData.parent_name
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            placeholder="Enter parent name"
                             className="
                             w-full
                             mt-2
@@ -226,22 +365,73 @@ const AddChildModal = ({ close, onSuccess }) => {
                             rounded-xl
                             border
                             px-4
+                            outline-none
+                            focus:border-[#7B6EF6]
                             "
                             required
+                            disabled={saving}
                         />
 
                     </div>
 
+
                     <div>
 
-                        <label className="text-sm text-slate-500">
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
+                            Region
+                        </label>
+
+                        <input
+                            type="text"
+                            name="region"
+                            value={
+                                formData.region
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            placeholder="Enter region"
+                            className="
+                            w-full
+                            mt-2
+                            h-12
+                            rounded-xl
+                            border
+                            px-4
+                            outline-none
+                            focus:border-[#7B6EF6]
+                            "
+                            required
+                            disabled={saving}
+                        />
+
+                    </div>
+
+
+                    <div>
+
+                        <label
+                            className="
+                            text-sm
+                            text-slate-500
+                            "
+                        >
                             Notes
                         </label>
 
                         <textarea
                             name="notes"
-                            value={formData.notes}
-                            onChange={handleChange}
+                            value={
+                                formData.notes
+                            }
+                            onChange={
+                                handleChange
+                            }
                             placeholder="Additional notes"
                             rows="3"
                             className="
@@ -251,10 +441,14 @@ const AddChildModal = ({ close, onSuccess }) => {
                             border
                             p-4
                             resize-none
+                            outline-none
+                            focus:border-[#7B6EF6]
                             "
+                            disabled={saving}
                         />
 
                     </div>
+
 
                     <div
                         className="
@@ -267,18 +461,22 @@ const AddChildModal = ({ close, onSuccess }) => {
                         <button
                             type="button"
                             onClick={close}
+                            disabled={saving}
                             className="
                             flex-1
                             h-12
                             rounded-xl
                             border
+                            disabled:opacity-50
                             "
                         >
                             Cancel
                         </button>
 
+
                         <button
                             type="submit"
+                            disabled={saving}
                             className="
                             flex-1
                             h-12
@@ -286,9 +484,14 @@ const AddChildModal = ({ close, onSuccess }) => {
                             bg-[#7B6EF6]
                             text-white
                             hover:bg-[#6959F5]
+                            disabled:opacity-50
                             "
                         >
-                            Save Child
+                            {
+                                saving
+                                    ? "Saving..."
+                                    : "Save Child"
+                            }
                         </button>
 
                     </div>
@@ -302,5 +505,6 @@ const AddChildModal = ({ close, onSuccess }) => {
     );
 
 };
+
 
 export default AddChildModal;
