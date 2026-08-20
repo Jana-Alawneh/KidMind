@@ -16,6 +16,330 @@ import {
     getChildren
 } from "../api/childrenApi";
 
+import {
+    getSessions
+} from "../api/sessionsApi";
+
+
+const domainConfigs = [
+    {
+        gameName: "focus finder",
+    },
+    {
+        gameName: "memory match",
+    },
+    {
+        gameName: "puzzle path",
+    },
+    {
+        gameName: "reading adventure",
+    },
+    {
+        gameName: "quick match",
+    },
+];
+
+
+const normalizeGameName = (
+    value
+) => {
+
+    return String(
+        value || ""
+    )
+        .trim()
+        .toLowerCase();
+
+};
+
+
+const getTimestamp = (
+    game,
+    session
+) => {
+
+    const value =
+        game?.ended_at ||
+        game?.started_at ||
+        game?.updated_at ||
+        game?.created_at ||
+        session?.ended_at ||
+        session?.started_at ||
+        session?.updated_at ||
+        session?.created_at;
+
+
+    if (!value) {
+        return 0;
+    }
+
+
+    const timestamp =
+        new Date(
+            String(value).replace(
+                " ",
+                "T"
+            )
+        ).getTime();
+
+
+    return Number.isFinite(
+        timestamp
+    )
+        ? timestamp
+        : 0;
+
+};
+
+
+const getLatestGameScore = (
+    sessions,
+    gameName
+) => {
+
+    const matches = [];
+
+
+    sessions.forEach(
+        (session) => {
+
+            if (
+                !Array.isArray(
+                    session.games
+                )
+            ) {
+                return;
+            }
+
+
+            session.games.forEach(
+                (game) => {
+
+                    const isFinished =
+                        game.status ===
+                            "Completed" ||
+                        game.status ===
+                            "Failed";
+
+
+                    const score =
+                        Number(
+                            game.score
+                        );
+
+
+                    if (
+                        !isFinished ||
+                        normalizeGameName(
+                            game.game_name
+                        ) !== gameName ||
+                        !Number.isFinite(
+                            score
+                        )
+                    ) {
+                        return;
+                    }
+
+
+                    matches.push({
+                        score:
+                            Math.max(
+                                0,
+                                Math.min(
+                                    100,
+                                    Math.round(
+                                        score
+                                    )
+                                )
+                            ),
+
+                        timestamp:
+                            getTimestamp(
+                                game,
+                                session
+                            ),
+                    });
+
+                }
+            );
+
+        }
+    );
+
+
+    if (
+        matches.length === 0
+    ) {
+        return null;
+    }
+
+
+    matches.sort(
+        (
+            first,
+            second
+        ) =>
+            second.timestamp -
+            first.timestamp
+    );
+
+
+    return matches[0].score;
+
+};
+
+
+const calculateOverallScore = (
+    sessions
+) => {
+
+    const domainScores =
+        domainConfigs.map(
+            (domain) =>
+                getLatestGameScore(
+                    sessions,
+                    domain.gameName
+                )
+        );
+
+
+    const availableValues =
+        domainScores.filter(
+            (value) =>
+                typeof value ===
+                    "number" &&
+                Number.isFinite(
+                    value
+                )
+        );
+
+
+    if (
+        availableValues.length === 0
+    ) {
+        return null;
+    }
+
+
+    return Math.round(
+        availableValues.reduce(
+            (
+                total,
+                value
+            ) =>
+                total +
+                value,
+            0
+        ) /
+        availableValues.length
+    );
+
+};
+
+
+const getSessionTimestamp = (
+    session
+) => {
+
+    const value =
+        session?.ended_at ||
+        session?.updated_at ||
+        session?.started_at ||
+        session?.created_at;
+
+
+    if (!value) {
+        return 0;
+    }
+
+
+    const timestamp =
+        new Date(
+            String(value).replace(
+                " ",
+                "T"
+            )
+        ).getTime();
+
+
+    return Number.isFinite(
+        timestamp
+    )
+        ? timestamp
+        : 0;
+
+};
+
+
+const formatAssessmentDate = (
+    timestamp
+) => {
+
+    if (!timestamp) {
+        return "Not assessed";
+    }
+
+
+    const date =
+        new Date(
+            timestamp
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "Not assessed";
+    }
+
+
+    return date.toLocaleDateString(
+        "en-US",
+        {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        }
+    );
+
+};
+
+
+const getLastAssessment = (
+    sessions
+) => {
+
+    const assessedSessions =
+        sessions.filter(
+            (session) =>
+                session.status ===
+                "Completed"
+        );
+
+
+    if (
+        assessedSessions.length === 0
+    ) {
+        return "Not assessed";
+    }
+
+
+    const latestTimestamp =
+        Math.max(
+            ...assessedSessions.map(
+                getSessionTimestamp
+            )
+        );
+
+
+    return formatAssessmentDate(
+        latestTimestamp
+    );
+
+};
+
 
 const Children = () => {
 
@@ -40,75 +364,113 @@ const Children = () => {
     ] = useState("");
 
 
+    const loadChildren =
+        async () => {
+
+            try {
+
+                const [
+                    childrenData,
+                    sessionsData,
+                ] =
+                    await Promise.all([
+                        getChildren(),
+                        getSessions(),
+                    ]);
+
+
+                const allSessions =
+                    Array.isArray(
+                        sessionsData
+                    )
+                        ? sessionsData
+                        : [];
+
+
+                const formattedChildren =
+                    childrenData.map(
+                        (child) => {
+
+                            const childSessions =
+                                allSessions.filter(
+                                    (session) =>
+                                        Number(
+                                            session.child_id
+                                        ) ===
+                                        Number(
+                                            child.id
+                                        )
+                                );
+
+
+                            const overallScore =
+                                calculateOverallScore(
+                                    childSessions
+                                );
+
+
+                            const lastAssessment =
+                                getLastAssessment(
+                                    childSessions
+                                );
+
+
+                            return {
+
+                                ...child,
+
+                                name:
+                                    child.full_name ||
+                                    child.name ||
+                                    "Unnamed Child",
+
+                                image:
+                                    child.image ||
+                                    `https://i.pravatar.cc/100?u=kidmind-${child.id}`,
+
+                                score:
+                                    typeof overallScore ===
+                                        "number"
+                                        ? `${overallScore}%`
+                                        : "—",
+
+                                lastAssessment,
+
+                                status:
+                                    child.status ||
+                                    "Active",
+
+                                region:
+                                    child.region ||
+                                    "",
+
+                            };
+
+                        }
+                    );
+
+
+                setChildren(
+                    formattedChildren
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load children:",
+                    error
+                );
+
+            }
+
+        };
+
+
     useEffect(() => {
 
         loadChildren();
 
     }, []);
-
-
-    const loadChildren = async () => {
-
-        try {
-
-            const data =
-                await getChildren();
-
-
-            const formattedChildren =
-                data.map((child) => ({
-
-                    ...child,
-
-                    name:
-                        child.full_name ||
-                        child.name ||
-                        "Unnamed Child",
-
-                    image:
-                        child.image ||
-                        `https://i.pravatar.cc/100?u=kidmind-${child.id}`,
-
-                    score:
-                        child.score !== null &&
-                        child.score !== undefined
-                            ? String(
-                                child.score
-                            ).includes("%")
-                                ? child.score
-                                : `${child.score}%`
-                            : "—",
-
-                    lastAssessment:
-                        child.last_assessment ||
-                        child.lastAssessment ||
-                        "Not assessed",
-
-                    status:
-                        child.status ||
-                        "Active",
-
-                    region:
-                        child.region ||
-                        "",
-
-                }));
-
-
-            setChildren(
-                formattedChildren
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Failed to load children:",
-                error
-            );
-
-        }
-
-    };
 
 
     const handleEdit = (

@@ -10,14 +10,21 @@ import {
 
 import {
   useCallback,
-  useEffect,
   useState,
 } from "react";
+
+import {
+  useFocusEffect,
+} from "expo-router";
 
 import {
   deleteChild,
   getChildren,
 } from "@/api/childrenApi";
+
+import {
+  getSessions,
+} from "@/api/sessionsApi";
 
 import AddChildModal from "@/components/children/AddChildModal";
 import ChildrenHeader from "@/components/children/ChildrenHeader";
@@ -27,6 +34,310 @@ import EditChildModal from "@/components/children/EditChildModal";
 import type {
   Child,
 } from "@/api/childrenApi";
+
+import type {
+  Session,
+} from "@/api/sessionsApi";
+
+
+const gameNames = [
+  "focus finder",
+  "memory match",
+  "puzzle path",
+  "reading adventure",
+  "quick match",
+];
+
+
+const normalizeGameName = (
+  value: unknown
+) => {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase();
+
+};
+
+
+const getGameTimestamp = (
+  game: Session["games"][number],
+  session: Session
+) => {
+
+  const value =
+    game.ended_at ||
+    game.started_at ||
+    game.updated_at ||
+    game.created_at ||
+    session.ended_at ||
+    session.started_at ||
+    session.created_at;
+
+
+  if (!value) {
+    return 0;
+  }
+
+
+  const timestamp =
+    new Date(
+      String(value).replace(
+        " ",
+        "T"
+      )
+    ).getTime();
+
+
+  return Number.isFinite(
+    timestamp
+  )
+    ? timestamp
+    : 0;
+
+};
+
+
+const getSessionTimestamp = (
+  session: Session
+) => {
+
+  const value =
+    session.ended_at ||
+    session.started_at ||
+    session.created_at;
+
+
+  if (!value) {
+    return 0;
+  }
+
+
+  const timestamp =
+    new Date(
+      String(value).replace(
+        " ",
+        "T"
+      )
+    ).getTime();
+
+
+  return Number.isFinite(
+    timestamp
+  )
+    ? timestamp
+    : 0;
+
+};
+
+
+const getLatestGameScore = (
+  sessions: Session[],
+  gameName: string
+) => {
+
+  const matches: {
+    score: number;
+    timestamp: number;
+  }[] = [];
+
+
+  sessions.forEach(
+    (session) => {
+
+      if (
+        !Array.isArray(
+          session.games
+        )
+      ) {
+        return;
+      }
+
+
+      session.games.forEach(
+        (game) => {
+
+          const isFinished =
+            game.status ===
+              "Completed" ||
+            game.status ===
+              "Failed";
+
+
+          const score =
+            Number(
+              game.score
+            );
+
+
+          if (
+            !isFinished ||
+            normalizeGameName(
+              game.game_name
+            ) !== gameName ||
+            !Number.isFinite(
+              score
+            )
+          ) {
+            return;
+          }
+
+
+          matches.push({
+            score:
+              Math.max(
+                0,
+                Math.min(
+                  100,
+                  Math.round(
+                    score
+                  )
+                )
+              ),
+
+            timestamp:
+              getGameTimestamp(
+                game,
+                session
+              ),
+          });
+
+        }
+      );
+
+    }
+  );
+
+
+  if (
+    matches.length === 0
+  ) {
+    return null;
+  }
+
+
+  matches.sort(
+    (
+      first,
+      second
+    ) =>
+      second.timestamp -
+      first.timestamp
+  );
+
+
+  return matches[0].score;
+
+};
+
+
+const getOverallScore = (
+  sessions: Session[]
+) => {
+
+  const scores =
+    gameNames
+      .map(
+        (gameName) =>
+          getLatestGameScore(
+            sessions,
+            gameName
+          )
+      )
+      .filter(
+        (
+          score
+        ): score is number =>
+          typeof score ===
+            "number" &&
+          Number.isFinite(
+            score
+          )
+      );
+
+
+  if (
+    scores.length === 0
+  ) {
+    return null;
+  }
+
+
+  return Math.round(
+    scores.reduce(
+      (
+        total,
+        score
+      ) =>
+        total + score,
+      0
+    ) /
+      scores.length
+  );
+
+};
+
+
+const getLastAssessment = (
+  sessions: Session[]
+) => {
+
+  const completedSessions =
+    sessions
+      .filter(
+        (session) =>
+          session.status ===
+            "Completed"
+      )
+      .map(
+        (session) => ({
+          session,
+          timestamp:
+            getSessionTimestamp(
+              session
+            ),
+        })
+      )
+      .filter(
+        (item) =>
+          item.timestamp > 0
+      )
+      .sort(
+        (
+          first,
+          second
+        ) =>
+          second.timestamp -
+          first.timestamp
+      );
+
+
+  if (
+    completedSessions.length === 0
+  ) {
+    return "Not assessed";
+  }
+
+
+  const date =
+    new Date(
+      completedSessions[0]
+        .timestamp
+    );
+
+
+  return date.toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  );
+
+};
 
 
 export default function Children() {
@@ -70,11 +381,63 @@ export default function Children() {
 
         try {
 
-          const data =
-            await getChildren();
+          const [
+            childrenData,
+            sessionsData,
+          ] =
+            await Promise.all([
+              getChildren(),
+              getSessions(),
+            ]);
+
+
+          const enrichedChildren =
+            childrenData.map(
+              (child) => {
+
+                const childSessions =
+                  sessionsData.filter(
+                    (session) =>
+                      Number(
+                        session.child_id
+                      ) ===
+                      Number(
+                        child.id
+                      )
+                  );
+
+
+                const overallScore =
+                  getOverallScore(
+                    childSessions
+                  );
+
+
+                const lastAssessment =
+                  getLastAssessment(
+                    childSessions
+                  );
+
+
+                return {
+                  ...child,
+
+                  score:
+                    overallScore,
+
+                  last_assessment:
+                    lastAssessment,
+
+                  lastAssessment:
+                    lastAssessment,
+                };
+
+              }
+            );
+
 
           setChildren(
-            data
+            enrichedChildren
           );
 
         } catch (error) {
@@ -83,6 +446,7 @@ export default function Children() {
             "Failed to load children:",
             error
           );
+
 
           Alert.alert(
             "Connection Error",
@@ -103,13 +467,18 @@ export default function Children() {
     );
 
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(
+      () => {
 
-    loadChildren();
+        void loadChildren();
 
-  }, [
-    loadChildren,
-  ]);
+      },
+      [
+        loadChildren,
+      ]
+    )
+  );
 
 
   const handleRefresh =
@@ -117,7 +486,7 @@ export default function Children() {
 
       setRefreshing(true);
 
-      loadChildren();
+      void loadChildren();
 
     };
 
@@ -165,6 +534,7 @@ export default function Children() {
                   "Failed to delete child:",
                   error
                 );
+
 
                 Alert.alert(
                   "Error",
