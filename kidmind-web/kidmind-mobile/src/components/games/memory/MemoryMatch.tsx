@@ -14,10 +14,19 @@ import {
 } from "react-native";
 
 import {
-  Brain,
-  Clock3,
+  Apple,
+  Balloon,
+  Car,
+  Cat,
+  Cherry,
+  Circle,
+  Dog,
+  Flower2,
+  Music,
+  Rocket,
   RotateCcw,
-  Trophy,
+  Star,
+  Sun,
 } from "lucide-react-native";
 
 
@@ -28,28 +37,31 @@ type GameStatus =
 
 type GameResult = {
   status: GameStatus;
-
   duration_seconds: number;
-
   score: number;
-
   accuracy: number | null;
-
   mistakes: number | null;
-
   reaction_time: number | null;
-
   result_data:
     | Record<string, unknown>
     | null;
 };
 
 
+type FinalSummary =
+  GameResult & {
+    correct: number;
+    wrong: number;
+    attempts: number;
+    time: number;
+    averageAttemptTime: number;
+    speed: number;
+  };
+
+
 type MemoryMatchProps = {
   embedded?: boolean;
-
   paused?: boolean;
-
   difficulty?: string;
 
   onComplete?: (
@@ -58,13 +70,14 @@ type MemoryMatchProps = {
 };
 
 
-type Card = {
+type IconComponent =
+  typeof Apple;
+
+
+type MemoryCard = {
   id: string;
-
-  pairId: number;
-
-  symbol: string;
-
+  pairId: string;
+  Icon: IconComponent;
   matched: boolean;
 };
 
@@ -74,35 +87,77 @@ const LEVELS = {
     name: "Easy",
     pairs: 4,
     time: 60,
+    description:
+      "A simple memory challenge.",
   },
 
   2: {
     name: "Medium",
     pairs: 8,
     time: 90,
+    description:
+      "A balanced working memory challenge.",
   },
 
   3: {
     name: "Hard",
     pairs: 12,
     time: 120,
+    description:
+      "A challenging memory assessment.",
   },
 };
 
 
-const SYMBOLS = [
-  "🍎",
-  "🚗",
-  "⭐",
-  "🐶",
-  "🌸",
-  "🎈",
-  "🚀",
-  "⚽",
-  "🍒",
-  "🐱",
-  "☀️",
-  "🎵",
+const DEFAULT_ICONS = [
+  {
+    id: "apple",
+    Icon: Apple,
+  },
+  {
+    id: "car",
+    Icon: Car,
+  },
+  {
+    id: "star",
+    Icon: Star,
+  },
+  {
+    id: "dog",
+    Icon: Dog,
+  },
+  {
+    id: "flower",
+    Icon: Flower2,
+  },
+  {
+    id: "balloon",
+    Icon: Balloon,
+  },
+  {
+    id: "rocket",
+    Icon: Rocket,
+  },
+  {
+    id: "ball",
+    Icon: Circle,
+  },
+  {
+    id: "cherry",
+    Icon: Cherry,
+  },
+  {
+    id: "cat",
+    Icon: Cat,
+  },
+  {
+    id: "sun",
+    Icon: Sun,
+  },
+  {
+    id: "music",
+    Icon: Music,
+  },
 ];
 
 
@@ -125,7 +180,7 @@ const shuffle = <T,>(
     const randomIndex =
       Math.floor(
         Math.random() *
-        (index + 1)
+          (index + 1)
       );
 
 
@@ -178,49 +233,144 @@ const resolveLevelId = (
 
 const createCards = (
   pairCount: number
-): Card[] => {
+): MemoryCard[] => {
 
-  const selectedSymbols =
-    SYMBOLS.slice(
+  const selected =
+    DEFAULT_ICONS.slice(
       0,
       pairCount
     );
 
 
-  const cards =
-    selectedSymbols.flatMap(
-      (
-        symbol,
-        pairId
-      ) => [
+  const duplicated =
+    selected.flatMap(
+      (item) => [
         {
           id:
-            `${pairId}-a-${Math.random()}`,
+            `${item.id}-a-${Math.random()}`,
 
-          pairId,
+          pairId:
+            item.id,
 
-          symbol,
+          Icon:
+            item.Icon,
 
-          matched: false,
+          matched:
+            false,
         },
 
         {
           id:
-            `${pairId}-b-${Math.random()}`,
+            `${item.id}-b-${Math.random()}`,
 
-          pairId,
+          pairId:
+            item.id,
 
-          symbol,
+          Icon:
+            item.Icon,
 
-          matched: false,
+          matched:
+            false,
         },
       ]
     );
 
 
   return shuffle(
-    cards
+    duplicated
   );
+
+};
+
+
+const calculateMetrics = ({
+  correctPairs,
+  wrongPairs,
+  elapsedTime,
+  totalPairs,
+  timeLimit,
+}: {
+  correctPairs: number;
+  wrongPairs: number;
+  elapsedTime: number;
+  totalPairs: number;
+  timeLimit: number;
+}) => {
+
+  const attempts =
+    correctPairs +
+    wrongPairs;
+
+
+  const accuracy =
+    attempts > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (
+              correctPairs /
+              attempts
+            ) * 100
+          )
+        )
+      : 0;
+
+
+  const score =
+    totalPairs > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (
+              correctPairs /
+              totalPairs
+            ) * 100
+          )
+        )
+      : 0;
+
+
+  const averageAttemptTime =
+    attempts > 0
+      ? Number(
+          (
+            elapsedTime /
+            attempts
+          ).toFixed(2)
+        )
+      : 0;
+
+
+  const speed =
+    elapsedTime > 0
+      ? Number(
+          (
+            correctPairs /
+            (
+              elapsedTime /
+              60
+            )
+          ).toFixed(2)
+        )
+      : 0;
+
+
+  const timeRemaining =
+    Math.max(
+      0,
+      timeLimit -
+        elapsedTime
+    );
+
+
+  return {
+    attempts,
+    accuracy,
+    score,
+    averageAttemptTime,
+    speed,
+    timeRemaining,
+  };
 
 };
 
@@ -232,18 +382,36 @@ export default function MemoryMatch({
   onComplete,
 }: MemoryMatchProps) {
 
+  const [
+    standaloneLevel,
+    setStandaloneLevel,
+  ] = useState<
+    number | null
+  >(null);
+
+
   const levelId =
-    resolveLevelId(
-      difficulty
-    );
+    embedded
+      ? resolveLevelId(
+          difficulty
+        )
+      : standaloneLevel;
 
 
   const config =
     useMemo(
-      () =>
-        LEVELS[
+      () => {
+
+        if (!levelId) {
+          return null;
+        }
+
+
+        return LEVELS[
           levelId as keyof typeof LEVELS
-        ],
+        ];
+
+      },
       [
         levelId,
       ]
@@ -253,17 +421,17 @@ export default function MemoryMatch({
   const [
     cards,
     setCards,
-  ] = useState<Card[]>(
-    []
-  );
+  ] = useState<
+    MemoryCard[]
+  >([]);
 
 
   const [
     selectedIds,
     setSelectedIds,
-  ] = useState<string[]>(
-    []
-  );
+  ] = useState<
+    string[]
+  >([]);
 
 
   const [
@@ -305,15 +473,15 @@ export default function MemoryMatch({
   const [
     finalResult,
     setFinalResult,
-  ] = useState<GameResult | null>(
-    null
-  );
+  ] = useState<
+    FinalSummary | null
+  >(null);
 
 
   const cardsRef =
-    useRef<Card[]>(
-      []
-    );
+    useRef<
+      MemoryCard[]
+    >([]);
 
 
   const correctRef =
@@ -338,6 +506,11 @@ export default function MemoryMatch({
 
   const prepareGame =
     useCallback(() => {
+
+      if (!config) {
+        return;
+      }
+
 
       const newCards =
         createCards(
@@ -405,12 +578,17 @@ export default function MemoryMatch({
         false;
 
     }, [
-      config.pairs,
+      config,
     ]);
 
 
   const startGame =
     useCallback(() => {
+
+      if (!config) {
+        return;
+      }
+
 
       prepareGame();
 
@@ -419,7 +597,13 @@ export default function MemoryMatch({
         true
       );
 
+
+      setFinished(
+        false
+      );
+
     }, [
+      config,
       prepareGame,
     ]);
 
@@ -428,6 +612,7 @@ export default function MemoryMatch({
 
     if (
       !embedded ||
+      !config ||
       initializedRef.current
     ) {
       return;
@@ -442,6 +627,7 @@ export default function MemoryMatch({
 
   }, [
     embedded,
+    config,
     startGame,
   ]);
 
@@ -453,7 +639,8 @@ export default function MemoryMatch({
       ) => {
 
         if (
-          completionSentRef.current
+          completionSentRef.current ||
+          !config
         ) {
           return;
         }
@@ -471,44 +658,32 @@ export default function MemoryMatch({
           wrongRef.current;
 
 
-        const attempts =
-          finalCorrect +
-          finalWrong;
-
-
-        const score =
-          config.pairs > 0
-            ? Math.min(
-                100,
-                Math.round(
-                  (
-                    finalCorrect /
-                    config.pairs
-                  ) * 100
-                )
-              )
-            : 0;
-
-
-        const accuracy =
-          attempts > 0
-            ? Math.min(
-                100,
-                Math.round(
-                  (
-                    finalCorrect /
-                    attempts
-                  ) * 100
-                )
-              )
-            : 0;
-
-
         const finalTime =
           Math.min(
             config.time,
             gameTimeRef.current
           );
+
+
+        const metrics =
+          calculateMetrics({
+
+            correctPairs:
+              finalCorrect,
+
+            wrongPairs:
+              finalWrong,
+
+            elapsedTime:
+              finalTime,
+
+            totalPairs:
+              config.pairs,
+
+            timeLimit:
+              config.time,
+
+          });
 
 
         const status:
@@ -519,7 +694,7 @@ export default function MemoryMatch({
 
 
         const result:
-          GameResult = {
+          FinalSummary = {
 
           status,
 
@@ -531,9 +706,11 @@ export default function MemoryMatch({
               )
             ),
 
-          score,
+          score:
+            metrics.score,
 
-          accuracy,
+          accuracy:
+            metrics.accuracy,
 
           mistakes:
             finalWrong,
@@ -541,7 +718,27 @@ export default function MemoryMatch({
           reaction_time:
             null,
 
+          correct:
+            finalCorrect,
+
+          wrong:
+            finalWrong,
+
+          attempts:
+            metrics.attempts,
+
+          time:
+            finalTime,
+
+          averageAttemptTime:
+            metrics
+              .averageAttemptTime,
+
+          speed:
+            metrics.speed,
+
           result_data: {
+
             domain:
               "Working Memory",
 
@@ -565,33 +762,34 @@ export default function MemoryMatch({
             mistakes:
               finalWrong,
 
-            attempts,
+            attempts:
+              metrics.attempts,
 
             completion:
-              score,
+              metrics.score,
 
             time_limit:
               config.time,
 
             time_remaining:
-              Math.max(
-                0,
-                Number(
-                  (
-                    config.time -
-                    finalTime
-                  ).toFixed(
-                    1
-                  )
-                )
-              ),
+              metrics
+                .timeRemaining,
+
+            average_attempt_time:
+              metrics
+                .averageAttemptTime,
+
+            speed_pairs_per_minute:
+              metrics.speed,
 
             reaction_time:
               null,
 
             result_status:
               status,
+
           },
+
         };
 
 
@@ -612,9 +810,32 @@ export default function MemoryMatch({
 
         if (onComplete) {
 
-          onComplete(
-            result
-          );
+          onComplete({
+
+            status:
+              result.status,
+
+            duration_seconds:
+              result
+                .duration_seconds,
+
+            score:
+              result.score,
+
+            accuracy:
+              result.accuracy,
+
+            mistakes:
+              result.mistakes,
+
+            reaction_time:
+              result
+                .reaction_time,
+
+            result_data:
+              result.result_data,
+
+          });
 
         }
 
@@ -629,10 +850,15 @@ export default function MemoryMatch({
 
   useEffect(() => {
 
+    const activeConfig =
+      config;
+
+
     if (
       !started ||
       finished ||
-      paused
+      paused ||
+      !activeConfig
     ) {
       return;
     }
@@ -644,7 +870,7 @@ export default function MemoryMatch({
 
           const nextTime =
             Math.min(
-              config.time,
+              activeConfig.time,
               gameTimeRef.current +
                 1
             );
@@ -675,15 +901,20 @@ export default function MemoryMatch({
     started,
     finished,
     paused,
-    config.time,
+    config,
   ]);
 
 
   useEffect(() => {
 
+    const activeConfig =
+      config;
+
+
     if (
       !started ||
-      finished
+      finished ||
+      !activeConfig
     ) {
       return;
     }
@@ -691,7 +922,7 @@ export default function MemoryMatch({
 
     if (
       gameTime >=
-      config.time
+      activeConfig.time
     ) {
 
       finishGame(
@@ -704,16 +935,21 @@ export default function MemoryMatch({
     started,
     finished,
     gameTime,
-    config.time,
+    config,
     finishGame,
   ]);
 
 
   const handleCardPress = (
-    card: Card
+    card: MemoryCard
   ) => {
 
+    const activeConfig =
+      config;
+
+
     if (
+      !activeConfig ||
       paused ||
       finished ||
       checking ||
@@ -802,7 +1038,8 @@ export default function MemoryMatch({
 
               return {
                 ...item,
-                matched: true,
+                matched:
+                  true,
               };
 
             }
@@ -851,8 +1088,8 @@ export default function MemoryMatch({
 
 
           if (
-            nextCorrect ===
-            config.pairs
+            nextCorrect >=
+            activeConfig.pairs
           ) {
 
             finishGame(
@@ -898,318 +1135,284 @@ export default function MemoryMatch({
         );
 
       },
-      650
+      850
     );
 
   };
 
 
-  const attempts =
-    correctPairs +
-    wrongPairs;
+  const liveMetrics =
+    config
+      ? calculateMetrics({
 
+          correctPairs,
 
-  const liveAccuracy =
-    attempts > 0
-      ? Math.round(
-          (
-            correctPairs /
-            attempts
-          ) * 100
-        )
-      : 0;
+          wrongPairs,
 
+          elapsedTime:
+            gameTime,
 
-  const liveScore =
-    config.pairs > 0
-      ? Math.round(
-          (
-            correctPairs /
-            config.pairs
-          ) * 100
-        )
-      : 0;
+          totalPairs:
+            config.pairs,
 
+          timeLimit:
+            config.time,
 
-  const timeLeft =
-    Math.max(
-      0,
-      config.time -
-      gameTime
-    );
+        })
+      : {
+          attempts: 0,
+          accuracy: 0,
+          score: 0,
+          averageAttemptTime: 0,
+          speed: 0,
+          timeRemaining: 0,
+        };
 
 
   if (
-    !started
+    !embedded &&
+    !started &&
+    !finished
   ) {
 
     return (
 
       <View
         style={
-          styles.startContainer
+          styles.standaloneScreen
         }
       >
 
         <View
           style={
-            styles.iconBox
-          }
-        >
-
-          <Brain
-            size={34}
-            color="#7B6EF6"
-          />
-
-        </View>
-
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Memory Match
-        </Text>
-
-
-        <Text
-          style={
-            styles.description
-          }
-        >
-          Match identical cards and test working memory.
-        </Text>
-
-
-        <View
-          style={
-            styles.levelInfo
+            styles.selectionHeader
           }
         >
 
           <Text
             style={
-              styles.levelName
+              styles.category
             }
           >
-            {config.name}
+            COGNITIVE ASSESSMENT
           </Text>
 
 
           <Text
             style={
-              styles.levelDetails
+              styles.selectionTitle
             }
           >
-            {config.pairs} pairs · {config.time}s
+            Memory Match
           </Text>
 
-        </View>
-
-
-        <Pressable
-          onPress={
-            startGame
-          }
-          style={
-            styles.primaryButton
-          }
-        >
 
           <Text
             style={
-              styles.primaryButtonText
+              styles.selectionDescription
             }
           >
-            Start Game
+            Select a difficulty level before starting the assessment.
           </Text>
 
-        </Pressable>
-
-      </View>
-
-    );
-
-  }
-
-
-  if (
-    finished &&
-    finalResult
-  ) {
-
-    return (
-
-      <View
-        style={
-          styles.resultContainer
-        }
-      >
-
-        <View
-          style={
-            styles.iconBox
-          }
-        >
-
-          <Trophy
-            size={34}
-            color="#7B6EF6"
-          />
-
         </View>
-
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Memory Match Results
-        </Text>
-
-
-        <Text
-          style={
-            styles.resultStatus
-          }
-        >
-          {finalResult.status}
-        </Text>
 
 
         <View
           style={
-            styles.resultGrid
+            styles.levelList
           }
         >
 
-          <View
-            style={
-              styles.resultCard
+          {Object.entries(
+            LEVELS
+          ).map(
+            (
+              [
+                id,
+                item,
+              ]
+            ) => {
+
+              const numericId =
+                Number(id);
+
+
+              const selected =
+                standaloneLevel ===
+                numericId;
+
+
+              return (
+
+                <Pressable
+                  key={id}
+                  onPress={() => {
+
+                    setStandaloneLevel(
+                      numericId
+                    );
+
+                  }}
+                  style={[
+                    styles.levelCard,
+
+                    selected &&
+                      styles
+                        .levelCardSelected,
+                  ]}
+                >
+
+                  <View
+                    style={
+                      styles.levelTopRow
+                    }
+                  >
+
+                    <View
+                      style={
+                        styles.levelNumber
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles
+                            .levelNumberText
+                        }
+                      >
+                        {id}
+                      </Text>
+
+                    </View>
+
+
+                    {selected && (
+
+                      <Text
+                        style={
+                          styles.selectedText
+                        }
+                      >
+                        SELECTED
+                      </Text>
+
+                    )}
+
+                  </View>
+
+
+                  <Text
+                    style={
+                      styles
+                        .levelCardTitle
+                    }
+                  >
+                    {item.name}
+                  </Text>
+
+
+                  <Text
+                    style={
+                      styles
+                        .levelCardDescription
+                    }
+                  >
+                    {item.description}
+                  </Text>
+
+
+                  <View
+                    style={
+                      styles.levelDivider
+                    }
+                  />
+
+
+                  <View
+                    style={
+                      styles.levelStats
+                    }
+                  >
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Cards
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.pairs * 2}
+                      </Text>
+
+                    </View>
+
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Time
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.time}s
+                      </Text>
+
+                    </View>
+
+                  </View>
+
+                </Pressable>
+
+              );
+
             }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Score
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.score}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Accuracy
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.accuracy ?? 0}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Correct
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {correctPairs}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Mistakes
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {wrongPairs}
-            </Text>
-
-          </View>
+          )}
 
         </View>
 
 
-        {!embedded && (
+        {standaloneLevel && (
 
           <Pressable
             onPress={
               startGame
             }
             style={
-              styles.secondaryButton
+              styles.startButton
             }
           >
 
-            <RotateCcw
-              size={18}
-              color="#7B6EF6"
-            />
-
             <Text
               style={
-                styles.secondaryButtonText
+                styles.startButtonText
               }
             >
-              Play Again
+              Start Assessment
             </Text>
 
           </Pressable>
@@ -1223,17 +1426,408 @@ export default function MemoryMatch({
   }
 
 
+  if (
+    finished &&
+    finalResult
+  ) {
+
+    const insight =
+      finalResult.accuracy !==
+        null &&
+      finalResult.accuracy >= 85
+
+        ? "Excellent working memory accuracy."
+
+        : finalResult.accuracy !==
+            null &&
+          finalResult.accuracy >= 70
+
+        ? "Good working memory accuracy. Continue monitoring progress."
+
+        : "The child may benefit from additional working memory assessment and practice.";
+
+
+    return (
+
+      <View
+        style={[
+          styles.resultScreen,
+
+          !embedded &&
+            styles.standaloneScreen,
+        ]}
+      >
+
+        <View
+          style={
+            styles.resultPanel
+          }
+        >
+
+          <View
+            style={
+              styles.resultIcon
+            }
+          >
+
+            <Star
+              size={30}
+              color="#7C6CFF"
+              strokeWidth={1.8}
+            />
+
+          </View>
+
+
+          <Text
+            style={
+              styles.resultCategory
+            }
+          >
+            {finalResult.status ===
+            "Completed"
+              ? "ASSESSMENT COMPLETED"
+              : "ASSESSMENT FINISHED"
+            }
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultTitle
+            }
+          >
+            Memory Match Results
+          </Text>
+
+
+          <View
+            style={
+              styles.resultGrid
+            }
+          >
+
+            <View
+              style={
+                styles
+                  .resultMetricCard
+              }
+            >
+
+              <Text
+                style={
+                  styles
+                    .resultMetricLabel
+                }
+              >
+                Accuracy
+              </Text>
+
+              <Text
+                style={
+                  styles
+                    .resultMetricValue
+                }
+              >
+                {finalResult.accuracy ?? 0}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles
+                  .resultMetricCard
+              }
+            >
+
+              <Text
+                style={
+                  styles
+                    .resultMetricLabel
+                }
+              >
+                Score
+              </Text>
+
+              <Text
+                style={
+                  styles
+                    .resultMetricValue
+                }
+              >
+                {finalResult.score}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles
+                  .resultMetricCard
+              }
+            >
+
+              <Text
+                style={
+                  styles
+                    .resultMetricLabel
+                }
+              >
+                Correct
+              </Text>
+
+              <Text
+                style={
+                  styles
+                    .resultMetricValue
+                }
+              >
+                {finalResult.correct}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles
+                  .resultMetricCard
+              }
+            >
+
+              <Text
+                style={
+                  styles
+                    .resultMetricLabel
+                }
+              >
+                Wrong
+              </Text>
+
+              <Text
+                style={
+                  styles
+                    .resultMetricValue
+                }
+              >
+                {finalResult.wrong}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.secondaryGrid
+            }
+          >
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Attempts
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.attempts}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Game Time
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.time}s
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Avg. Attempt Time
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult
+                  .averageAttemptTime}s
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Speed
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.speed} pairs/min
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.insightCard
+            }
+          >
+
+            <Text
+              style={
+                styles.insightTitle
+              }
+            >
+              PERFORMANCE INSIGHT
+            </Text>
+
+
+            <Text
+              style={
+                styles.insightText
+              }
+            >
+              {insight}
+            </Text>
+
+          </View>
+
+
+          {!embedded && (
+
+            <Pressable
+              onPress={
+                startGame
+              }
+              style={
+                styles.restartButton
+              }
+            >
+
+              <RotateCcw
+                size={18}
+                color="#202033"
+              />
+
+              <Text
+                style={
+                  styles
+                    .restartButtonText
+                }
+              >
+                Restart
+              </Text>
+
+            </Pressable>
+
+          )}
+
+        </View>
+
+      </View>
+
+    );
+
+  }
+
+
+  if (
+    !started ||
+    !config
+  ) {
+    return null;
+  }
+
+
+  const timeLeft =
+    Math.max(
+      0,
+      config.time -
+        gameTime
+    );
+
+
+  const hardMode =
+    config.pairs >= 12;
+
+
   return (
 
     <View
-      style={
-        styles.container
-      }
+      style={[
+        styles.gameScreen,
+
+        !embedded &&
+          styles.standaloneScreen,
+      ]}
     >
 
       <View
         style={
-          styles.header
+          styles.gameHeader
         }
       >
 
@@ -1250,7 +1844,7 @@ export default function MemoryMatch({
 
           <Text
             style={
-              styles.title
+              styles.gameTitle
             }
           >
             Memory Match
@@ -1261,45 +1855,44 @@ export default function MemoryMatch({
 
         <View
           style={
-            styles.levelBadge
+            styles.statsRow
           }
         >
 
-          <Text
+          <View
             style={
-              styles.levelBadgeLabel
+              styles.headerStat
             }
           >
-            {config.name}
-          </Text>
-
-        </View>
-
-      </View>
-
-
-      <View
-        style={
-          styles.timeRow
-        }
-      >
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
+              }
+            >
+              Level
+            </Text>
+
+            <Text
+              style={
+                styles.headerStatValue
+              }
+            >
+              {config.name}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.headerTimeStat
+            }
+          >
+
+            <Text
+              style={
+                styles.headerTimeLabel
               }
             >
               Game Time
@@ -1307,7 +1900,7 @@ export default function MemoryMatch({
 
             <Text
               style={
-                styles.timeValue
+                styles.headerTimeValue
               }
             >
               {gameTime}s
@@ -1315,25 +1908,16 @@ export default function MemoryMatch({
 
           </View>
 
-        </View>
 
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
+          <View
+            style={
+              styles.headerStat
+            }
+          >
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
               }
             >
               Time Left
@@ -1341,7 +1925,7 @@ export default function MemoryMatch({
 
             <Text
               style={
-                styles.timeValue
+                styles.headerStatValue
               }
             >
               {timeLeft}s
@@ -1375,102 +1959,153 @@ export default function MemoryMatch({
       )}
 
 
-      <Text
-        style={
-          styles.instruction
-        }
-      >
-        Find all matching pairs
-      </Text>
-
-
       <View
         style={
-          styles.cardsGrid
+          styles.board
         }
       >
 
-        {cards.map(
-          (card) => {
+        <View
+          style={
+            styles.cardsGrid
+          }
+        >
 
-            const visible =
-              card.matched ||
-              selectedIds.includes(
-                card.id
+          {cards.map(
+            (card) => {
+
+              const visible =
+                card.matched ||
+                selectedIds.includes(
+                  card.id
+                );
+
+
+              const Icon =
+                card.Icon;
+
+
+              return (
+
+                <Pressable
+                  key={
+                    card.id
+                  }
+                  disabled={
+                    paused ||
+                    finished ||
+                    checking ||
+                    card.matched
+                  }
+                  onPress={() => {
+
+                    handleCardPress(
+                      card
+                    );
+
+                  }}
+                  style={[
+                    styles.card,
+
+                    hardMode
+                      ? styles
+                          .cardSixColumns
+                      : styles
+                          .cardFourColumns,
+
+                    visible
+                      ? styles.cardVisible
+                      : styles.cardHidden,
+
+                    paused &&
+                      styles.cardPaused,
+                  ]}
+                >
+
+                  {visible ? (
+
+                    <Icon
+                      size={
+                        hardMode
+                          ? 27
+                          : 34
+                      }
+                      strokeWidth={
+                        1.8
+                      }
+                      color="#7C6CFF"
+                    />
+
+                  ) : (
+
+                    <View
+                      style={
+                        styles.hiddenCircle
+                      }
+                    >
+
+                      <View
+                        style={
+                          styles.hiddenDot
+                        }
+                      />
+
+                    </View>
+
+                  )}
+
+                </Pressable>
+
               );
 
+            }
+          )}
 
-            return (
-
-              <Pressable
-                key={
-                  card.id
-                }
-                disabled={
-                  paused ||
-                  finished ||
-                  checking ||
-                  card.matched
-                }
-                onPress={() => {
-
-                  handleCardPress(
-                    card
-                  );
-
-                }}
-                style={[
-                  styles.card,
-
-                  visible
-                    ? styles.cardVisible
-                    : styles.cardHidden,
-
-                  config.pairs >= 12
-                    ? styles.cardHard
-                    : config.pairs >= 8
-                    ? styles.cardMedium
-                    : styles.cardEasy,
-                ]}
-              >
-
-                <Text
-                  style={
-                    visible
-                      ? styles.cardSymbol
-                      : styles.cardQuestion
-                  }
-                >
-                  {visible
-                    ? card.symbol
-                    : "?"}
-                </Text>
-
-              </Pressable>
-
-            );
-
-          }
-        )}
+        </View>
 
       </View>
 
 
       <View
         style={
-          styles.metricsRow
+          styles.liveMetrics
         }
       >
 
         <View
           style={
-            styles.metricBox
+            styles.liveMetric
           }
         >
 
           <Text
             style={
-              styles.metricLabel
+              styles.liveMetricLabel
+            }
+          >
+            Attempts
+          </Text>
+
+          <Text
+            style={
+              styles.liveMetricValue
+            }
+          >
+            {liveMetrics.attempts}
+          </Text>
+
+        </View>
+
+
+        <View
+          style={
+            styles.liveMetric
+          }
+        >
+
+          <Text
+            style={
+              styles.liveMetricLabel
             }
           >
             Correct
@@ -1478,7 +2113,7 @@ export default function MemoryMatch({
 
           <Text
             style={
-              styles.metricValue
+              styles.liveMetricValue
             }
           >
             {correctPairs}
@@ -1489,21 +2124,21 @@ export default function MemoryMatch({
 
         <View
           style={
-            styles.metricBox
+            styles.liveMetric
           }
         >
 
           <Text
             style={
-              styles.metricLabel
+              styles.liveMetricLabel
             }
           >
-            Mistakes
+            Wrong
           </Text>
 
           <Text
             style={
-              styles.metricValue
+              styles.liveMetricValue
             }
           >
             {wrongPairs}
@@ -1514,13 +2149,13 @@ export default function MemoryMatch({
 
         <View
           style={
-            styles.metricBox
+            styles.liveMetric
           }
         >
 
           <Text
             style={
-              styles.metricLabel
+              styles.liveMetricLabel
             }
           >
             Accuracy
@@ -1528,10 +2163,10 @@ export default function MemoryMatch({
 
           <Text
             style={
-              styles.metricValue
+              styles.liveMetricValue
             }
           >
-            {liveAccuracy}%
+            {liveMetrics.accuracy}%
           </Text>
 
         </View>
@@ -1539,13 +2174,13 @@ export default function MemoryMatch({
 
         <View
           style={
-            styles.metricBox
+            styles.liveMetric
           }
         >
 
           <Text
             style={
-              styles.metricLabel
+              styles.liveMetricLabel
             }
           >
             Score
@@ -1553,10 +2188,10 @@ export default function MemoryMatch({
 
           <Text
             style={
-              styles.metricValue
+              styles.liveMetricValue
             }
           >
-            {liveScore}%
+            {liveMetrics.score}%
           </Text>
 
         </View>
@@ -1573,483 +2208,547 @@ export default function MemoryMatch({
 const styles =
   StyleSheet.create({
 
-    container: {
+    gameScreen: {
       width: "100%",
-
-      padding: 18,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
     },
 
-
-    startContainer: {
+    standaloneScreen: {
       width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
+      minHeight: "100%",
       backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
+        "#F7F8FC",
+      padding: 20,
     },
 
-
-    resultContainer: {
-      width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
+    selectionHeader: {
+      marginBottom: 28,
     },
-
-
-    iconBox: {
-      width: 64,
-
-      height: 64,
-
-      borderRadius: 20,
-
-      backgroundColor:
-        "#EEE9FF",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    title: {
-      color: "#202033",
-
-      fontSize: 25,
-
-      fontWeight: "800",
-
-      marginTop: 6,
-    },
-
 
     category: {
-      color: "#7B6EF6",
-
+      color:
+        "#7C6CFF",
       fontSize: 12,
-
-      fontWeight: "800",
-    },
-
-
-    description: {
-      color: "#77778A",
-
-      textAlign:
-        "center",
-
-      lineHeight: 21,
-
-      marginTop: 10,
-    },
-
-
-    levelInfo: {
-      width: "100%",
-
-      marginTop: 22,
-
-      padding: 18,
-
-      borderRadius: 18,
-
-      backgroundColor:
-        "#F7F8FC",
-
-      alignItems:
-        "center",
-    },
-
-
-    levelName: {
-      color: "#202033",
-
-      fontSize: 20,
-
-      fontWeight: "800",
-    },
-
-
-    levelDetails: {
-      color: "#77778A",
-
-      marginTop: 5,
-    },
-
-
-    primaryButton: {
-      width: "100%",
-
-      height: 52,
-
-      borderRadius: 16,
-
-      backgroundColor:
-        "#7B6EF6",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      marginTop: 22,
-    },
-
-
-    primaryButtonText: {
-      color: "#FFFFFF",
-
-      fontSize: 16,
-
-      fontWeight: "800",
-    },
-
-
-    secondaryButton: {
-      minHeight: 48,
-
-      paddingHorizontal: 22,
-
-      borderRadius: 15,
-
-      borderWidth: 1,
-
-      borderColor:
-        "#DDD7FF",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    secondaryButtonText: {
-      color: "#7B6EF6",
-
-      fontWeight: "800",
-    },
-
-
-    resultStatus: {
-      color: "#64748B",
-
-      marginTop: 6,
-
       fontWeight: "700",
+      letterSpacing: 0.3,
     },
 
-
-    resultGrid: {
-      width: "100%",
-
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 10,
-
-      marginTop: 22,
+    selectionTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 34,
+      fontWeight: "800",
     },
 
+    selectionDescription: {
+      marginTop: 10,
+      color:
+        "#77778A",
+      fontSize: 15,
+      lineHeight: 22,
+    },
 
-    resultCard: {
-      width: "48%",
+    levelList: {
+      gap: 16,
+    },
 
-      minHeight: 90,
-
-      borderRadius: 18,
-
+    levelCard: {
       backgroundColor:
-        "#F7F8FC",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
+        "#FFFFFF",
+      borderWidth: 1,
+      borderColor:
+        "#E8E8F0",
+      borderRadius: 28,
+      padding: 22,
     },
 
+    levelCardSelected: {
+      backgroundColor:
+        "#F5F2FF",
+      borderColor:
+        "#7C6CFF",
+    },
 
-    header: {
+    levelTopRow: {
       flexDirection:
         "row",
-
       alignItems:
-        "flex-start",
-
+        "center",
       justifyContent:
         "space-between",
-
-      gap: 12,
     },
 
-
-    levelBadge: {
-      paddingHorizontal: 13,
-
-      paddingVertical: 8,
-
-      borderRadius: 15,
-
+    levelNumber: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       backgroundColor:
-        "#EEE9FF",
-    },
-
-
-    levelBadgeLabel: {
-      color: "#6D5CE7",
-
-      fontWeight: "800",
-
-      fontSize: 12,
-    },
-
-
-    timeRow: {
-      flexDirection:
-        "row",
-
-      gap: 10,
-
-      marginTop: 18,
-    },
-
-
-    timeCard: {
-      flex: 1,
-
-      minHeight: 70,
-
-      padding: 12,
-
-      borderRadius: 17,
-
-      backgroundColor:
-        "#F7F8FC",
-
-      flexDirection:
-        "row",
-
+        "#7C6CFF",
       alignItems:
         "center",
-
-      gap: 10,
+      justifyContent:
+        "center",
     },
 
+    levelNumberText: {
+      color:
+        "#FFFFFF",
+      fontWeight:
+        "800",
+      fontSize: 16,
+    },
 
-    timeLabel: {
-      color: "#77778A",
+    selectedText: {
+      color:
+        "#7C6CFF",
+      fontSize: 11,
+      fontWeight:
+        "800",
+    },
 
+    levelCardTitle: {
+      marginTop: 20,
+      color:
+        "#202033",
+      fontSize: 20,
+      fontWeight:
+        "800",
+    },
+
+    levelCardDescription: {
+      marginTop: 7,
+      color:
+        "#77778A",
+      fontSize: 14,
+      lineHeight: 21,
+    },
+
+    levelDivider: {
+      height: 1,
+      backgroundColor:
+        "#EEEEF5",
+      marginTop: 20,
+      marginBottom: 16,
+    },
+
+    levelStats: {
+      flexDirection:
+        "row",
+    },
+
+    levelStat: {
+      flex: 1,
+    },
+
+    smallLabel: {
+      color:
+        "#9999AA",
       fontSize: 11,
     },
 
-
-    timeValue: {
-      color: "#202033",
-
-      fontWeight: "800",
-
-      marginTop: 2,
+    smallValue: {
+      marginTop: 4,
+      color:
+        "#202033",
+      fontWeight:
+        "800",
+      fontSize: 15,
     },
 
+    startButton: {
+      height: 56,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      marginTop: 24,
+    },
+
+    startButtonText: {
+      color:
+        "#FFFFFF",
+      fontWeight:
+        "700",
+      fontSize: 15,
+    },
+
+    gameHeader: {
+      gap: 18,
+      marginBottom: 24,
+    },
+
+    gameTitle: {
+      marginTop: 4,
+      color:
+        "#202033",
+      fontSize: 30,
+      fontWeight:
+        "800",
+    },
+
+    statsRow: {
+      flexDirection:
+        "row",
+      gap: 8,
+    },
+
+    headerStat: {
+      flex: 1,
+      minHeight: 67,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      justifyContent:
+        "center",
+    },
+
+    headerTimeStat: {
+      flex: 1,
+      minHeight: 67,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      justifyContent:
+        "center",
+    },
+
+    headerStatLabel: {
+      color:
+        "#9999AA",
+      fontSize: 10,
+    },
+
+    headerStatValue: {
+      color:
+        "#202033",
+      fontSize: 14,
+      fontWeight:
+        "800",
+      marginTop: 3,
+    },
+
+    headerTimeLabel: {
+      color:
+        "rgba(255,255,255,0.75)",
+      fontSize: 10,
+    },
+
+    headerTimeValue: {
+      color:
+        "#FFFFFF",
+      fontSize: 14,
+      fontWeight:
+        "800",
+      marginTop: 3,
+    },
 
     pausedBox: {
-      padding: 13,
-
-      borderRadius: 15,
-
+      marginBottom: 18,
       backgroundColor:
-        "#FEF3C7",
-
-      marginTop: 16,
-
+        "#FFFBEB",
+      borderWidth: 1,
+      borderColor:
+        "#FDE68A",
+      borderRadius: 16,
+      padding: 14,
       alignItems:
         "center",
     },
 
-
     pausedText: {
-      color: "#B45309",
-
-      fontWeight: "800",
+      color:
+        "#B45309",
+      fontWeight:
+        "700",
     },
 
-
-    instruction: {
-      color: "#202033",
-
-      fontSize: 17,
-
-      fontWeight: "800",
-
-      textAlign:
-        "center",
-
-      marginTop: 22,
-
-      marginBottom: 15,
+    board: {
+      backgroundColor:
+        "#FFFFFF",
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      padding: 16,
     },
-
 
     cardsGrid: {
       flexDirection:
         "row",
-
       flexWrap:
         "wrap",
-
       justifyContent:
         "center",
-
-      gap: 9,
+      gap: 8,
     },
-
 
     card: {
-      borderRadius: 16,
-
+      aspectRatio: 1,
+      borderRadius: 22,
+      borderWidth: 1,
       alignItems:
         "center",
-
       justifyContent:
         "center",
-
-      borderWidth: 2,
     },
 
-
-    cardEasy: {
-      width: "22%",
-
-      aspectRatio: 0.82,
+    cardFourColumns: {
+      width: "22.5%",
     },
 
-
-    cardMedium: {
-      width: "22%",
-
-      aspectRatio: 0.88,
+    cardSixColumns: {
+      width: "14.5%",
+      borderRadius: 17,
     },
-
-
-    cardHard: {
-      width: "22%",
-
-      aspectRatio: 0.92,
-    },
-
 
     cardHidden: {
       backgroundColor:
-        "#7B6EF6",
-
+        "#7C6CFF",
       borderColor:
-        "#6959F5",
+        "#6E5FF0",
     },
-
 
     cardVisible: {
       backgroundColor:
-        "#F5F2FF",
-
+        "#F2EEFF",
       borderColor:
         "#D8D0FF",
     },
 
-
-    cardSymbol: {
-      fontSize: 29,
+    cardPaused: {
+      opacity: 0.6,
     },
 
-
-    cardQuestion: {
-      color: "#FFFFFF",
-
-      fontSize: 25,
-
-      fontWeight: "900",
-    },
-
-
-    metricsRow: {
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    metricBox: {
-      width: "48%",
-
-      minHeight: 72,
-
-      borderRadius: 16,
-
-      backgroundColor:
-        "#F7F8FC",
-
+    hiddenCircle: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      borderWidth: 1,
+      borderColor:
+        "rgba(255,255,255,0.30)",
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
+    hiddenDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor:
+        "rgba(255,255,255,0.80)",
+    },
 
-    metricLabel: {
-      color: "#77778A",
+    liveMetrics: {
+      marginTop: 20,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      justifyContent:
+        "center",
+      gap: 18,
+    },
 
+    liveMetric: {
+      alignItems:
+        "center",
+      minWidth: 52,
+    },
+
+    liveMetricLabel: {
+      color:
+        "#9999AA",
       fontSize: 11,
     },
 
+    liveMetricValue: {
+      color:
+        "#202033",
+      fontSize: 14,
+      fontWeight:
+        "800",
+      marginTop: 2,
+    },
 
-    metricValue: {
-      color: "#202033",
+    resultScreen: {
+      width: "100%",
+    },
 
-      fontSize: 19,
+    resultPanel: {
+      width: "100%",
+      backgroundColor:
+        "#FFFFFF",
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      padding: 22,
+      alignItems:
+        "center",
+    },
 
-      fontWeight: "800",
+    resultIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      backgroundColor:
+        "#F2EEFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
 
-      marginTop: 3,
+    resultCategory: {
+      marginTop: 18,
+      color:
+        "#7C6CFF",
+      fontSize: 12,
+      fontWeight:
+        "800",
+      textAlign:
+        "center",
+    },
+
+    resultTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 27,
+      fontWeight:
+        "800",
+      textAlign:
+        "center",
+    },
+
+    resultGrid: {
+      width: "100%",
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+      marginTop: 24,
+    },
+
+    resultMetricCard: {
+      width: "48%",
+      minHeight: 95,
+      borderRadius: 16,
+      backgroundColor:
+        "#F7F8FC",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      padding: 12,
+    },
+
+    resultMetricLabel: {
+      color:
+        "#9999AA",
+      fontSize: 11,
+    },
+
+    resultMetricValue: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 22,
+      fontWeight:
+        "800",
+    },
+
+    secondaryGrid: {
+      width: "100%",
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+      marginTop: 10,
+    },
+
+    secondaryCard: {
+      width: "48%",
+      minHeight: 85,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      padding: 15,
+      justifyContent:
+        "center",
+    },
+
+    secondaryValue: {
+      marginTop: 5,
+      color:
+        "#202033",
+      fontSize: 14,
+      fontWeight:
+        "800",
+    },
+
+    insightCard: {
+      width: "100%",
+      marginTop: 16,
+      backgroundColor:
+        "#F2EEFF",
+      borderRadius: 16,
+      padding: 17,
+    },
+
+    insightTitle: {
+      color:
+        "#7C6CFF",
+      fontSize: 11,
+      fontWeight:
+        "800",
+    },
+
+    insightText: {
+      marginTop: 7,
+      color:
+        "#555568",
+      fontSize: 13,
+      lineHeight: 20,
+    },
+
+    restartButton: {
+      width: "100%",
+      height: 54,
+      marginTop: 20,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#E4E4EC",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 8,
+    },
+
+    restartButtonText: {
+      color:
+        "#202033",
+      fontWeight:
+        "700",
     },
 
   });

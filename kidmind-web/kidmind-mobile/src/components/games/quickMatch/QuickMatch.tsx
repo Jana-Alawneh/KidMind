@@ -22,6 +22,13 @@ import {
   Zap,
 } from "lucide-react-native";
 
+import Svg, {
+  Circle,
+  Path,
+  Polygon,
+  Rect,
+} from "react-native-svg";
+
 
 type GameStatus =
   | "Completed"
@@ -65,7 +72,7 @@ type SymbolItem = {
 
   label: string;
 
-  symbol: string;
+  shape: string;
 };
 
 
@@ -74,7 +81,7 @@ type Card = {
 
   label: string;
 
-  symbol: string;
+  shape: string;
 
   color: string;
 };
@@ -120,49 +127,49 @@ const SYMBOLS: SymbolItem[] = [
   {
     id: "circle",
     label: "Circle",
-    symbol: "●",
+    shape: "circle",
   },
 
   {
     id: "square",
     label: "Square",
-    symbol: "■",
+    shape: "square",
   },
 
   {
     id: "triangle",
     label: "Triangle",
-    symbol: "▲",
+    shape: "triangle",
   },
 
   {
     id: "diamond",
     label: "Diamond",
-    symbol: "◆",
+    shape: "diamond",
   },
 
   {
     id: "star",
     label: "Star",
-    symbol: "★",
+    shape: "star",
   },
 
   {
     id: "hexagon",
     label: "Hexagon",
-    symbol: "⬢",
+    shape: "hexagon",
   },
 
   {
     id: "heart",
     label: "Heart",
-    symbol: "♥",
+    shape: "heart",
   },
 
   {
     id: "cross",
     label: "Cross",
-    symbol: "✚",
+    shape: "cross",
   },
 ];
 
@@ -177,6 +184,182 @@ const COLORS = [
   "#9B8AFB",
   "#5EC6B3",
 ];
+
+const ShapeSvg = ({
+  shapeName,
+  color = "#7C6CFF",
+  size = 58,
+}: {
+  shapeName?: string;
+  color?: string;
+  size?: number;
+}) => {
+
+  if (!shapeName) {
+    return null;
+  }
+
+
+  if (
+    shapeName === "circle"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Circle
+          cx="50"
+          cy="50"
+          r="35"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  if (
+    shapeName === "square"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Rect
+          x="16"
+          y="16"
+          width="68"
+          height="68"
+          rx="10"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  if (
+    shapeName === "triangle"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Polygon
+          points="50,10 90,85 10,85"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  if (
+    shapeName === "diamond"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Polygon
+          points="50,8 92,50 50,92 8,50"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  if (
+    shapeName === "star"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Polygon
+          points="50,8 61,37 92,37 67,55 77,86 50,67 23,86 33,55 8,37 39,37"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  if (
+    shapeName === "hexagon"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Polygon
+          points="25,12 75,12 92,50 75,88 25,88 8,50"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  if (
+    shapeName === "heart"
+  ) {
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+      >
+        <Path
+          d="M50 86 C45 80 15 62 15 37 C15 18 38 12 50 30 C62 12 85 18 85 37 C85 62 55 80 50 86"
+          fill={color}
+        />
+      </Svg>
+    );
+
+  }
+
+
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+    >
+      <Path
+        d="M35 10 H65 V35 H90 V65 H65 V90 H35 V65 H10 V35 H35 Z"
+        fill={color}
+      />
+    </Svg>
+  );
+
+};
 
 
 const shuffle = <T,>(
@@ -1436,36 +1619,33 @@ export default function QuickMatch({
     );
 
 
+
   if (
     !embedded &&
-    !started
+    !started &&
+    !finished
   ) {
 
     return (
 
       <View
         style={
-          styles.startContainer
+          styles.standaloneScreen
         }
       >
 
-        <View
+        <Text
           style={
-            styles.iconBox
+            styles.category
           }
         >
-
-          <Zap
-            size={34}
-            color="#7B6EF6"
-          />
-
-        </View>
+          COGNITIVE ASSESSMENT
+        </Text>
 
 
         <Text
           style={
-            styles.title
+            styles.selectionTitle
           }
         >
           Quick Match
@@ -1474,16 +1654,16 @@ export default function QuickMatch({
 
         <Text
           style={
-            styles.description
+            styles.selectionDescription
           }
         >
-          Find the matching shape as quickly and accurately as possible.
+          Find the matching shape as quickly and accurately as possible. Each round changes the layout, colors and target.
         </Text>
 
 
         <View
           style={
-            styles.levelsContainer
+            styles.levelList
           }
         >
 
@@ -1509,9 +1689,7 @@ export default function QuickMatch({
               return (
 
                 <Pressable
-                  key={
-                    id
-                  }
+                  key={id}
                   onPress={() => {
 
                     selectLevel(
@@ -1527,13 +1705,48 @@ export default function QuickMatch({
                   ]}
                 >
 
-                  <Text
-                    style={[
-                      styles.levelName,
+                  <View
+                    style={
+                      styles.levelTopRow
+                    }
+                  >
 
-                      selected &&
-                        styles.levelNameSelected,
-                    ]}
+                    <View
+                      style={
+                        styles.levelNumber
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.levelNumberText
+                        }
+                      >
+                        {id}
+                      </Text>
+
+                    </View>
+
+
+                    {selected && (
+
+                      <Text
+                        style={
+                          styles.selectedText
+                        }
+                      >
+                        SELECTED
+                      </Text>
+
+                    )}
+
+                  </View>
+
+
+                  <Text
+                    style={
+                      styles.levelTitle
+                    }
                   >
                     {item.name}
                   </Text>
@@ -1541,38 +1754,101 @@ export default function QuickMatch({
 
                   <Text
                     style={
-                      styles.levelDetails
+                      styles.levelDescription
                     }
                   >
-                    {item.rounds} rounds
+                    Match the target shape quickly while keeping your accuracy.
                   </Text>
 
 
-                  <Text
+                  <View
                     style={
-                      styles.levelDetails
+                      styles.levelDivider
                     }
-                  >
-                    {item.cards} cards
-                  </Text>
+                  />
 
 
-                  <Text
+                  <View
                     style={
-                      styles.levelDetails
+                      styles.levelStats
                     }
                   >
-                    {item.reactionTime}s per round
-                  </Text>
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Rounds
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.rounds}
+                      </Text>
+
+                    </View>
 
 
-                  <Text
-                    style={
-                      styles.levelDetails
-                    }
-                  >
-                    {item.time}s total
-                  </Text>
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Cards
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.cards}
+                      </Text>
+
+                    </View>
+
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Time
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.time}s
+                      </Text>
+
+                    </View>
+
+                  </View>
 
                 </Pressable>
 
@@ -1589,7 +1865,7 @@ export default function QuickMatch({
             startGame
           }
           style={
-            styles.primaryButton
+            styles.startButton
           }
         >
 
@@ -1601,7 +1877,7 @@ export default function QuickMatch({
 
           <Text
             style={
-              styles.primaryButtonText
+              styles.startButtonText
             }
           >
             Start Assessment
@@ -1630,240 +1906,406 @@ export default function QuickMatch({
         | null;
 
 
+    const resultCorrect =
+      Number(
+        resultData
+          ?.correct_answers ??
+        correct
+      );
+
+
+    const resultWrong =
+      Number(
+        resultData
+          ?.wrong_answers ??
+        wrong
+      );
+
+
+    const resultMissed =
+      Number(
+        resultData
+          ?.missed_rounds ??
+        missed
+      );
+
+
+    const resultAttempts =
+      Number(
+        resultData
+          ?.total_attempts ??
+        (
+          resultCorrect +
+          resultWrong
+        )
+      );
+
+
+    const resultTime =
+      Number(
+        (
+          config.time -
+          Number(
+            resultData
+              ?.time_remaining ??
+            0
+          )
+        ).toFixed(1)
+      );
+
+
+    const recommendation =
+      (
+        finalResult.accuracy ??
+        0
+      ) >= 85
+        ? "Excellent processing speed and visual attention."
+        : (
+            finalResult.accuracy ??
+            0
+          ) >= 70
+        ? "Good processing speed. Continue monitoring progress."
+        : "The child may benefit from additional visual matching and attention practice.";
+
+
     return (
 
       <View
-        style={
-          styles.resultContainer
-        }
+        style={[
+          styles.resultScreen,
+
+          !embedded &&
+            styles.standaloneScreen,
+        ]}
       >
 
         <View
           style={
-            styles.iconBox
-          }
-        >
-
-          <Trophy
-            size={34}
-            color="#7B6EF6"
-          />
-
-        </View>
-
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Quick Match Results
-        </Text>
-
-
-        <Text
-          style={
-            styles.resultStatus
-          }
-        >
-          {finalResult.status}
-        </Text>
-
-
-        <View
-          style={
-            styles.resultGrid
+            styles.resultPanel
           }
         >
 
           <View
             style={
-              styles.resultCard
+              styles.resultIcon
             }
           >
 
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Score
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.score}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Accuracy
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.accuracy ?? 0}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Correct
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {correct}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Mistakes
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {wrong}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Missed
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {Number(
-                resultData
-                  ?.missed_rounds ||
-                0
-              )}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Reaction
-            </Text>
-
-            <Text
-              style={
-                styles.metricValueSmall
-              }
-            >
-              {finalResult.reaction_time !==
-              null
-                ? `${finalResult.reaction_time}s`
-                : "—"
-              }
-            </Text>
-
-          </View>
-
-        </View>
-
-
-        {!embedded && (
-
-          <Pressable
-            onPress={
-              restartGame
-            }
-            style={
-              styles.secondaryButton
-            }
-          >
-
-            <RotateCcw
-              size={18}
-              color="#7B6EF6"
+            <Trophy
+              size={30}
+              color="#7C6CFF"
             />
 
+          </View>
+
+
+          <Text
+            style={
+              styles.resultCategory
+            }
+          >
+            {finalResult.status ===
+            "Completed"
+              ? "ASSESSMENT COMPLETED"
+              : "TIME COMPLETED"
+            }
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultTitle
+            }
+          >
+            Quick Match Results
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultLevel
+            }
+          >
+            {config.name} Level
+          </Text>
+
+
+          <View
+            style={
+              styles.resultGrid
+            }
+          >
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Score
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.score}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Accuracy
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.accuracy ?? 0}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Correct
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {resultCorrect}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Wrong
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {resultWrong}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.secondaryGrid
+            }
+          >
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Missed
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {resultMissed}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Attempts
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {resultAttempts}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Reaction Time
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.reaction_time !==
+                null
+                  ? `${finalResult.reaction_time}s`
+                  : "—"
+                }
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Game Time
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {resultTime}s
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.insightBox
+            }
+          >
 
             <Text
               style={
-                styles.secondaryButtonText
+                styles.insightTitle
               }
             >
-              Play Again
+              PERFORMANCE INSIGHT
             </Text>
 
-          </Pressable>
 
-        )}
+            <Text
+              style={
+                styles.insightText
+              }
+            >
+              {recommendation}
+            </Text>
+
+          </View>
+
+
+          {!embedded && (
+
+            <Pressable
+              onPress={
+                restartGame
+              }
+              style={
+                styles.restartButton
+              }
+            >
+
+              <RotateCcw
+                size={18}
+                color="#303044"
+              />
+
+
+              <Text
+                style={
+                  styles.restartText
+                }
+              >
+                Play Again
+              </Text>
+
+            </Pressable>
+
+          )}
+
+        </View>
 
       </View>
 
@@ -1886,7 +2328,7 @@ export default function QuickMatch({
 
         <Text
           style={
-            styles.description
+            styles.selectionDescription
           }
         >
           Preparing Quick Match...
@@ -1910,22 +2352,21 @@ export default function QuickMatch({
   return (
 
     <View
-      style={
-        styles.container
-      }
+      style={[
+        styles.gameScreen,
+
+        !embedded &&
+          styles.standaloneScreen,
+      ]}
     >
 
       <View
         style={
-          styles.header
+          styles.gameHeader
         }
       >
 
-        <View
-          style={
-            styles.headerTextBox
-          }
-        >
+        <View>
 
           <Text
             style={
@@ -1938,7 +2379,7 @@ export default function QuickMatch({
 
           <Text
             style={
-              styles.title
+              styles.gameTitle
             }
           >
             Quick Match
@@ -1949,45 +2390,44 @@ export default function QuickMatch({
 
         <View
           style={
-            styles.levelBadge
+            styles.statsRow
           }
         >
 
-          <Text
+          <View
             style={
-              styles.levelBadgeText
+              styles.headerStat
             }
           >
-            {config.name}
-          </Text>
-
-        </View>
-
-      </View>
-
-
-      <View
-        style={
-          styles.timeRow
-        }
-      >
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
+              }
+            >
+              Level
+            </Text>
+
+            <Text
+              style={
+                styles.headerStatValue
+              }
+            >
+              {config.name}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.headerTimeStat
+            }
+          >
+
+            <Text
+              style={
+                styles.headerTimeLabel
               }
             >
               Game Time
@@ -1995,7 +2435,7 @@ export default function QuickMatch({
 
             <Text
               style={
-                styles.timeValue
+                styles.headerTimeValue
               }
             >
               {gameTime.toFixed(1)}s
@@ -2003,25 +2443,16 @@ export default function QuickMatch({
 
           </View>
 
-        </View>
 
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
+          <View
+            style={
+              styles.headerStat
+            }
+          >
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
               }
             >
               Time Left
@@ -2029,7 +2460,7 @@ export default function QuickMatch({
 
             <Text
               style={
-                styles.timeValue
+                styles.headerStatValue
               }
             >
               {timeLeft.toFixed(1)}s
@@ -2065,383 +2496,434 @@ export default function QuickMatch({
 
       <View
         style={
-          styles.roundHeader
-        }
-      >
-
-        <Text
-          style={
-            styles.roundText
-          }
-        >
-          Round {round + 1} / {config.rounds}
-        </Text>
-
-
-        <Text
-          style={
-            styles.roundText
-          }
-        >
-          {roundTimeLeft.toFixed(1)}s left
-        </Text>
-
-      </View>
-
-
-      <View
-        style={
-          styles.progressTrack
+          styles.board
         }
       >
 
         <View
-          style={[
-            styles.progressBar,
+          style={
+            styles.roundHeader
+          }
+        >
 
-            {
-              width:
-                `${
-                  (
+          <View>
+
+            <Text
+              style={
+                styles.roundLabel
+              }
+            >
+              ROUND
+            </Text>
+
+            <Text
+              style={
+                styles.roundValue
+              }
+            >
+              {round + 1}
+              {" / "}
+              {config.rounds}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.roundTimer
+            }
+          >
+
+            <Clock3
+              size={17}
+              color="#77778A"
+            />
+
+            <Text
+              style={
+                styles.roundTimerText
+              }
+            >
+              {roundTime.toFixed(1)}s
+              {" / "}
+              {config.reactionTime}s
+            </Text>
+
+          </View>
+
+        </View>
+
+
+        <View
+          style={
+            styles.progressTrack
+          }
+        >
+
+          <View
+            style={[
+              styles.progressBar,
+
+              {
+                width:
+                  `${
                     (
-                      round + 1
-                    ) /
-                    config.rounds
-                  ) * 100
-                }%`,
-            },
-          ]}
-        />
-
-      </View>
-
-
-      <View
-        style={
-          styles.targetCard
-        }
-      >
-
-        <View
-          style={
-            styles.targetIconBox
-          }
-        >
-
-          <Target
-            size={22}
-            color="#7B6EF6"
+                      (
+                        round + 1
+                      ) /
+                      config.rounds
+                    ) * 100
+                  }%`,
+              },
+            ]}
           />
 
         </View>
 
 
-        <Text
+        <View
           style={
-            styles.targetLabel
+            styles.targetCard
           }
         >
-          FIND THIS SHAPE
-        </Text>
 
-
-        <Text
-          style={[
-            styles.targetSymbol,
-
-            {
-              color:
-                currentRound.targetColor,
-            },
-          ]}
-        >
-          {target?.symbol}
-        </Text>
-
-
-        <Text
-          style={
-            styles.targetName
-          }
-        >
-          Match the target
-        </Text>
-
-
-        <Text
-          style={
-            styles.targetDescription
-          }
-        >
-          Choose the identical shape and color below.
-        </Text>
-
-      </View>
-
-
-      <View
-        style={
-          styles.cardsGrid
-        }
-      >
-
-        {currentRound.cards.map(
-          (
-            card
-          ) => {
-
-            const isPressed =
-              pressedId ===
-              card.id;
-
-
-            let backgroundColor =
-              "#FFFFFF";
-
-
-            let borderColor =
-              "#E7E7F0";
-
-
-            if (
-              isPressed &&
-              feedback ===
-              "correct"
-            ) {
-
-              backgroundColor =
-                "#EEF9EE";
-
-
-              borderColor =
-                "#7BC67B";
-
+          <View
+            style={
+              styles.targetIconBox
             }
+          >
+
+            <Target
+              size={23}
+              color="#7C6CFF"
+            />
+
+          </View>
 
 
-            if (
-              isPressed &&
-              feedback ===
-              "wrong"
-            ) {
-
-              backgroundColor =
-                "#FFF0F3";
-
-
-              borderColor =
-                "#EF6A8A";
-
+          <Text
+            style={
+              styles.targetLabel
             }
+          >
+            FIND THIS SHAPE
+          </Text>
 
 
-            return (
+          <View
+            style={
+              styles.targetShape
+            }
+          >
 
-              <Pressable
-                key={
-                  `${card.id}-${card.color}`
-                }
-                onPress={() => {
+            <ShapeSvg
+              shapeName={
+                target?.shape
+              }
+              color={
+                currentRound.targetColor
+              }
+              size={72}
+            />
 
-                  chooseCard(
-                    card
-                  );
+          </View>
 
-                }}
-                disabled={
-                  paused ||
-                  finished ||
-                  Boolean(
-                    feedback
-                  )
-                }
-                style={[
-                  styles.card,
 
-                  {
-                    backgroundColor,
-                    borderColor,
-                  },
+          <Text
+            style={
+              styles.targetName
+            }
+          >
+            Match the target
+          </Text>
 
-                  paused &&
-                    styles.cardPaused,
-                ]}
-              >
 
-                <Text
+          <Text
+            style={
+              styles.targetDescription
+            }
+          >
+            Choose the identical shape below.
+          </Text>
+
+
+          <Text
+            style={
+              styles.roundTimeLeftText
+            }
+          >
+            Round time left:{" "}
+            {roundTimeLeft.toFixed(
+              1
+            )}s
+          </Text>
+
+        </View>
+
+
+        <View
+          style={
+            styles.cardsGrid
+          }
+        >
+
+          {currentRound.cards.map(
+            (
+              card
+            ) => {
+
+              const isPressed =
+                pressedId ===
+                card.id;
+
+
+              let backgroundColor =
+                "#FFFFFF";
+
+
+              let borderColor =
+                "#E7E7F0";
+
+
+              if (
+                isPressed &&
+                feedback ===
+                "correct"
+              ) {
+
+                backgroundColor =
+                  "#EEF9EE";
+
+
+                borderColor =
+                  "#7BC67B";
+
+              }
+
+
+              if (
+                isPressed &&
+                feedback ===
+                "wrong"
+              ) {
+
+                backgroundColor =
+                  "#FFF0F3";
+
+
+                borderColor =
+                  "#EF6A8A";
+
+              }
+
+
+              return (
+
+                <Pressable
+                  key={
+                    `${card.id}-${card.color}`
+                  }
+                  onPress={() => {
+
+                    chooseCard(
+                      card
+                    );
+
+                  }}
+                  disabled={
+                    paused ||
+                    finished ||
+                    Boolean(
+                      feedback
+                    )
+                  }
                   style={[
-                    styles.cardSymbol,
+                    styles.card,
 
                     {
-                      color:
-                        card.color,
+                      backgroundColor,
+                      borderColor,
                     },
+
+                    paused &&
+                      styles.cardPaused,
                   ]}
                 >
-                  {card.symbol}
-                </Text>
 
-              </Pressable>
+                  <ShapeSvg
+                    shapeName={
+                      card.shape
+                    }
+                    color={
+                      card.color
+                    }
+                    size={62}
+                  />
 
-            );
+                </Pressable>
 
+              );
+
+            }
+          )}
+
+        </View>
+
+
+        <View
+          style={
+            styles.liveMetrics
           }
+        >
+
+          <View
+            style={
+              styles.liveMetric
+            }
+          >
+
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Correct
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {correct}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.liveMetric
+            }
+          >
+
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Wrong
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {wrong}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.liveMetric
+            }
+          >
+
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Missed
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {missed}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.liveMetric
+            }
+          >
+
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Accuracy
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {liveAccuracy}%
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.liveMetric
+            }
+          >
+
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Score
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {liveScore}%
+            </Text>
+
+          </View>
+
+        </View>
+
+
+        {feedback ===
+          "timeout" && (
+
+          <View
+            style={
+              styles.timeoutBox
+            }
+          >
+
+            <Text
+              style={
+                styles.timeoutText
+              }
+            >
+              Time ran out. This round was counted as missed.
+            </Text>
+
+          </View>
+
         )}
-
-      </View>
-
-
-      {feedback ===
-        "timeout" && (
-
-        <View
-          style={
-            styles.timeoutBox
-          }
-        >
-
-          <Text
-            style={
-              styles.timeoutText
-            }
-          >
-            Time ran out. This round was counted as missed.
-          </Text>
-
-        </View>
-
-      )}
-
-
-      <View
-        style={
-          styles.metricsGrid
-        }
-      >
-
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Correct
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {correct}
-          </Text>
-
-        </View>
-
-
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Mistakes
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {wrong}
-          </Text>
-
-        </View>
-
-
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Missed
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {missed}
-          </Text>
-
-        </View>
-
-
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Accuracy
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {liveAccuracy}%
-          </Text>
-
-        </View>
-
-
-        <View
-          style={
-            styles.scoreBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Score
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {liveScore}%
-          </Text>
-
-        </View>
 
       </View>
 
@@ -2455,678 +2937,734 @@ export default function QuickMatch({
 const styles =
   StyleSheet.create({
 
-    container: {
+    standaloneScreen: {
       width: "100%",
-
-      padding: 18,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-    },
-
-
-    startContainer: {
-      width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-    },
-
-
-    resultContainer: {
-      width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-    },
-
-
-    loadingContainer: {
-      width: "100%",
-
-      minHeight: 280,
-
+      minHeight: "100%",
       padding: 20,
-
-      borderRadius: 24,
-
       backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
+        "#F7F8FC",
     },
 
 
-    iconBox: {
-      width: 64,
-
-      height: 64,
-
-      borderRadius: 20,
-
-      backgroundColor:
-        "#EEE9FF",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    title: {
-      color: "#202033",
-
-      fontSize: 25,
-
-      fontWeight: "800",
-
-      marginTop: 5,
+    gameScreen: {
+      width: "100%",
     },
 
 
     category: {
-      color: "#7B6EF6",
-
+      color:
+        "#7C6CFF",
       fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+    },
 
+
+    selectionTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 34,
       fontWeight: "800",
     },
 
 
-    description: {
-      color: "#77778A",
-
-      textAlign:
-        "center",
-
-      lineHeight: 21,
-
+    selectionDescription: {
       marginTop: 10,
+      color:
+        "#77778A",
+      fontSize: 15,
+      lineHeight: 22,
     },
 
 
-    levelsContainer: {
-      width: "100%",
-
-      gap: 10,
-
-      marginTop: 22,
+    levelList: {
+      marginTop: 28,
+      gap: 16,
     },
 
 
     levelCard: {
-      width: "100%",
-
-      padding: 17,
-
-      borderRadius: 18,
-
+      padding: 22,
+      borderRadius: 28,
       borderWidth: 1,
-
       borderColor:
-        "#E2E8F0",
-
+        "#E8E8F0",
       backgroundColor:
-        "#F8FAFC",
+        "#FFFFFF",
     },
 
 
     levelCardSelected: {
       borderColor:
-        "#7B6EF6",
-
+        "#7C6CFF",
       backgroundColor:
-        "#F4F1FF",
+        "#F5F2FF",
     },
 
 
-    levelName: {
-      color: "#202033",
-
-      fontSize: 17,
-
-      fontWeight: "800",
-    },
-
-
-    levelNameSelected: {
-      color: "#6D5CE7",
-    },
-
-
-    levelDetails: {
-      color: "#77778A",
-
-      fontSize: 13,
-
-      marginTop: 4,
-    },
-
-
-    primaryButton: {
-      width: "100%",
-
-      height: 52,
-
-      borderRadius: 16,
-
-      backgroundColor:
-        "#7B6EF6",
-
+    levelTopRow: {
       flexDirection:
         "row",
-
       alignItems:
         "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    primaryButtonText: {
-      color: "#FFFFFF",
-
-      fontSize: 16,
-
-      fontWeight: "800",
-    },
-
-
-    secondaryButton: {
-      minHeight: 48,
-
-      paddingHorizontal: 22,
-
-      borderRadius: 15,
-
-      borderWidth: 1,
-
-      borderColor:
-        "#DDD7FF",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    secondaryButtonText: {
-      color: "#7B6EF6",
-
-      fontWeight: "800",
-    },
-
-
-    resultStatus: {
-      color: "#64748B",
-
-      marginTop: 6,
-
-      fontWeight: "700",
-    },
-
-
-    resultGrid: {
-      width: "100%",
-
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 10,
-
-      marginTop: 22,
-    },
-
-
-    resultCard: {
-      width: "48%",
-
-      minHeight: 90,
-
-      borderRadius: 18,
-
-      backgroundColor:
-        "#F7F8FC",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    header: {
-      flexDirection:
-        "row",
-
-      alignItems:
-        "flex-start",
-
       justifyContent:
         "space-between",
-
-      gap: 12,
     },
 
 
-    headerTextBox: {
-      flex: 1,
-    },
-
-
-    levelBadge: {
-      paddingHorizontal: 13,
-
-      paddingVertical: 8,
-
-      borderRadius: 15,
-
+    levelNumber: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       backgroundColor:
-        "#EEE9FF",
+        "#7C6CFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
     },
 
 
-    levelBadgeText: {
-      color: "#6D5CE7",
-
-      fontSize: 12,
-
+    levelNumberText: {
+      color:
+        "#FFFFFF",
+      fontSize: 16,
       fontWeight: "800",
     },
 
 
-    timeRow: {
-      flexDirection:
-        "row",
-
-      gap: 10,
-
-      marginTop: 18,
+    selectedText: {
+      color:
+        "#7C6CFF",
+      fontSize: 11,
+      fontWeight: "800",
     },
 
 
-    timeCard: {
-      flex: 1,
+    levelTitle: {
+      marginTop: 20,
+      color:
+        "#202033",
+      fontSize: 20,
+      fontWeight: "800",
+    },
 
-      minHeight: 70,
 
-      padding: 12,
+    levelDescription: {
+      marginTop: 7,
+      color:
+        "#77778A",
+      fontSize: 14,
+      lineHeight: 21,
+    },
 
-      borderRadius: 17,
 
+    levelDivider: {
+      height: 1,
+      marginTop: 20,
+      marginBottom: 16,
       backgroundColor:
-        "#F7F8FC",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      gap: 10,
+        "#EEEEF5",
     },
 
 
-    timeLabel: {
-      color: "#77778A",
+    levelStats: {
+      flexDirection:
+        "row",
+      gap: 8,
+    },
 
+
+    levelStat: {
+      flex: 1,
+    },
+
+
+    smallLabel: {
+      color:
+        "#9999AA",
       fontSize: 11,
     },
 
 
-    timeValue: {
-      color: "#202033",
-
+    smallValue: {
+      marginTop: 4,
+      color:
+        "#303044",
+      fontSize: 15,
       fontWeight: "800",
+    },
 
-      marginTop: 2,
+
+    startButton: {
+      height: 56,
+      marginTop: 24,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 8,
+    },
+
+
+    startButtonText: {
+      color:
+        "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "700",
+    },
+
+
+    loadingContainer: {
+      width: "100%",
+      minHeight: 280,
+      padding: 20,
+      borderRadius: 24,
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    gameHeader: {
+      gap: 18,
+      marginBottom: 24,
+    },
+
+
+    gameTitle: {
+      marginTop: 4,
+      color:
+        "#202033",
+      fontSize: 30,
+      fontWeight: "800",
+    },
+
+
+    statsRow: {
+      flexDirection:
+        "row",
+      gap: 8,
+    },
+
+
+    headerStat: {
+      flex: 1,
+      minHeight: 67,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+      justifyContent:
+        "center",
+    },
+
+
+    headerTimeStat: {
+      flex: 1,
+      minHeight: 67,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      justifyContent:
+        "center",
+    },
+
+
+    headerStatLabel: {
+      color:
+        "#9999AA",
+      fontSize: 10,
+    },
+
+
+    headerStatValue: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    headerTimeLabel: {
+      color:
+        "rgba(255,255,255,0.75)",
+      fontSize: 10,
+    },
+
+
+    headerTimeValue: {
+      marginTop: 3,
+      color:
+        "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "800",
     },
 
 
     pausedBox: {
-      padding: 13,
-
-      borderRadius: 15,
-
+      marginBottom: 18,
+      padding: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#FDE68A",
       backgroundColor:
-        "#FEF3C7",
-
-      marginTop: 16,
-
+        "#FFFBEB",
       alignItems:
         "center",
     },
 
 
     pausedText: {
-      color: "#B45309",
+      color:
+        "#B45309",
+      fontWeight: "700",
+    },
 
-      fontWeight: "800",
+
+    board: {
+      width: "100%",
+      padding: 18,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
     },
 
 
     roundHeader: {
       flexDirection:
         "row",
-
-      justifyContent:
-        "space-between",
-
       alignItems:
         "center",
-
-      marginTop: 20,
+      justifyContent:
+        "space-between",
+      gap: 10,
     },
 
 
-    roundText: {
-      color: "#64748B",
+    roundLabel: {
+      color:
+        "#9999AA",
+      fontSize: 11,
+      fontWeight: "800",
+    },
 
+
+    roundValue: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    roundTimer: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap: 6,
+    },
+
+
+    roundTimerText: {
+      color:
+        "#77778A",
       fontSize: 12,
-
       fontWeight: "700",
     },
 
 
     progressTrack: {
       width: "100%",
-
-      height: 7,
-
+      height: 8,
+      marginTop: 14,
       borderRadius: 20,
-
       backgroundColor:
         "#F0EFF7",
-
       overflow:
         "hidden",
-
-      marginTop: 8,
     },
 
 
     progressBar: {
       height: "100%",
-
       borderRadius: 20,
-
       backgroundColor:
-        "#7B6EF6",
+        "#7C6CFF",
     },
 
 
     targetCard: {
-      marginTop: 20,
-
-      padding: 20,
-
-      borderRadius: 22,
-
-      backgroundColor:
-        "#F7F8FC",
-
+      marginTop: 22,
+      padding: 22,
+      borderRadius: 28,
       borderWidth: 1,
-
       borderColor:
         "#ECECF4",
-
+      backgroundColor:
+        "#F7F8FC",
       alignItems:
         "center",
     },
 
 
     targetIconBox: {
-      width: 46,
-
-      height: 46,
-
-      borderRadius: 15,
-
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       backgroundColor:
-        "#EEE9FF",
-
+        "#F2EEFF",
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
 
     targetLabel: {
-      color: "#9999AA",
-
+      marginTop: 14,
+      color:
+        "#9999AA",
       fontSize: 11,
-
       fontWeight: "800",
-
-      marginTop: 12,
     },
 
 
-    targetSymbol: {
-      fontSize: 72,
-
-      fontWeight: "900",
-
-      lineHeight: 82,
-
-      marginTop: 5,
+    targetShape: {
+      height: 80,
+      marginTop: 7,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
     },
 
 
     targetName: {
-      color: "#202033",
-
+      marginTop: 4,
+      color:
+        "#202033",
       fontSize: 18,
-
       fontWeight: "800",
     },
 
 
     targetDescription: {
-      color: "#77778A",
-
-      fontSize: 12,
-
+      marginTop: 5,
+      color:
+        "#77778A",
+      fontSize: 13,
       textAlign:
         "center",
+    },
 
-      marginTop: 5,
+
+    roundTimeLeftText: {
+      marginTop: 12,
+      color:
+        "#9999AA",
+      fontSize: 11,
+      fontWeight: "700",
     },
 
 
     cardsGrid: {
       width: "100%",
-
+      marginTop: 18,
       flexDirection:
         "row",
-
       flexWrap:
         "wrap",
-
       justifyContent:
         "center",
-
-      gap: 9,
-
-      marginTop: 18,
+      gap: 10,
     },
 
 
     card: {
-      width: "22%",
-
+      width: "47%",
       aspectRatio: 1,
-
-      borderRadius: 18,
-
+      borderRadius: 26,
       borderWidth: 2,
-
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
 
     cardPaused: {
-      opacity: 0.55,
+      opacity: 0.6,
     },
 
 
-    cardSymbol: {
-      fontSize: 37,
+    liveMetrics: {
+      marginTop: 22,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      justifyContent:
+        "center",
+      gap: 10,
+    },
 
-      fontWeight: "900",
+
+    liveMetric: {
+      width: "47%",
+      minHeight: 70,
+      borderRadius: 16,
+      backgroundColor:
+        "#F7F8FC",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      padding: 10,
+    },
+
+
+    liveLabel: {
+      color:
+        "#9999AA",
+      fontSize: 11,
+      textAlign:
+        "center",
+    },
+
+
+    liveValue: {
+      marginTop: 4,
+      color:
+        "#303044",
+      fontSize: 15,
+      fontWeight: "800",
     },
 
 
     timeoutBox: {
-      marginTop: 14,
-
-      padding: 13,
-
-      borderRadius: 15,
-
-      backgroundColor:
-        "#FFF5E8",
-
+      marginTop: 16,
+      padding: 14,
+      borderRadius: 16,
       borderWidth: 1,
-
       borderColor:
         "#FFE1B8",
+      backgroundColor:
+        "#FFF5E8",
     },
 
 
     timeoutText: {
-      color: "#A66A00",
-
+      color:
+        "#A66A00",
+      fontSize: 12,
+      fontWeight: "700",
+      lineHeight: 18,
       textAlign:
         "center",
-
-      fontSize: 12,
-
-      fontWeight: "700",
     },
 
 
-    metricsGrid: {
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 8,
-
-      marginTop: 20,
+    resultScreen: {
+      width: "100%",
     },
 
 
-    metricBox: {
-      width: "48%",
-
-      minHeight: 72,
-
-      borderRadius: 16,
-
+    resultPanel: {
+      width: "100%",
+      padding: 22,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
       backgroundColor:
-        "#F7F8FC",
-
+        "#FFFFFF",
       alignItems:
         "center",
-
-      justifyContent:
-        "center",
     },
 
 
-    scoreBox: {
-      width: "100%",
-
-      minHeight: 72,
-
+    resultIcon: {
+      width: 64,
+      height: 64,
       borderRadius: 16,
-
       backgroundColor:
         "#F2EEFF",
-
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
 
-    metricLabel: {
-      color: "#77778A",
+    resultCategory: {
+      marginTop: 18,
+      color:
+        "#7C6CFF",
+      fontSize: 12,
+      fontWeight: "800",
+      textAlign:
+        "center",
+    },
 
+
+    resultTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 27,
+      fontWeight: "800",
+      textAlign:
+        "center",
+    },
+
+
+    resultLevel: {
+      marginTop: 8,
+      color:
+        "#77778A",
+      fontSize: 14,
+    },
+
+
+    resultGrid: {
+      width: "100%",
+      marginTop: 24,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+    },
+
+
+    resultMetric: {
+      width: "48%",
+      minHeight: 95,
+      padding: 12,
+      borderRadius: 16,
+      backgroundColor:
+        "#F7F8FC",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    resultMetricValue: {
+      marginTop: 6,
+      color:
+        "#303044",
+      fontSize: 22,
+      fontWeight: "800",
+    },
+
+
+    secondaryGrid: {
+      width: "100%",
+      marginTop: 10,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+    },
+
+
+    secondaryCard: {
+      width: "48%",
+      minHeight: 85,
+      padding: 15,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      justifyContent:
+        "center",
+    },
+
+
+    secondaryValue: {
+      marginTop: 5,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    insightBox: {
+      width: "100%",
+      marginTop: 16,
+      padding: 17,
+      borderRadius: 16,
+      backgroundColor:
+        "#F2EEFF",
+    },
+
+
+    insightTitle: {
+      color:
+        "#7C6CFF",
       fontSize: 11,
+      fontWeight: "800",
     },
 
 
-    metricValue: {
-      color: "#202033",
-
-      fontSize: 19,
-
-      fontWeight: "800",
-
-      marginTop: 3,
+    insightText: {
+      marginTop: 7,
+      color:
+        "#555568",
+      fontSize: 13,
+      lineHeight: 20,
     },
 
 
-    metricValueSmall: {
-      color: "#202033",
+    restartButton: {
+      width: "100%",
+      height: 52,
+      marginTop: 20,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#E4E4EC",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 8,
+    },
 
-      fontSize: 15,
 
-      fontWeight: "800",
-
-      marginTop: 3,
+    restartText: {
+      color:
+        "#303044",
+      fontWeight: "700",
     },
 
   });

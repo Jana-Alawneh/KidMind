@@ -14,12 +14,14 @@ import {
 } from "react-native";
 
 import {
-  Clock3,
-  Grid3X3,
-  Play,
   RotateCcw,
-  Trophy,
 } from "lucide-react-native";
+
+import Svg, {
+  Circle,
+  Polygon,
+  Rect,
+} from "react-native-svg";
 
 
 type GameStatus =
@@ -46,6 +48,26 @@ type GameResult = {
 };
 
 
+type FinalResult =
+  GameResult & {
+    moves: number;
+
+    errors: number;
+
+    attempts: number;
+
+    correctPieces: number;
+
+    totalPieces: number;
+
+    time: number;
+
+    shape: string;
+
+    recommendation: string;
+  };
+
+
 type PuzzlePathProps = {
   embedded?: boolean;
 
@@ -66,12 +88,11 @@ type Tile = {
 
 type ShapeItem = {
   name: string;
-
-  symbol: string;
 };
 
 
 const LEVELS = {
+
   1: {
     name: "Easy",
     size: 2,
@@ -89,49 +110,44 @@ const LEVELS = {
     size: 4,
     time: 120,
   },
+
 };
 
 
 const SHAPES: ShapeItem[] = [
+
   {
     name: "Circle",
-    symbol: "●",
   },
 
   {
     name: "Triangle",
-    symbol: "▲",
   },
 
   {
     name: "Square",
-    symbol: "■",
   },
 
   {
     name: "Diamond",
-    symbol: "◆",
   },
 
   {
     name: "Rectangle",
-    symbol: "▬",
   },
 
   {
     name: "Star",
-    symbol: "★",
   },
 
   {
     name: "Hexagon",
-    symbol: "⬢",
   },
 
   {
     name: "Plus",
-    symbol: "✚",
   },
+
 ];
 
 
@@ -176,13 +192,13 @@ const shuffle = <T,>(
 
 const createPuzzle = (
   size: number
-) => {
+): Tile[] => {
 
   const total =
     size * size;
 
 
-  const solved =
+  const pieces =
     Array.from(
       {
         length: total,
@@ -196,43 +212,43 @@ const createPuzzle = (
     );
 
 
-  let result =
+  const shuffled =
     shuffle(
-      solved
+      pieces
     );
 
 
   const alreadySolved =
-    result.every(
+    shuffled.every(
       (
-        tile,
+        piece,
         index
       ) =>
-        tile.id ===
+        piece.id ===
         index
     );
 
 
   if (
     alreadySolved &&
-    result.length > 1
+    shuffled.length > 1
   ) {
 
-    const temporary =
-      result[0];
+    const first =
+      shuffled[0];
 
 
-    result[0] =
-      result[1];
+    shuffled[0] =
+      shuffled[1];
 
 
-    result[1] =
-      temporary;
+    shuffled[1] =
+      first;
 
   }
 
 
-  return result;
+  return shuffled;
 
 };
 
@@ -274,21 +290,13 @@ const countCorrectPieces = (
 
   return tiles.reduce(
     (
-      count,
-      tile,
+      total,
+      piece,
       index
-    ) => {
-
-      if (
-        tile.id === index
-      ) {
-        return count + 1;
-      }
-
-
-      return count;
-
-    },
+    ) =>
+      piece.id === index
+        ? total + 1
+        : total,
     0
   );
 
@@ -301,37 +309,322 @@ const areNeighbors = (
   size: number
 ) => {
 
+  const difference =
+    Math.abs(
+      firstIndex -
+      secondIndex
+    );
+
+
   const firstRow =
     Math.floor(
-      firstIndex / size
+      firstIndex /
+      size
     );
 
 
   const secondRow =
     Math.floor(
-      secondIndex / size
+      secondIndex /
+      size
     );
 
 
-  const sameRow =
+  const horizontal =
+    difference === 1 &&
     firstRow ===
-      secondRow &&
-    Math.abs(
-      firstIndex -
-      secondIndex
-    ) === 1;
+      secondRow;
 
 
   const vertical =
-    Math.abs(
-      firstIndex -
-      secondIndex
-    ) === size;
+    difference ===
+    size;
 
 
   return (
-    sameRow ||
+    horizontal ||
     vertical
+  );
+
+};
+
+
+const renderShapeContent = (
+  shapeName: string
+) => {
+
+  if (
+    shapeName === "Circle"
+  ) {
+
+    return (
+      <>
+        <Circle
+          cx="50"
+          cy="50"
+          r="34"
+          fill="#7C6CFF"
+        />
+
+        <Circle
+          cx="50"
+          cy="50"
+          r="16"
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  if (
+    shapeName === "Triangle"
+  ) {
+
+    return (
+      <>
+        <Polygon
+          points="50,8 92,88 8,88"
+          fill="#7C6CFF"
+        />
+
+        <Polygon
+          points="50,30 70,68 30,68"
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  if (
+    shapeName === "Square"
+  ) {
+
+    return (
+      <>
+        <Rect
+          x="12"
+          y="12"
+          width="76"
+          height="76"
+          rx="8"
+          fill="#7C6CFF"
+        />
+
+        <Rect
+          x="30"
+          y="30"
+          width="40"
+          height="40"
+          rx="5"
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  if (
+    shapeName === "Diamond"
+  ) {
+
+    return (
+      <>
+        <Polygon
+          points="50,7 93,50 50,93 7,50"
+          fill="#7C6CFF"
+        />
+
+        <Polygon
+          points="50,27 73,50 50,73 27,50"
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  if (
+    shapeName === "Rectangle"
+  ) {
+
+    return (
+      <>
+        <Rect
+          x="8"
+          y="25"
+          width="84"
+          height="50"
+          rx="8"
+          fill="#7C6CFF"
+        />
+
+        <Rect
+          x="27"
+          y="37"
+          width="46"
+          height="26"
+          rx="5"
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  if (
+    shapeName === "Star"
+  ) {
+
+    return (
+      <>
+        <Polygon
+          points="
+            50,7
+            61,36
+            92,36
+            67,54
+            77,86
+            50,67
+            23,86
+            33,54
+            8,36
+            39,36
+          "
+          fill="#7C6CFF"
+        />
+
+        <Polygon
+          points="
+            50,27
+            56,43
+            73,43
+            59,53
+            64,70
+            50,60
+            36,70
+            41,53
+            27,43
+            44,43
+          "
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  if (
+    shapeName === "Hexagon"
+  ) {
+
+    return (
+      <>
+        <Polygon
+          points="
+            28,10
+            72,10
+            92,50
+            72,90
+            28,90
+            8,50
+          "
+          fill="#7C6CFF"
+        />
+
+        <Polygon
+          points="
+            37,28
+            63,28
+            75,50
+            63,72
+            37,72
+            25,50
+          "
+          fill="#A59AFF"
+        />
+      </>
+    );
+
+  }
+
+
+  return (
+    <>
+      <Rect
+        x="38"
+        y="8"
+        width="24"
+        height="84"
+        rx="6"
+        fill="#7C6CFF"
+      />
+
+      <Rect
+        x="8"
+        y="38"
+        width="84"
+        height="24"
+        rx="6"
+        fill="#7C6CFF"
+      />
+
+      <Rect
+        x="44"
+        y="27"
+        width="12"
+        height="46"
+        rx="3"
+        fill="#A59AFF"
+      />
+
+      <Rect
+        x="27"
+        y="44"
+        width="46"
+        height="12"
+        rx="3"
+        fill="#A59AFF"
+      />
+    </>
+  );
+
+};
+
+
+const ShapeSvg = ({
+  shapeName,
+  viewBox =
+    "0 0 100 100",
+}: {
+  shapeName: string;
+  viewBox?: string;
+}) => {
+
+  return (
+
+    <Svg
+      width="100%"
+      height="100%"
+      viewBox={
+        viewBox
+      }
+      preserveAspectRatio="none"
+    >
+
+      {renderShapeContent(
+        shapeName
+      )}
+
+    </Svg>
+
   );
 
 };
@@ -344,30 +637,30 @@ export default function PuzzlePath({
   onComplete,
 }: PuzzlePathProps) {
 
-  const levelId =
-    resolveLevelId(
-      difficulty
-    );
+  const [
+    level,
+    setLevel,
+  ] = useState(1);
+
+
+  const activeLevelId =
+    embedded
+      ? resolveLevelId(
+          difficulty
+        )
+      : level;
 
 
   const config =
     useMemo(
       () =>
         LEVELS[
-          levelId as keyof typeof LEVELS
+          activeLevelId as keyof typeof LEVELS
         ],
       [
-        levelId,
+        activeLevelId,
       ]
     );
-
-
-  const [
-    level,
-    setLevel,
-  ] = useState(
-    levelId
-  );
 
 
   const [
@@ -399,9 +692,9 @@ export default function PuzzlePath({
   const [
     selectedTile,
     setSelectedTile,
-  ] = useState<number | null>(
-    null
-  );
+  ] = useState<
+    number | null
+  >(null);
 
 
   const [
@@ -433,9 +726,9 @@ export default function PuzzlePath({
   const [
     finalResult,
     setFinalResult,
-  ] = useState<GameResult | null>(
-    null
-  );
+  ] = useState<
+    FinalResult | null
+  >(null);
 
 
   const tilesRef =
@@ -683,8 +976,16 @@ export default function PuzzlePath({
               : "Failed";
 
 
+        const recommendation =
+          accuracy >= 85
+            ? "Good Performance"
+            : accuracy >= 70
+            ? "Monitor Progress"
+            : "Needs Further Assessment";
+
+
         const result:
-          GameResult = {
+          FinalResult = {
 
           status,
 
@@ -706,7 +1007,28 @@ export default function PuzzlePath({
           reaction_time:
             null,
 
+          moves:
+            finalMoves,
+
+          errors:
+            finalErrors,
+
+          attempts,
+
+          correctPieces,
+
+          totalPieces,
+
+          time:
+            finalTime,
+
+          shape:
+            shape.name,
+
+          recommendation,
+
           result_data: {
+
             domain:
               "Visual Spatial Skills",
 
@@ -753,7 +1075,9 @@ export default function PuzzlePath({
 
             result_status:
               status,
+
           },
+
         };
 
 
@@ -779,9 +1103,30 @@ export default function PuzzlePath({
 
         if (onComplete) {
 
-          onComplete(
-            result
-          );
+          onComplete({
+
+            status:
+              result.status,
+
+            duration_seconds:
+              result.duration_seconds,
+
+            score:
+              result.score,
+
+            accuracy:
+              result.accuracy,
+
+            mistakes:
+              result.mistakes,
+
+            reaction_time:
+              result.reaction_time,
+
+            result_data:
+              result.result_data,
+
+          });
 
         }
 
@@ -863,7 +1208,8 @@ export default function PuzzlePath({
     ) {
 
       finishGame(
-        false
+        false,
+        tilesRef.current
       );
 
     }
@@ -882,6 +1228,7 @@ export default function PuzzlePath({
   ) => {
 
     if (
+      !started ||
       paused ||
       finished
     ) {
@@ -952,29 +1299,29 @@ export default function PuzzlePath({
     }
 
 
-    const nextTiles = [
+    const updated = [
       ...tilesRef.current,
     ];
 
 
-    const temporary =
-      nextTiles[
+    const first =
+      updated[
         selectedTile
       ];
 
 
-    nextTiles[
+    updated[
       selectedTile
     ] =
-      nextTiles[
+      updated[
         index
       ];
 
 
-    nextTiles[
+    updated[
       index
     ] =
-      temporary;
+      first;
 
 
     const nextMoves =
@@ -987,7 +1334,7 @@ export default function PuzzlePath({
 
 
     tilesRef.current =
-      nextTiles;
+      updated;
 
 
     setMoves(
@@ -996,7 +1343,7 @@ export default function PuzzlePath({
 
 
     setTiles(
-      nextTiles
+      updated
     );
 
 
@@ -1006,13 +1353,13 @@ export default function PuzzlePath({
 
 
     const solved =
-      nextTiles.every(
+      updated.every(
         (
-          tile,
-          tileIndex
+          piece,
+          pieceIndex
         ) =>
-          tile.id ===
-          tileIndex
+          piece.id ===
+          pieceIndex
       );
 
 
@@ -1023,7 +1370,7 @@ export default function PuzzlePath({
 
           finishGame(
             true,
-            nextTiles
+            updated
           );
 
         },
@@ -1091,12 +1438,12 @@ export default function PuzzlePath({
   };
 
 
-  const restartGame =
+  const restart =
     () => {
 
       startGame();
 
-  };
+    };
 
 
   const totalPieces =
@@ -1115,20 +1462,6 @@ export default function PuzzlePath({
     errors;
 
 
-  const liveScore =
-    totalPieces > 0
-      ? Math.min(
-          100,
-          Math.round(
-            (
-              correctPieces /
-              totalPieces
-            ) * 100
-          )
-        )
-      : 0;
-
-
   const liveAccuracy =
     attempts > 0
       ? Math.min(
@@ -1137,6 +1470,20 @@ export default function PuzzlePath({
             (
               moves /
               attempts
+            ) * 100
+          )
+        )
+      : 0;
+
+
+  const liveScore =
+    totalPieces > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (
+              correctPieces /
+              totalPieces
             ) * 100
           )
         )
@@ -1153,34 +1500,30 @@ export default function PuzzlePath({
 
   if (
     !embedded &&
-    !started
+    !started &&
+    !finished
   ) {
 
     return (
 
       <View
         style={
-          styles.startContainer
+          styles.standaloneScreen
         }
       >
 
-        <View
+        <Text
           style={
-            styles.iconBox
+            styles.category
           }
         >
-
-          <Grid3X3
-            size={34}
-            color="#7B6EF6"
-          />
-
-        </View>
+          COGNITIVE ASSESSMENT
+        </Text>
 
 
         <Text
           style={
-            styles.title
+            styles.selectionTitle
           }
         >
           Puzzle Path
@@ -1189,16 +1532,16 @@ export default function PuzzlePath({
 
         <Text
           style={
-            styles.description
+            styles.selectionDescription
           }
         >
-          Arrange the puzzle pieces in the correct order using neighboring swaps.
+          Look at the shape, then arrange the pieces to recreate it.
         </Text>
 
 
         <View
           style={
-            styles.levelsContainer
+            styles.levelList
           }
         >
 
@@ -1224,9 +1567,7 @@ export default function PuzzlePath({
               return (
 
                 <Pressable
-                  key={
-                    id
-                  }
+                  key={id}
                   onPress={() => {
 
                     selectLevel(
@@ -1238,17 +1579,54 @@ export default function PuzzlePath({
                     styles.levelCard,
 
                     selected &&
-                      styles.levelCardSelected,
+                      styles
+                        .levelCardSelected,
                   ]}
                 >
 
-                  <Text
-                    style={[
-                      styles.levelName,
+                  <View
+                    style={
+                      styles.levelTopRow
+                    }
+                  >
 
-                      selected &&
-                        styles.levelNameSelected,
-                    ]}
+                    <View
+                      style={
+                        styles.levelNumber
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles
+                            .levelNumberText
+                        }
+                      >
+                        {id}
+                      </Text>
+
+                    </View>
+
+
+                    {selected && (
+
+                      <Text
+                        style={
+                          styles.selectedText
+                        }
+                      >
+                        SELECTED
+                      </Text>
+
+                    )}
+
+                  </View>
+
+
+                  <Text
+                    style={
+                      styles.levelTitle
+                    }
                   >
                     {item.name}
                   </Text>
@@ -1256,20 +1634,78 @@ export default function PuzzlePath({
 
                   <Text
                     style={
-                      styles.levelDetails
+                      styles.levelDescription
                     }
                   >
-                    {item.size}x{item.size} puzzle
+                    Rebuild the geometric shape by arranging its pieces.
                   </Text>
 
 
-                  <Text
+                  <View
                     style={
-                      styles.levelDetails
+                      styles.levelDivider
+                    }
+                  />
+
+
+                  <View
+                    style={
+                      styles.levelStats
                     }
                   >
-                    {item.time}s
-                  </Text>
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Puzzle
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.size}
+                        {" × "}
+                        {item.size}
+                      </Text>
+
+                    </View>
+
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Time
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.time}s
+                      </Text>
+
+                    </View>
+
+                  </View>
 
                 </Pressable>
 
@@ -1286,22 +1722,16 @@ export default function PuzzlePath({
             startGame
           }
           style={
-            styles.primaryButton
+            styles.startButton
           }
         >
 
-          <Play
-            size={19}
-            color="#FFFFFF"
-          />
-
-
           <Text
             style={
-              styles.primaryButtonText
+              styles.startButtonText
             }
           >
-            Start Game
+            Start Assessment
           </Text>
 
         </Pressable>
@@ -1321,183 +1751,339 @@ export default function PuzzlePath({
     return (
 
       <View
-        style={
-          styles.resultContainer
-        }
+        style={[
+          styles.resultScreen,
+
+          !embedded &&
+            styles.standaloneScreen,
+        ]}
       >
 
         <View
           style={
-            styles.iconBox
-          }
-        >
-
-          <Trophy
-            size={34}
-            color={
-              completed
-                ? "#7B6EF6"
-                : "#EF6A8A"
-            }
-          />
-
-        </View>
-
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Puzzle Path Results
-        </Text>
-
-
-        <Text
-          style={
-            styles.resultStatus
-          }
-        >
-          {finalResult.status}
-        </Text>
-
-
-        <View
-          style={
-            styles.resultGrid
+            styles.resultPanel
           }
         >
 
           <View
             style={
-              styles.resultCard
+              styles.resultIcon
             }
           >
 
-            <Text
+            <View
               style={
-                styles.metricLabel
+                styles.resultDot
               }
-            >
-              Score
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.score}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Accuracy
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.accuracy ?? 0}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Moves
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {moves}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Errors
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {errors}
-            </Text>
-
-          </View>
-
-        </View>
-
-
-        {!embedded && (
-
-          <Pressable
-            onPress={
-              restartGame
-            }
-            style={
-              styles.secondaryButton
-            }
-          >
-
-            <RotateCcw
-              size={18}
-              color="#7B6EF6"
             />
 
+          </View>
+
+
+          <Text
+            style={
+              styles.resultCategory
+            }
+          >
+            {completed
+              ? "ASSESSMENT COMPLETED"
+              : "TIME COMPLETED"
+            }
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultTitle
+            }
+          >
+            Puzzle Path Results
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultLevel
+            }
+          >
+            {config.name} Level
+          </Text>
+
+
+          <View
+            style={
+              styles.resultGrid
+            }
+          >
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Score
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.score}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Accuracy
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.accuracy ?? 0}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Moves
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.moves}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Errors
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.errors}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.secondaryGrid
+            }
+          >
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Correct Pieces
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.correctPieces}
+                /
+                {finalResult.totalPieces}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Attempts
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.attempts}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Game Time
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.time}s
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Shape
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.shape}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.insightBox
+            }
+          >
 
             <Text
               style={
-                styles.secondaryButtonText
+                styles.insightTitle
               }
             >
-              Play Again
+              PERFORMANCE INSIGHT
             </Text>
 
-          </Pressable>
 
-        )}
+            <Text
+              style={
+                styles.insightText
+              }
+            >
+              {finalResult.recommendation}
+            </Text>
+
+          </View>
+
+
+          {!embedded && (
+
+            <Pressable
+              onPress={
+                restart
+              }
+              style={
+                styles.restartButton
+              }
+            >
+
+              <RotateCcw
+                size={18}
+                color="#303044"
+              />
+
+
+              <Text
+                style={
+                  styles.restartText
+                }
+              >
+                Restart
+              </Text>
+
+            </Pressable>
+
+          )}
+
+        </View>
 
       </View>
 
@@ -1509,35 +2095,34 @@ export default function PuzzlePath({
   return (
 
     <View
-      style={
-        styles.container
-      }
+      style={[
+        styles.gameScreen,
+
+        !embedded &&
+          styles.standaloneScreen,
+      ]}
     >
 
       <View
         style={
-          styles.header
+          styles.gameHeader
         }
       >
 
-        <View
-          style={
-            styles.headerTextBox
-          }
-        >
+        <View>
 
           <Text
             style={
               styles.category
             }
           >
-            VISUAL SPATIAL SKILLS
+            VISUAL-SPATIAL ASSESSMENT
           </Text>
 
 
           <Text
             style={
-              styles.title
+              styles.gameTitle
             }
           >
             Puzzle Path
@@ -1548,54 +2133,52 @@ export default function PuzzlePath({
 
         <View
           style={
-            styles.levelBadge
+            styles.statsRow
           }
         >
 
-          <Text
+          <View
             style={
-              styles.levelBadgeText
+              styles.headerStat
             }
           >
-            {config.name}
-          </Text>
-
-        </View>
-
-      </View>
-
-
-      <View
-        style={
-          styles.timeRow
-        }
-      >
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
+              }
+            >
+              Level
+            </Text>
+
+            <Text
+              style={
+                styles.headerStatValue
+              }
+            >
+              {config.name}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.headerTimeStat
+            }
+          >
+
+            <Text
+              style={
+                styles.headerTimeLabel
               }
             >
               Game Time
             </Text>
 
-
             <Text
               style={
-                styles.timeValue
+                styles.headerTimeValue
               }
             >
               {gameTime}s
@@ -1603,34 +2186,24 @@ export default function PuzzlePath({
 
           </View>
 
-        </View>
 
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
+          <View
+            style={
+              styles.headerStat
+            }
+          >
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
               }
             >
               Time Left
             </Text>
 
-
             <Text
               style={
-                styles.timeValue
+                styles.headerStatValue
               }
             >
               {timeLeft}s
@@ -1666,290 +2239,336 @@ export default function PuzzlePath({
 
       <View
         style={
-          styles.targetCard
+          styles.board
         }
       >
 
-        <Text
+        <View
           style={
-            styles.targetLabel
+            styles.targetSection
           }
         >
-          TARGET SHAPE
-        </Text>
+
+          <Text
+            style={
+              styles.targetLabel
+            }
+          >
+            TARGET SHAPE
+          </Text>
 
 
-        <Text
+          <Text
+            style={
+              styles.targetDescription
+            }
+          >
+            Rebuild this shape below
+          </Text>
+
+
+          <View
+            style={
+              styles.targetPreview
+            }
+          >
+
+            <ShapeSvg
+              shapeName={
+                shape.name
+              }
+            />
+
+          </View>
+
+
+          <Text
+            style={
+              styles.targetName
+            }
+          >
+            {shape.name}
+          </Text>
+
+        </View>
+
+
+        <View
           style={
-            styles.targetShape
+            styles.arrangeSection
           }
         >
-          {shape.symbol}
-        </Text>
+
+          <Text
+            style={
+              styles.arrangeTitle
+            }
+          >
+            ARRANGE THE PIECES
+          </Text>
 
 
-        <Text
-          style={
-            styles.targetName
-          }
+          <Text
+            style={
+              styles.arrangeDescription
+            }
+          >
+            Select two neighboring pieces to swap them.
+          </Text>
+
+        </View>
+
+
+        <View
+          style={[
+            styles.puzzleGrid,
+
+            {
+              gap:
+                config.size === 4
+                  ? 6
+                  : 8,
+            },
+          ]}
         >
-          {shape.name}
-        </Text>
+
+          {tiles.map(
+            (
+              piece,
+              index
+            ) => {
+
+              const selected =
+                selectedTile ===
+                index;
 
 
-        <Text
-          style={
-            styles.targetInstruction
-          }
-        >
-          Arrange the numbered pieces from 1 to {totalPieces}.
-        </Text>
-
-      </View>
+              const row =
+                Math.floor(
+                  piece.id /
+                  config.size
+                );
 
 
-      <View
-        style={[
-          styles.puzzleGrid,
-
-          {
-            gap:
-              config.size === 4
-                ? 6
-                : 9,
-          },
-        ]}
-      >
-
-        {tiles.map(
-          (
-            tile,
-            index
-          ) => {
-
-            const selected =
-              selectedTile ===
-              index;
+              const column =
+                piece.id %
+                config.size;
 
 
-            const correct =
-              tile.id ===
-              index;
+              const viewWidth =
+                100 /
+                config.size;
 
 
-            const tileWidth =
-              config.size === 2
-                ? "47%"
-                : config.size === 3
-                ? "30%"
-                : "22%";
+              const viewHeight =
+                100 /
+                config.size;
 
 
-            return (
+              const viewX =
+                column *
+                viewWidth;
 
-              <Pressable
-                key={
-                  `${tile.id}-${index}`
-                }
-                onPress={() => {
 
-                  handleTilePress(
-                    index
-                  );
+              const viewY =
+                row *
+                viewHeight;
 
-                }}
-                disabled={
-                  paused ||
-                  finished
-                }
-                style={[
-                  styles.tile,
 
-                  {
-                    width:
-                      tileWidth,
-                  },
+              const viewBox =
+                `${viewX} ${viewY} ${viewWidth} ${viewHeight}`;
 
-                  selected &&
-                    styles.tileSelected,
 
-                  correct &&
-                    styles.tileCorrect,
+              const tileWidth =
+                config.size === 2
+                  ? "47%"
+                  : config.size === 3
+                  ? "30%"
+                  : "22%";
 
-                  paused &&
-                    styles.tilePaused,
-                ]}
-              >
 
-                <Text
+              return (
+
+                <Pressable
+                  key={
+                    `${piece.id}-${index}`
+                  }
+                  onPress={() => {
+
+                    handleTilePress(
+                      index
+                    );
+
+                  }}
+                  disabled={
+                    paused ||
+                    finished
+                  }
                   style={[
-                    styles.tileShape,
+                    styles.tile,
 
-                    config.size === 4 &&
-                      styles.tileShapeSmall,
+                    {
+                      width:
+                        tileWidth,
+                    },
+
+                    selected
+                      ? styles.tileSelected
+                      : styles.tileNormal,
+
+                    paused &&
+                      styles.tilePaused,
                   ]}
                 >
-                  {shape.symbol}
-                </Text>
 
+                  <ShapeSvg
+                    shapeName={
+                      shape.name
+                    }
+                    viewBox={
+                      viewBox
+                    }
+                  />
 
-                <Text
-                  style={[
-                    styles.tileNumber,
+                </Pressable>
 
-                    config.size === 4 &&
-                      styles.tileNumberSmall,
-                  ]}
-                >
-                  {tile.id + 1}
-                </Text>
+              );
 
-              </Pressable>
-
-            );
-
-          }
-        )}
-
-      </View>
-
-
-      <Text
-        style={
-          styles.instruction
-        }
-      >
-        Tap one piece, then tap a neighboring piece to swap them.
-      </Text>
-
-
-      <View
-        style={
-          styles.metricsGrid
-        }
-      >
-
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
             }
-          >
-            Correct Pieces
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {correctPieces}/{totalPieces}
-          </Text>
+          )}
 
         </View>
 
 
         <View
           style={
-            styles.metricBox
+            styles.liveMetrics
           }
         >
 
-          <Text
+          <View
             style={
-              styles.metricLabel
+              styles.liveMetric
             }
           >
-            Moves
-          </Text>
 
-          <Text
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Correct Pieces
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {correctPieces}/{totalPieces}
+            </Text>
+
+          </View>
+
+
+          <View
             style={
-              styles.metricValue
+              styles.liveMetric
             }
           >
-            {moves}
-          </Text>
 
-        </View>
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Moves
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {moves}
+            </Text>
+
+          </View>
 
 
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
+          <View
             style={
-              styles.metricLabel
+              styles.liveMetric
             }
           >
-            Errors
-          </Text>
 
-          <Text
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Errors
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {errors}
+            </Text>
+
+          </View>
+
+
+          <View
             style={
-              styles.metricValue
+              styles.liveMetric
             }
           >
-            {errors}
-          </Text>
 
-        </View>
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Accuracy
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {liveAccuracy}%
+            </Text>
+
+          </View>
 
 
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
+          <View
             style={
-              styles.metricLabel
+              styles.liveMetric
             }
           >
-            Accuracy
-          </Text>
 
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {liveAccuracy}%
-          </Text>
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Score
+            </Text>
 
-        </View>
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {liveScore}%
+            </Text>
 
-
-        <View
-          style={
-            styles.scoreBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Score
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {liveScore}%
-          </Text>
+          </View>
 
         </View>
 
@@ -1965,603 +2584,643 @@ export default function PuzzlePath({
 const styles =
   StyleSheet.create({
 
-    container: {
+    standaloneScreen: {
       width: "100%",
-
-      padding: 18,
-
-      borderRadius: 24,
-
+      minHeight: "100%",
+      padding: 20,
       backgroundColor:
-        "#FFFFFF",
+        "#F7F8FC",
     },
 
 
-    startContainer: {
+    gameScreen: {
       width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-    },
-
-
-    resultContainer: {
-      width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-    },
-
-
-    iconBox: {
-      width: 64,
-
-      height: 64,
-
-      borderRadius: 20,
-
-      backgroundColor:
-        "#EEE9FF",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    title: {
-      color: "#202033",
-
-      fontSize: 25,
-
-      fontWeight: "800",
-
-      marginTop: 5,
     },
 
 
     category: {
-      color: "#7B6EF6",
-
+      color:
+        "#7C6CFF",
       fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+    },
 
+
+    selectionTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 34,
       fontWeight: "800",
     },
 
 
-    description: {
-      color: "#77778A",
-
-      textAlign:
-        "center",
-
-      lineHeight: 21,
-
+    selectionDescription: {
       marginTop: 10,
+      color:
+        "#77778A",
+      fontSize: 15,
+      lineHeight: 22,
     },
 
 
-    levelsContainer: {
-      width: "100%",
-
-      gap: 10,
-
-      marginTop: 22,
+    levelList: {
+      marginTop: 28,
+      gap: 16,
     },
 
 
     levelCard: {
-      width: "100%",
-
-      padding: 17,
-
-      borderRadius: 18,
-
+      padding: 22,
+      borderRadius: 28,
       borderWidth: 1,
-
       borderColor:
-        "#E2E8F0",
-
+        "#E8E8F0",
       backgroundColor:
-        "#F8FAFC",
+        "#FFFFFF",
     },
 
 
     levelCardSelected: {
       borderColor:
-        "#7B6EF6",
-
+        "#7C6CFF",
       backgroundColor:
-        "#F4F1FF",
+        "#F5F2FF",
     },
 
 
-    levelName: {
-      color: "#202033",
-
-      fontSize: 17,
-
-      fontWeight: "800",
-    },
-
-
-    levelNameSelected: {
-      color: "#6D5CE7",
-    },
-
-
-    levelDetails: {
-      color: "#77778A",
-
-      fontSize: 13,
-
-      marginTop: 4,
-    },
-
-
-    primaryButton: {
-      width: "100%",
-
-      height: 52,
-
-      borderRadius: 16,
-
-      backgroundColor:
-        "#7B6EF6",
-
+    levelTopRow: {
       flexDirection:
         "row",
-
       alignItems:
         "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    primaryButtonText: {
-      color: "#FFFFFF",
-
-      fontSize: 16,
-
-      fontWeight: "800",
-    },
-
-
-    secondaryButton: {
-      minHeight: 48,
-
-      paddingHorizontal: 22,
-
-      borderRadius: 15,
-
-      borderWidth: 1,
-
-      borderColor:
-        "#DDD7FF",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    secondaryButtonText: {
-      color: "#7B6EF6",
-
-      fontWeight: "800",
-    },
-
-
-    resultStatus: {
-      color: "#64748B",
-
-      marginTop: 6,
-
-      fontWeight: "700",
-    },
-
-
-    resultGrid: {
-      width: "100%",
-
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 10,
-
-      marginTop: 22,
-    },
-
-
-    resultCard: {
-      width: "48%",
-
-      minHeight: 90,
-
-      borderRadius: 18,
-
-      backgroundColor:
-        "#F7F8FC",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    header: {
-      flexDirection:
-        "row",
-
-      alignItems:
-        "flex-start",
-
       justifyContent:
         "space-between",
-
-      gap: 12,
     },
 
 
-    headerTextBox: {
-      flex: 1,
-    },
-
-
-    levelBadge: {
-      paddingHorizontal: 13,
-
-      paddingVertical: 8,
-
-      borderRadius: 15,
-
+    levelNumber: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       backgroundColor:
-        "#EEE9FF",
+        "#7C6CFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
     },
 
 
-    levelBadgeText: {
-      color: "#6D5CE7",
-
-      fontSize: 12,
-
+    levelNumberText: {
+      color:
+        "#FFFFFF",
+      fontSize: 16,
       fontWeight: "800",
     },
 
 
-    timeRow: {
-      flexDirection:
-        "row",
-
-      gap: 10,
-
-      marginTop: 18,
+    selectedText: {
+      color:
+        "#7C6CFF",
+      fontSize: 11,
+      fontWeight: "800",
     },
 
 
-    timeCard: {
-      flex: 1,
+    levelTitle: {
+      marginTop: 20,
+      color:
+        "#202033",
+      fontSize: 20,
+      fontWeight: "800",
+    },
 
-      minHeight: 70,
 
-      padding: 12,
+    levelDescription: {
+      marginTop: 7,
+      color:
+        "#77778A",
+      fontSize: 14,
+      lineHeight: 21,
+    },
 
-      borderRadius: 17,
 
+    levelDivider: {
+      height: 1,
+      marginTop: 20,
+      marginBottom: 16,
       backgroundColor:
-        "#F7F8FC",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      gap: 10,
+        "#EEEEF5",
     },
 
 
-    timeLabel: {
-      color: "#77778A",
+    levelStats: {
+      flexDirection:
+        "row",
+    },
 
+
+    levelStat: {
+      flex: 1,
+    },
+
+
+    smallLabel: {
+      color:
+        "#9999AA",
       fontSize: 11,
     },
 
 
-    timeValue: {
-      color: "#202033",
-
+    smallValue: {
+      marginTop: 4,
+      color:
+        "#303044",
+      fontSize: 15,
       fontWeight: "800",
+    },
 
-      marginTop: 2,
+
+    startButton: {
+      height: 56,
+      marginTop: 24,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    startButtonText: {
+      color:
+        "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "700",
+    },
+
+
+    gameHeader: {
+      gap: 18,
+      marginBottom: 24,
+    },
+
+
+    gameTitle: {
+      marginTop: 4,
+      color:
+        "#202033",
+      fontSize: 30,
+      fontWeight: "800",
+    },
+
+
+    statsRow: {
+      flexDirection:
+        "row",
+      gap: 8,
+    },
+
+
+    headerStat: {
+      flex: 1,
+      minHeight: 67,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+      justifyContent:
+        "center",
+    },
+
+
+    headerTimeStat: {
+      flex: 1,
+      minHeight: 67,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      justifyContent:
+        "center",
+    },
+
+
+    headerStatLabel: {
+      color:
+        "#9999AA",
+      fontSize: 10,
+    },
+
+
+    headerStatValue: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    headerTimeLabel: {
+      color:
+        "rgba(255,255,255,0.75)",
+      fontSize: 10,
+    },
+
+
+    headerTimeValue: {
+      marginTop: 3,
+      color:
+        "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "800",
     },
 
 
     pausedBox: {
-      padding: 13,
-
-      borderRadius: 15,
-
+      marginBottom: 18,
+      padding: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#FDE68A",
       backgroundColor:
-        "#FEF3C7",
-
-      marginTop: 16,
-
+        "#FFFBEB",
       alignItems:
         "center",
     },
 
 
     pausedText: {
-      color: "#B45309",
-
-      fontWeight: "800",
+      color:
+        "#B45309",
+      fontWeight: "700",
     },
 
 
-    targetCard: {
-      marginTop: 18,
-
+    board: {
+      width: "100%",
       padding: 18,
-
-      borderRadius: 22,
-
-      backgroundColor:
-        "#F7F5FF",
-
+      borderRadius: 32,
       borderWidth: 1,
-
       borderColor:
-        "#E5E1FF",
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+    },
 
+
+    targetSection: {
       alignItems:
         "center",
     },
 
 
     targetLabel: {
-      color: "#7B6EF6",
-
+      color:
+        "#7C6CFF",
       fontSize: 11,
-
       fontWeight: "800",
     },
 
 
-    targetShape: {
-      color: "#7B6EF6",
+    targetDescription: {
+      marginTop: 4,
+      color:
+        "#77778A",
+      fontSize: 13,
+    },
 
-      fontSize: 56,
 
-      marginTop: 5,
+    targetPreview: {
+      width: 140,
+      height: 140,
+      marginTop: 14,
+      padding: 12,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor:
+        "#E5E0FF",
+      backgroundColor:
+        "#F5F2FF",
+      overflow:
+        "hidden",
     },
 
 
     targetName: {
-      color: "#202033",
-
-      fontSize: 17,
-
+      marginTop: 10,
+      color:
+        "#303044",
+      fontSize: 16,
       fontWeight: "800",
-
-      marginTop: 2,
     },
 
 
-    targetInstruction: {
-      color: "#64748B",
+    arrangeSection: {
+      marginTop: 28,
+      alignItems:
+        "center",
+    },
 
-      fontSize: 12,
 
+    arrangeTitle: {
+      color:
+        "#9999AA",
+      fontSize: 11,
+      fontWeight: "800",
+    },
+
+
+    arrangeDescription: {
+      marginTop: 4,
+      color:
+        "#77778A",
+      fontSize: 13,
       textAlign:
         "center",
-
-      marginTop: 6,
     },
 
 
     puzzleGrid: {
       width: "100%",
-
+      marginTop: 18,
       flexDirection:
         "row",
-
       flexWrap:
         "wrap",
-
       justifyContent:
         "center",
-
-      marginTop: 20,
     },
 
 
     tile: {
       aspectRatio: 1,
-
-      borderRadius: 18,
-
-      borderWidth: 2,
-
-      borderColor:
-        "#E7E7F0",
-
+      borderRadius: 16,
+      borderWidth: 4,
       backgroundColor:
+        "#F5F2FF",
+      overflow:
+        "hidden",
+    },
+
+
+    tileNormal: {
+      borderColor:
         "#FFFFFF",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
     },
 
 
     tileSelected: {
       borderColor:
-        "#7B6EF6",
-
-      backgroundColor:
-        "#EEE9FF",
-    },
-
-
-    tileCorrect: {
-      borderColor:
-        "#A7E3BD",
-
-      backgroundColor:
-        "#F0FDF4",
+        "#7C6CFF",
+      transform: [
+        {
+          scale: 0.96,
+        },
+      ],
     },
 
 
     tilePaused: {
-      opacity: 0.55,
+      opacity: 0.6,
     },
 
 
-    tileShape: {
-      color: "#7B6EF6",
-
-      fontSize: 28,
-    },
-
-
-    tileShapeSmall: {
-      fontSize: 21,
-    },
-
-
-    tileNumber: {
-      color: "#202033",
-
-      fontSize: 20,
-
-      fontWeight: "900",
-
-      marginTop: 3,
-    },
-
-
-    tileNumberSmall: {
-      fontSize: 16,
-    },
-
-
-    instruction: {
-      color: "#64748B",
-
-      textAlign:
-        "center",
-
-      fontSize: 12,
-
-      lineHeight: 18,
-
-      marginTop: 14,
-    },
-
-
-    metricsGrid: {
+    liveMetrics: {
+      marginTop: 24,
       flexDirection:
         "row",
-
       flexWrap:
         "wrap",
-
-      gap: 8,
-
-      marginTop: 20,
-    },
-
-
-    metricBox: {
-      width: "48%",
-
-      minHeight: 72,
-
-      borderRadius: 16,
-
-      backgroundColor:
-        "#F7F8FC",
-
-      alignItems:
-        "center",
-
       justifyContent:
         "center",
+      gap: 18,
     },
 
 
-    scoreBox: {
+    liveMetric: {
+      minWidth: 52,
+      alignItems:
+        "center",
+    },
+
+
+    liveLabel: {
+      color:
+        "#9999AA",
+      fontSize: 11,
+      textAlign:
+        "center",
+    },
+
+
+    liveValue: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    resultScreen: {
       width: "100%",
+    },
 
-      minHeight: 72,
 
+    resultPanel: {
+      width: "100%",
+      padding: 22,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+    },
+
+
+    resultIcon: {
+      width: 64,
+      height: 64,
       borderRadius: 16,
-
       backgroundColor:
         "#F2EEFF",
-
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
 
-    metricLabel: {
-      color: "#77778A",
-
-      fontSize: 11,
+    resultDot: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
     },
 
 
-    metricValue: {
-      color: "#202033",
-
-      fontSize: 19,
-
+    resultCategory: {
+      marginTop: 18,
+      color:
+        "#7C6CFF",
+      fontSize: 12,
       fontWeight: "800",
+      textAlign:
+        "center",
+    },
 
-      marginTop: 3,
+
+    resultTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 27,
+      fontWeight: "800",
+      textAlign:
+        "center",
+    },
+
+
+    resultLevel: {
+      marginTop: 8,
+      color:
+        "#77778A",
+      fontSize: 14,
+    },
+
+
+    resultGrid: {
+      width: "100%",
+      marginTop: 24,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+    },
+
+
+    resultMetric: {
+      width: "48%",
+      minHeight: 95,
+      padding: 12,
+      borderRadius: 16,
+      backgroundColor:
+        "#F7F8FC",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    resultMetricValue: {
+      marginTop: 6,
+      color:
+        "#303044",
+      fontSize: 22,
+      fontWeight: "800",
+    },
+
+
+    secondaryGrid: {
+      width: "100%",
+      marginTop: 10,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+    },
+
+
+    secondaryCard: {
+      width: "48%",
+      minHeight: 85,
+      padding: 15,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      justifyContent:
+        "center",
+    },
+
+
+    secondaryValue: {
+      marginTop: 5,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    insightBox: {
+      width: "100%",
+      marginTop: 16,
+      padding: 17,
+      borderRadius: 16,
+      backgroundColor:
+        "#F2EEFF",
+    },
+
+
+    insightTitle: {
+      color:
+        "#7C6CFF",
+      fontSize: 11,
+      fontWeight: "800",
+    },
+
+
+    insightText: {
+      marginTop: 7,
+      color:
+        "#555568",
+      fontSize: 13,
+      lineHeight: 20,
+    },
+
+
+    restartButton: {
+      width: "100%",
+      height: 52,
+      marginTop: 20,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#E4E4EC",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 8,
+    },
+
+
+    restartText: {
+      color:
+        "#303044",
+      fontWeight: "700",
     },
 
   });

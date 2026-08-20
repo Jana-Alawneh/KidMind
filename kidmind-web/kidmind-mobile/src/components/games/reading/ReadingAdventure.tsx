@@ -14,12 +14,17 @@ import {
 } from "react-native";
 
 import {
-  BookOpen,
   Clock3,
   Play,
   RotateCcw,
   Trophy,
 } from "lucide-react-native";
+
+import Svg, {
+  Circle,
+  Polygon,
+  Rect,
+} from "react-native-svg";
 
 
 type GameStatus =
@@ -29,60 +34,66 @@ type GameStatus =
 
 type GameResult = {
   status: GameStatus;
-
   duration_seconds: number;
-
   score: number;
-
   accuracy: number | null;
-
   mistakes: number | null;
-
   reaction_time: number | null;
-
   result_data:
     | Record<string, unknown>
     | null;
 };
 
 
+type FinalResult =
+  GameResult & {
+    completed: boolean;
+    totalQuestions: number;
+    correct: number;
+    wrong: number;
+    attempts: number;
+    missed: number;
+    completionRate: number;
+    time: number;
+    recommendation: string;
+  };
+
+
 type ReadingAdventureProps = {
   embedded?: boolean;
-
   paused?: boolean;
-
   difficulty?: string;
-
   onComplete?: (
     result: GameResult
   ) => void;
 };
 
 
+type ShapeType =
+  | "circle"
+  | "square"
+  | "triangle"
+  | "diamond"
+  | "rectangle"
+  | "star";
+
+
 type VisualItem = {
-  symbol: string;
-
+  shape: ShapeType;
   color: string;
-
   label?: string;
+  size?: number;
 };
 
 
 type Question = {
   type: string;
-
   title: string;
-
   description: string;
-
   question: string;
-
   answer: string;
-
   options: string[];
-
   visual: VisualItem[];
-
   direction?: "row" | "column";
 };
 
@@ -116,8 +127,7 @@ const DATA: Question[] = [
       "A red circle is placed next to a blue square.",
     question:
       "Which shape is red?",
-    answer:
-      "Circle",
+    answer: "Circle",
     options: [
       "Circle",
       "Square",
@@ -126,12 +136,12 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#EF6A8A",
         label: "Circle",
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#63B3ED",
         label: "Square",
       },
@@ -145,8 +155,7 @@ const DATA: Question[] = [
       "There are three shapes. Only one of them is blue.",
     question:
       "Which shape is blue?",
-    answer:
-      "Triangle",
+    answer: "Triangle",
     options: [
       "Circle",
       "Triangle",
@@ -155,15 +164,15 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#F2A65A",
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#63B3ED",
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#A59AFF",
       },
     ],
@@ -184,15 +193,14 @@ const DATA: Question[] = [
       "Blue triangle",
       "Red diamond",
     ],
-    direction:
-      "column",
+    direction: "column",
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#A59AFF",
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#7BC67B",
       },
     ],
@@ -215,11 +223,11 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#F2C94C",
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#A59AFF",
       },
     ],
@@ -227,13 +235,13 @@ const DATA: Question[] = [
 
   {
     type: "color",
-    title: "Find the Purple Shape",
+    title:
+      "Find the Purple Shape",
     description:
       "A green triangle, a purple diamond, and a blue circle are shown.",
     question:
       "Which shape is purple?",
-    answer:
-      "Diamond",
+    answer: "Diamond",
     options: [
       "Triangle",
       "Diamond",
@@ -242,15 +250,15 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#7BC67B",
       },
       {
-        symbol: "◆",
+        shape: "diamond",
         color: "#A59AFF",
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#63B3ED",
       },
     ],
@@ -263,8 +271,7 @@ const DATA: Question[] = [
       "Look carefully at the shapes.",
     question:
       "How many circles are there?",
-    answer:
-      "2",
+    answer: "2",
     options: [
       "1",
       "2",
@@ -273,16 +280,19 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#7C6CFF",
+        size: 60,
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#63B3ED",
+        size: 60,
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#EF6A8A",
+        size: 60,
       },
     ],
   },
@@ -294,8 +304,7 @@ const DATA: Question[] = [
       "There are different shapes in the scene.",
     question:
       "How many squares are there?",
-    answer:
-      "2",
+    answer: "2",
     options: [
       "1",
       "2",
@@ -304,20 +313,24 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "■",
+        shape: "square",
         color: "#7C6CFF",
+        size: 60,
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#F2C94C",
+        size: 60,
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#63B3ED",
+        size: 60,
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#EF6A8A",
+        size: 60,
       },
     ],
   },
@@ -329,8 +342,7 @@ const DATA: Question[] = [
       "The scene contains a yellow circle and a purple triangle.",
     question:
       "What color is the circle?",
-    answer:
-      "Yellow",
+    answer: "Yellow",
     options: [
       "Yellow",
       "Purple",
@@ -339,11 +351,11 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#F2C94C",
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#A59AFF",
       },
     ],
@@ -366,15 +378,15 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#63B3ED",
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#7C6CFF",
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#F2C94C",
       },
     ],
@@ -382,13 +394,13 @@ const DATA: Question[] = [
 
   {
     type: "position",
-    title: "The Shape in the Middle",
+    title:
+      "The Shape in the Middle",
     description:
       "A circle is on the left, a triangle is in the middle, and a square is on the right.",
     question:
       "Which shape is in the middle?",
-    answer:
-      "Triangle",
+    answer: "Triangle",
     options: [
       "Circle",
       "Triangle",
@@ -397,16 +409,19 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#63B3ED",
+        size: 60,
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#7C6CFF",
+        size: 60,
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#F2C94C",
+        size: 60,
       },
     ],
   },
@@ -418,8 +433,7 @@ const DATA: Question[] = [
       "A green triangle is beside a blue diamond.",
     question:
       "What color is the diamond?",
-    answer:
-      "Blue",
+    answer: "Blue",
     options: [
       "Green",
       "Blue",
@@ -428,11 +442,11 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#7BC67B",
       },
       {
-        symbol: "◆",
+        shape: "diamond",
         color: "#63B3ED",
       },
     ],
@@ -445,8 +459,7 @@ const DATA: Question[] = [
       "Look at all the shapes carefully.",
     question:
       "How many shapes are shown?",
-    answer:
-      "3",
+    answer: "3",
     options: [
       "1",
       "2",
@@ -455,23 +468,27 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#7C6CFF",
+        size: 60,
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#63B3ED",
+        size: 60,
       },
       {
-        symbol: "◆",
+        shape: "diamond",
         color: "#F2C94C",
+        size: 60,
       },
     ],
   },
 
   {
     type: "position",
-    title: "The Shape on the Right",
+    title:
+      "The Shape on the Right",
     description:
       "A square is on the left and a red circle is on the right.",
     question:
@@ -486,11 +503,11 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "■",
+        shape: "square",
         color: "#63B3ED",
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#EF6A8A",
       },
     ],
@@ -503,8 +520,7 @@ const DATA: Question[] = [
       "A circle, diamond, and triangle are shown.",
     question:
       "Which shape has four corners?",
-    answer:
-      "Diamond",
+    answer: "Diamond",
     options: [
       "Circle",
       "Diamond",
@@ -513,16 +529,19 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#63B3ED",
+        size: 65,
       },
       {
-        symbol: "◆",
+        shape: "diamond",
         color: "#A59AFF",
+        size: 65,
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#F2C94C",
+        size: 65,
       },
     ],
   },
@@ -534,8 +553,7 @@ const DATA: Question[] = [
       "A purple square and an orange triangle are shown.",
     question:
       "Which shape is orange?",
-    answer:
-      "Triangle",
+    answer: "Triangle",
     options: [
       "Square",
       "Triangle",
@@ -544,11 +562,11 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "■",
+        shape: "square",
         color: "#A59AFF",
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#F2A65A",
       },
     ],
@@ -569,15 +587,14 @@ const DATA: Question[] = [
       "Red circle",
       "Green diamond",
     ],
-    direction:
-      "column",
+    direction: "column",
     visual: [
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#63B3ED",
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#A59AFF",
       },
     ],
@@ -590,8 +607,7 @@ const DATA: Question[] = [
       "Two circles and one triangle are shown.",
     question:
       "How many circles can you see?",
-    answer:
-      "2",
+    answer: "2",
     options: [
       "1",
       "2",
@@ -600,16 +616,19 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#EF6A8A",
+        size: 65,
       },
       {
-        symbol: "▲",
+        shape: "triangle",
         color: "#63B3ED",
+        size: 65,
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#7C6CFF",
+        size: 65,
       },
     ],
   },
@@ -621,8 +640,7 @@ const DATA: Question[] = [
       "There are three shapes in the scene.",
     question:
       "Which shape has many points?",
-    answer:
-      "Star",
+    answer: "Star",
     options: [
       "Circle",
       "Star",
@@ -631,16 +649,19 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#63B3ED",
+        size: 65,
       },
       {
-        symbol: "★",
+        shape: "star",
         color: "#F2C94C",
+        size: 65,
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#A59AFF",
+        size: 65,
       },
     ],
   },
@@ -652,8 +673,7 @@ const DATA: Question[] = [
       "A pink circle is beside a green square.",
     question:
       "What color is the circle?",
-    answer:
-      "Pink",
+    answer: "Pink",
     options: [
       "Pink",
       "Green",
@@ -662,11 +682,11 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "●",
+        shape: "circle",
         color: "#EF6A8A",
       },
       {
-        symbol: "■",
+        shape: "square",
         color: "#7BC67B",
       },
     ],
@@ -689,12 +709,76 @@ const DATA: Question[] = [
     ],
     visual: [
       {
-        symbol: "◆",
+        shape: "diamond",
         color: "#A59AFF",
       },
       {
-        symbol: "●",
+        shape: "circle",
         color: "#F2C94C",
+      },
+    ],
+  },
+
+  {
+    type: "count",
+    title: "Four Shapes",
+    description:
+      "Four shapes are arranged in one row.",
+    question:
+      "How many shapes are there?",
+    answer: "4",
+    options: [
+      "2",
+      "3",
+      "4",
+      "5",
+    ],
+    visual: [
+      {
+        shape: "circle",
+        color: "#EF6A8A",
+        size: 55,
+      },
+      {
+        shape: "square",
+        color: "#63B3ED",
+        size: 55,
+      },
+      {
+        shape: "triangle",
+        color: "#7C6CFF",
+        size: 55,
+      },
+      {
+        shape: "diamond",
+        color: "#F2C94C",
+        size: 55,
+      },
+    ],
+  },
+
+  {
+    type: "shape",
+    title: "The Rectangle",
+    description:
+      "A rectangle is shown beside a circle.",
+    question:
+      "Which shape is wider than it is tall?",
+    answer: "Rectangle",
+    options: [
+      "Rectangle",
+      "Circle",
+      "Triangle",
+      "Diamond",
+    ],
+    visual: [
+      {
+        shape: "rectangle",
+        color: "#7C6CFF",
+      },
+      {
+        shape: "circle",
+        color: "#63B3ED",
       },
     ],
   },
@@ -802,6 +886,117 @@ const resolveLevelId = (
 };
 
 
+const ShapeGraphic = ({
+  type,
+  color,
+  size = 80,
+}: {
+  type: ShapeType;
+  color: string;
+  size?: number;
+}) => {
+
+  return (
+
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+    >
+
+      {type ===
+        "circle" && (
+
+        <Circle
+          cx="50"
+          cy="50"
+          r="35"
+          fill={color}
+        />
+
+      )}
+
+
+      {type ===
+        "square" && (
+
+        <Rect
+          x="15"
+          y="15"
+          width="70"
+          height="70"
+          rx="8"
+          fill={color}
+        />
+
+      )}
+
+
+      {type ===
+        "triangle" && (
+
+        <Polygon
+          points="50,10 90,85 10,85"
+          fill={color}
+        />
+
+      )}
+
+
+      {type ===
+        "diamond" && (
+
+        <Polygon
+          points="50,8 92,50 50,92 8,50"
+          fill={color}
+        />
+
+      )}
+
+
+      {type ===
+        "rectangle" && (
+
+        <Rect
+          x="10"
+          y="25"
+          width="80"
+          height="50"
+          rx="8"
+          fill={color}
+        />
+
+      )}
+
+
+      {type ===
+        "star" && (
+
+        <Polygon
+          points="
+            50,8
+            61,37
+            92,37
+            67,55
+            77,86
+            50,67
+            23,86
+            33,55
+            8,37
+            39,37
+          "
+          fill={color}
+        />
+
+      )}
+
+    </Svg>
+
+  );
+
+};
+
+
 export default function ReadingAdventure({
   embedded = true,
   paused = false,
@@ -888,9 +1083,9 @@ export default function ReadingAdventure({
   const [
     selectedAnswer,
     setSelectedAnswer,
-  ] = useState<string | null>(
-    null
-  );
+  ] = useState<
+    string | null
+  >(null);
 
 
   const [
@@ -902,9 +1097,9 @@ export default function ReadingAdventure({
   const [
     finalResult,
     setFinalResult,
-  ] = useState<GameResult | null>(
-    null
-  );
+  ] = useState<
+    FinalResult | null
+  >(null);
 
 
   const questionsRef =
@@ -1100,9 +1295,11 @@ export default function ReadingAdventure({
       (
         completedAll: boolean,
         finalCorrect:
-          number = correctRef.current,
+          number =
+            correctRef.current,
         finalWrong:
-          number = wrongRef.current
+          number =
+            wrongRef.current
       ) => {
 
         if (
@@ -1217,15 +1414,23 @@ export default function ReadingAdventure({
               : "Failed";
 
 
+        const recommendation =
+          accuracy >= 85
+            ? "Excellent reading comprehension and visual attention."
+            : accuracy >= 70
+            ? "Good comprehension skills. Continue monitoring progress."
+            : "The child may benefit from additional reading comprehension and visual attention practice.";
+
+
         const result:
-          GameResult = {
+          FinalResult = {
 
           status,
 
           duration_seconds:
             Math.max(
               0,
-              Math.ceil(
+              Math.floor(
                 finalGameTime
               )
             ),
@@ -1240,7 +1445,30 @@ export default function ReadingAdventure({
           reaction_time:
             null,
 
+          completed:
+            completedAll,
+
+          totalQuestions,
+
+          correct:
+            finalCorrect,
+
+          wrong:
+            finalWrong,
+
+          attempts,
+
+          missed,
+
+          completionRate,
+
+          time:
+            finalGameTime,
+
+          recommendation,
+
           result_data: {
+
             domain:
               "Reading Comprehension",
 
@@ -1281,7 +1509,9 @@ export default function ReadingAdventure({
 
             result_status:
               status,
+
           },
+
         };
 
 
@@ -1310,13 +1540,32 @@ export default function ReadingAdventure({
         );
 
 
-        if (
-          onComplete
-        ) {
+        if (onComplete) {
 
-          onComplete(
-            result
-          );
+          onComplete({
+
+            status:
+              result.status,
+
+            duration_seconds:
+              result.duration_seconds,
+
+            score:
+              result.score,
+
+            accuracy:
+              result.accuracy,
+
+            mistakes:
+              result.mistakes,
+
+            reaction_time:
+              result.reaction_time,
+
+            result_data:
+              result.result_data,
+
+          });
 
         }
 
@@ -1671,34 +1920,30 @@ export default function ReadingAdventure({
 
   if (
     !embedded &&
-    !started
+    !started &&
+    !finished
   ) {
 
     return (
 
       <View
         style={
-          styles.startContainer
+          styles.standaloneScreen
         }
       >
 
-        <View
+        <Text
           style={
-            styles.iconBox
+            styles.category
           }
         >
-
-          <BookOpen
-            size={34}
-            color="#7B6EF6"
-          />
-
-        </View>
+          COGNITIVE ASSESSMENT
+        </Text>
 
 
         <Text
           style={
-            styles.title
+            styles.selectionTitle
           }
         >
           Reading Adventure
@@ -1707,7 +1952,7 @@ export default function ReadingAdventure({
 
         <Text
           style={
-            styles.description
+            styles.selectionDescription
           }
         >
           Read the short visual story, observe the shapes and colors, then choose the correct answer.
@@ -1716,7 +1961,7 @@ export default function ReadingAdventure({
 
         <View
           style={
-            styles.levelsContainer
+            styles.levelList
           }
         >
 
@@ -1742,9 +1987,7 @@ export default function ReadingAdventure({
               return (
 
                 <Pressable
-                  key={
-                    id
-                  }
+                  key={id}
                   onPress={() => {
 
                     selectLevel(
@@ -1756,17 +1999,54 @@ export default function ReadingAdventure({
                     styles.levelCard,
 
                     selected &&
-                      styles.levelCardSelected,
+                      styles
+                        .levelCardSelected,
                   ]}
                 >
 
-                  <Text
-                    style={[
-                      styles.levelName,
+                  <View
+                    style={
+                      styles.levelTopRow
+                    }
+                  >
 
-                      selected &&
-                        styles.levelNameSelected,
-                    ]}
+                    <View
+                      style={
+                        styles.levelNumber
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles
+                            .levelNumberText
+                        }
+                      >
+                        {id}
+                      </Text>
+
+                    </View>
+
+
+                    {selected && (
+
+                      <Text
+                        style={
+                          styles.selectedText
+                        }
+                      >
+                        SELECTED
+                      </Text>
+
+                    )}
+
+                  </View>
+
+
+                  <Text
+                    style={
+                      styles.levelTitle
+                    }
                   >
                     {item.name}
                   </Text>
@@ -1774,20 +2054,76 @@ export default function ReadingAdventure({
 
                   <Text
                     style={
-                      styles.levelDetails
+                      styles.levelDescription
                     }
                   >
-                    {item.questions} questions
+                    Read and understand visual stories, shapes and colors.
                   </Text>
 
 
-                  <Text
+                  <View
                     style={
-                      styles.levelDetails
+                      styles.levelDivider
+                    }
+                  />
+
+
+                  <View
+                    style={
+                      styles.levelStats
                     }
                   >
-                    {item.time}s
-                  </Text>
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Questions
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.questions}
+                      </Text>
+
+                    </View>
+
+
+                    <View
+                      style={
+                        styles.levelStat
+                      }
+                    >
+
+                      <Text
+                        style={
+                          styles.smallLabel
+                        }
+                      >
+                        Time
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.smallValue
+                        }
+                      >
+                        {item.time}s
+                      </Text>
+
+                    </View>
+
+                  </View>
 
                 </Pressable>
 
@@ -1804,7 +2140,7 @@ export default function ReadingAdventure({
             startGame
           }
           style={
-            styles.primaryButton
+            styles.startButton
           }
         >
 
@@ -1816,7 +2152,7 @@ export default function ReadingAdventure({
 
           <Text
             style={
-              styles.primaryButtonText
+              styles.startButtonText
             }
           >
             Start Assessment
@@ -1836,245 +2172,339 @@ export default function ReadingAdventure({
     finalResult
   ) {
 
-    const resultData =
-      finalResult.result_data as
-        | Record<
-            string,
-            unknown
-          >
-        | null;
-
-
     return (
 
       <View
-        style={
-          styles.resultContainer
-        }
+        style={[
+          styles.resultScreen,
+
+          !embedded &&
+            styles.standaloneScreen,
+        ]}
       >
 
         <View
           style={
-            styles.iconBox
-          }
-        >
-
-          <Trophy
-            size={34}
-            color="#7B6EF6"
-          />
-
-        </View>
-
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Reading Adventure Results
-        </Text>
-
-
-        <Text
-          style={
-            styles.resultStatus
-          }
-        >
-          {finalResult.status}
-        </Text>
-
-
-        <View
-          style={
-            styles.resultGrid
+            styles.resultPanel
           }
         >
 
           <View
             style={
-              styles.resultCard
+              styles.resultIcon
             }
           >
 
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Score
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.score}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Accuracy
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {finalResult.accuracy ?? 0}%
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Correct
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {correct}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Wrong
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {wrong}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Missed
-            </Text>
-
-            <Text
-              style={
-                styles.metricValue
-              }
-            >
-              {Number(
-                resultData
-                  ?.missed_questions ||
-                0
-              )}
-            </Text>
-
-          </View>
-
-
-          <View
-            style={
-              styles.resultCard
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              Game Time
-            </Text>
-
-            <Text
-              style={
-                styles.metricValueSmall
-              }
-            >
-              {finalResult.duration_seconds}s
-            </Text>
-
-          </View>
-
-        </View>
-
-
-        {!embedded && (
-
-          <Pressable
-            onPress={
-              restartGame
-            }
-            style={
-              styles.secondaryButton
-            }
-          >
-
-            <RotateCcw
-              size={18}
-              color="#7B6EF6"
+            <Trophy
+              size={30}
+              color="#7C6CFF"
             />
 
+          </View>
+
+
+          <Text
+            style={
+              styles.resultCategory
+            }
+          >
+            {finalResult.completed
+              ? "ASSESSMENT COMPLETED"
+              : "TIME COMPLETED"
+            }
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultTitle
+            }
+          >
+            Reading Adventure Results
+          </Text>
+
+
+          <Text
+            style={
+              styles.resultLevel
+            }
+          >
+            {config.name} Level
+          </Text>
+
+
+          <View
+            style={
+              styles.resultGrid
+            }
+          >
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Score
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.score}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Accuracy
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.accuracy ?? 0}%
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Correct
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.correct}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.resultMetric
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Wrong
+              </Text>
+
+              <Text
+                style={
+                  styles.resultMetricValue
+                }
+              >
+                {finalResult.wrong}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.secondaryGrid
+            }
+          >
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Attempts
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.attempts}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Missed
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.missed}
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Game Time
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.time}s
+              </Text>
+
+            </View>
+
+
+            <View
+              style={
+                styles.secondaryCard
+              }
+            >
+
+              <Text
+                style={
+                  styles.smallLabel
+                }
+              >
+                Questions
+              </Text>
+
+              <Text
+                style={
+                  styles.secondaryValue
+                }
+              >
+                {finalResult.totalQuestions}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.insightBox
+            }
+          >
 
             <Text
               style={
-                styles.secondaryButtonText
+                styles.insightTitle
               }
             >
-              Play Again
+              PERFORMANCE INSIGHT
             </Text>
 
-          </Pressable>
 
-        )}
+            <Text
+              style={
+                styles.insightText
+              }
+            >
+              {finalResult.recommendation}
+            </Text>
+
+          </View>
+
+
+          {!embedded && (
+
+            <Pressable
+              onPress={
+                restartGame
+              }
+              style={
+                styles.restartButton
+              }
+            >
+
+              <RotateCcw
+                size={18}
+                color="#303044"
+              />
+
+
+              <Text
+                style={
+                  styles.restartText
+                }
+              >
+                Restart
+              </Text>
+
+            </Pressable>
+
+          )}
+
+        </View>
 
       </View>
 
@@ -2089,9 +2519,7 @@ export default function ReadingAdventure({
     ];
 
 
-  if (
-    !question
-  ) {
+  if (!question) {
 
     return (
 
@@ -2103,7 +2531,7 @@ export default function ReadingAdventure({
 
         <Text
           style={
-            styles.description
+            styles.loadingText
           }
         >
           Preparing assessment...
@@ -2116,25 +2544,35 @@ export default function ReadingAdventure({
   }
 
 
+  const progress =
+    questions.length > 0
+      ? (
+          (
+            current + 1
+          ) /
+          questions.length
+        ) * 100
+      : 0;
+
+
   return (
 
     <View
-      style={
-        styles.container
-      }
+      style={[
+        styles.gameScreen,
+
+        !embedded &&
+          styles.standaloneScreen,
+      ]}
     >
 
       <View
         style={
-          styles.header
+          styles.gameHeader
         }
       >
 
-        <View
-          style={
-            styles.headerTextBox
-          }
-        >
+        <View>
 
           <Text
             style={
@@ -2147,7 +2585,7 @@ export default function ReadingAdventure({
 
           <Text
             style={
-              styles.title
+              styles.gameTitle
             }
           >
             Reading Adventure
@@ -2158,45 +2596,44 @@ export default function ReadingAdventure({
 
         <View
           style={
-            styles.levelBadge
+            styles.statsRow
           }
         >
 
-          <Text
+          <View
             style={
-              styles.levelBadgeText
+              styles.headerStat
             }
           >
-            {config.name}
-          </Text>
-
-        </View>
-
-      </View>
-
-
-      <View
-        style={
-          styles.timeRow
-        }
-      >
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
+              }
+            >
+              Level
+            </Text>
+
+            <Text
+              style={
+                styles.headerStatValue
+              }
+            >
+              {config.name}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.headerTimeStat
+            }
+          >
+
+            <Text
+              style={
+                styles.headerTimeLabel
               }
             >
               Game Time
@@ -2204,7 +2641,7 @@ export default function ReadingAdventure({
 
             <Text
               style={
-                styles.timeValue
+                styles.headerTimeValue
               }
             >
               {gameTime}s
@@ -2212,25 +2649,16 @@ export default function ReadingAdventure({
 
           </View>
 
-        </View>
 
-
-        <View
-          style={
-            styles.timeCard
-          }
-        >
-
-          <Clock3
-            size={19}
-            color="#7B6EF6"
-          />
-
-          <View>
+          <View
+            style={
+              styles.headerStat
+            }
+          >
 
             <Text
               style={
-                styles.timeLabel
+                styles.headerStatLabel
               }
             >
               Time Left
@@ -2238,7 +2666,7 @@ export default function ReadingAdventure({
 
             <Text
               style={
-                styles.timeValue
+                styles.headerStatValue
               }
             >
               {timeLeft}s
@@ -2274,405 +2702,441 @@ export default function ReadingAdventure({
 
       <View
         style={
-          styles.progressHeader
+          styles.board
         }
       >
 
-        <Text
+        <View
           style={
-            styles.progressText
+            styles.questionHeader
           }
         >
-          Question {current + 1} / {questions.length}
-        </Text>
+
+          <View>
+
+            <Text
+              style={
+                styles.questionHeaderLabel
+              }
+            >
+              QUESTION
+            </Text>
 
 
-        <Text
+            <Text
+              style={
+                styles.questionCount
+              }
+            >
+              {current + 1}
+              {" / "}
+              {questions.length}
+            </Text>
+
+          </View>
+
+
+          <View
+            style={
+              styles.questionTime
+            }
+          >
+
+            <Clock3
+              size={16}
+              color="#77778A"
+            />
+
+
+            <Text
+              style={
+                styles.questionTimeText
+              }
+            >
+              {timeLeft}s
+            </Text>
+
+          </View>
+
+        </View>
+
+
+        <View
           style={
-            styles.progressText
+            styles.progressTrack
           }
         >
-          {Math.round(
-            (
+
+          <View
+            style={[
+              styles.progressBar,
+
+              {
+                width:
+                  `${progress}%`,
+              },
+            ]}
+          />
+
+        </View>
+
+
+        <View
+          style={
+            styles.storyCard
+          }
+        >
+
+          <Text
+            style={
+              styles.storyTitle
+            }
+          >
+            {question.title}
+          </Text>
+
+
+          <Text
+            style={
+              styles.storyDescription
+            }
+          >
+            {question.description}
+          </Text>
+
+
+          <View
+            style={[
+              styles.visualContainer,
+
+              question.direction ===
+                "column"
+                ? styles.visualColumn
+                : styles.visualRow,
+            ]}
+          >
+
+            {question.visual.map(
               (
-                current + 1
-              ) /
-              questions.length
-            ) * 100
-          )}%
-        </Text>
+                item,
+                index
+              ) => (
 
-      </View>
+                <View
+                  key={
+                    `${item.shape}-${index}`
+                  }
+                  style={
+                    styles.visualItem
+                  }
+                >
 
-
-      <View
-        style={
-          styles.progressTrack
-        }
-      >
-
-        <View
-          style={[
-            styles.progressBar,
-
-            {
-              width:
-                `${
-                  (
-                    (
-                      current + 1
-                    ) /
-                    questions.length
-                  ) * 100
-                }%`,
-            },
-          ]}
-        />
-
-      </View>
+                  <ShapeGraphic
+                    type={
+                      item.shape
+                    }
+                    color={
+                      item.color
+                    }
+                    size={
+                      item.size ??
+                      80
+                    }
+                  />
 
 
-      <View
-        style={
-          styles.storyCard
-        }
-      >
+                  {item.label && (
 
-        <Text
-          style={
-            styles.storyTitle
-          }
-        >
-          {question.title}
-        </Text>
+                    <Text
+                      style={
+                        styles.visualLabel
+                      }
+                    >
+                      {item.label}
+                    </Text>
 
+                  )}
 
-        <Text
-          style={
-            styles.storyDescription
-          }
-        >
-          {question.description}
-        </Text>
+                </View>
+
+              )
+            )}
+
+          </View>
+
+        </View>
 
 
         <View
-          style={[
-            styles.visualContainer,
-
-            question.direction ===
-              "column"
-              ? styles.visualColumn
-              : styles.visualRow,
-          ]}
+          style={
+            styles.mainQuestionSection
+          }
         >
 
-          {question.visual.map(
+          <Text
+            style={
+              styles.mainQuestionLabel
+            }
+          >
+            QUESTION
+          </Text>
+
+
+          <Text
+            style={
+              styles.mainQuestionText
+            }
+          >
+            {question.question}
+          </Text>
+
+        </View>
+
+
+        <View
+          style={
+            styles.answersContainer
+          }
+        >
+
+          {question.options.map(
             (
-              item,
+              option,
               index
-            ) => (
+            ) => {
 
-              <View
-                key={
-                  `${item.symbol}-${index}`
-                }
-                style={
-                  styles.visualItem
-                }
-              >
+              const colors =
+                ANSWER_COLORS[
+                  index %
+                  ANSWER_COLORS.length
+                ];
 
-                <Text
+
+              const isSelected =
+                selectedAnswer ===
+                option;
+
+
+              const isCorrect =
+                option ===
+                question.answer;
+
+
+              let backgroundColor =
+                colors.background;
+
+
+              let borderColor =
+                colors.border;
+
+
+              if (
+                isSelected &&
+                isCorrect
+              ) {
+
+                backgroundColor =
+                  "#EEF9EE";
+
+
+                borderColor =
+                  "#7BC67B";
+
+              }
+
+
+              if (
+                isSelected &&
+                !isCorrect
+              ) {
+
+                backgroundColor =
+                  "#FFF0F3";
+
+
+                borderColor =
+                  "#EF6A8A";
+
+              }
+
+
+              return (
+
+                <Pressable
+                  key={option}
+                  onPress={() => {
+
+                    checkAnswer(
+                      option
+                    );
+
+                  }}
+                  disabled={
+                    answerLocked ||
+                    paused ||
+                    finished
+                  }
                   style={[
-                    styles.visualSymbol,
+                    styles.answerButton,
 
                     {
-                      color:
-                        item.color,
+                      backgroundColor,
+                      borderColor,
                     },
+
+                    paused &&
+                      styles.answerDisabled,
                   ]}
                 >
-                  {item.symbol}
-                </Text>
 
+                  <View
+                    style={
+                      styles.answerLetter
+                    }
+                  >
 
-                {item.label && (
+                    <Text
+                      style={
+                        styles.answerLetterText
+                      }
+                    >
+                      {String.fromCharCode(
+                        65 + index
+                      )}
+                    </Text>
+
+                  </View>
+
 
                   <Text
                     style={
-                      styles.visualLabel
+                      styles.answerText
                     }
                   >
-                    {item.label}
+                    {option}
                   </Text>
 
-                )}
+                </Pressable>
 
-              </View>
+              );
 
-            )
+            }
           )}
 
         </View>
 
-      </View>
-
-
-      <Text
-        style={
-          styles.questionLabel
-        }
-      >
-        QUESTION
-      </Text>
-
-
-      <Text
-        style={
-          styles.questionText
-        }
-      >
-        {question.question}
-      </Text>
-
-
-      <View
-        style={
-          styles.answersContainer
-        }
-      >
-
-        {question.options.map(
-          (
-            option,
-            index
-          ) => {
-
-            const colors =
-              ANSWER_COLORS[
-                index %
-                ANSWER_COLORS.length
-              ];
-
-
-            const isSelected =
-              selectedAnswer ===
-              option;
-
-
-            const isCorrect =
-              option ===
-              question.answer;
-
-
-            let backgroundColor =
-              colors.background;
-
-
-            let borderColor =
-              colors.border;
-
-
-            if (
-              isSelected &&
-              isCorrect
-            ) {
-
-              backgroundColor =
-                "#EEF9EE";
-
-
-              borderColor =
-                "#7BC67B";
-
-            }
-
-
-            if (
-              isSelected &&
-              !isCorrect
-            ) {
-
-              backgroundColor =
-                "#FFF0F3";
-
-
-              borderColor =
-                "#EF6A8A";
-
-            }
-
-
-            return (
-
-              <Pressable
-                key={
-                  option
-                }
-                onPress={() => {
-
-                  checkAnswer(
-                    option
-                  );
-
-                }}
-                disabled={
-                  answerLocked ||
-                  paused ||
-                  finished
-                }
-                style={[
-                  styles.answerButton,
-
-                  {
-                    backgroundColor,
-                    borderColor,
-                  },
-
-                  paused &&
-                    styles.answerDisabled,
-                ]}
-              >
-
-                <View
-                  style={
-                    styles.answerLetter
-                  }
-                >
-
-                  <Text
-                    style={
-                      styles.answerLetterText
-                    }
-                  >
-                    {String.fromCharCode(
-                      65 + index
-                    )}
-                  </Text>
-
-                </View>
-
-
-                <Text
-                  style={
-                    styles.answerText
-                  }
-                >
-                  {option}
-                </Text>
-
-              </Pressable>
-
-            );
-
-          }
-        )}
-
-      </View>
-
-
-      <View
-        style={
-          styles.metricsGrid
-        }
-      >
 
         <View
           style={
-            styles.metricBox
+            styles.metricsDivider
           }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Correct
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {correct}
-          </Text>
-
-        </View>
+        />
 
 
         <View
           style={
-            styles.metricBox
+            styles.liveMetrics
           }
         >
 
-          <Text
+          <View
             style={
-              styles.metricLabel
+              styles.liveMetric
             }
           >
-            Wrong
-          </Text>
 
-          <Text
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Correct
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {correct}
+            </Text>
+
+          </View>
+
+
+          <View
             style={
-              styles.metricValue
+              styles.liveMetric
             }
           >
-            {wrong}
-          </Text>
 
-        </View>
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Wrong
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {wrong}
+            </Text>
+
+          </View>
 
 
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
+          <View
             style={
-              styles.metricLabel
+              styles.liveMetric
             }
           >
-            Accuracy
-          </Text>
 
-          <Text
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Accuracy
+            </Text>
+
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {liveAccuracy}%
+            </Text>
+
+          </View>
+
+
+          <View
             style={
-              styles.metricValue
+              styles.liveMetric
             }
           >
-            {liveAccuracy}%
-          </Text>
 
-        </View>
+            <Text
+              style={
+                styles.liveLabel
+              }
+            >
+              Score
+            </Text>
 
+            <Text
+              style={
+                styles.liveValue
+              }
+            >
+              {liveScore}%
+            </Text>
 
-        <View
-          style={
-            styles.metricBox
-          }
-        >
-
-          <Text
-            style={
-              styles.metricLabel
-            }
-          >
-            Score
-          </Text>
-
-          <Text
-            style={
-              styles.metricValue
-            }
-          >
-            {liveScore}%
-          </Text>
+          </View>
 
         </View>
 
@@ -2688,513 +3152,435 @@ export default function ReadingAdventure({
 const styles =
   StyleSheet.create({
 
-    container: {
+    standaloneScreen: {
       width: "100%",
-
-      padding: 18,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-    },
-
-
-    startContainer: {
-      width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-    },
-
-
-    resultContainer: {
-      width: "100%",
-
-      padding: 24,
-
-      borderRadius: 24,
-
-      backgroundColor:
-        "#FFFFFF",
-
-      alignItems:
-        "center",
-    },
-
-
-    loadingContainer: {
-      minHeight: 300,
-
-      width: "100%",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
+      minHeight: "100%",
       padding: 20,
-
       backgroundColor:
-        "#FFFFFF",
-
-      borderRadius: 24,
+        "#F7F8FC",
     },
 
 
-    iconBox: {
-      width: 64,
-
-      height: 64,
-
-      borderRadius: 20,
-
-      backgroundColor:
-        "#EEE9FF",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    title: {
-      color: "#202033",
-
-      fontSize: 24,
-
-      fontWeight: "800",
-
-      marginTop: 5,
+    gameScreen: {
+      width: "100%",
     },
 
 
     category: {
-      color: "#7B6EF6",
-
+      color:
+        "#7C6CFF",
       fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+    },
 
+
+    selectionTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 34,
       fontWeight: "800",
     },
 
 
-    description: {
-      color: "#77778A",
-
-      textAlign:
-        "center",
-
-      lineHeight: 21,
-
+    selectionDescription: {
       marginTop: 10,
+      color:
+        "#77778A",
+      fontSize: 15,
+      lineHeight: 22,
     },
 
 
-    levelsContainer: {
-      width: "100%",
-
-      gap: 10,
-
-      marginTop: 22,
+    levelList: {
+      marginTop: 28,
+      gap: 16,
     },
 
 
     levelCard: {
-      width: "100%",
-
-      padding: 17,
-
-      borderRadius: 18,
-
+      padding: 22,
+      borderRadius: 28,
       borderWidth: 1,
-
       borderColor:
-        "#E2E8F0",
-
+        "#E8E8F0",
       backgroundColor:
-        "#F8FAFC",
+        "#FFFFFF",
     },
 
 
     levelCardSelected: {
       borderColor:
-        "#7B6EF6",
-
+        "#7C6CFF",
       backgroundColor:
-        "#F4F1FF",
+        "#F5F2FF",
     },
 
 
-    levelName: {
-      color: "#202033",
-
-      fontSize: 17,
-
-      fontWeight: "800",
-    },
-
-
-    levelNameSelected: {
-      color: "#6D5CE7",
-    },
-
-
-    levelDetails: {
-      color: "#77778A",
-
-      fontSize: 13,
-
-      marginTop: 4,
-    },
-
-
-    primaryButton: {
-      width: "100%",
-
-      height: 52,
-
-      borderRadius: 16,
-
-      backgroundColor:
-        "#7B6EF6",
-
+    levelTopRow: {
       flexDirection:
         "row",
-
       alignItems:
         "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    primaryButtonText: {
-      color: "#FFFFFF",
-
-      fontSize: 16,
-
-      fontWeight: "800",
-    },
-
-
-    secondaryButton: {
-      minHeight: 48,
-
-      paddingHorizontal: 22,
-
-      borderRadius: 15,
-
-      borderWidth: 1,
-
-      borderColor:
-        "#DDD7FF",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      gap: 8,
-
-      marginTop: 22,
-    },
-
-
-    secondaryButtonText: {
-      color: "#7B6EF6",
-
-      fontWeight: "800",
-    },
-
-
-    resultStatus: {
-      color: "#64748B",
-
-      marginTop: 6,
-
-      fontWeight: "700",
-    },
-
-
-    resultGrid: {
-      width: "100%",
-
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 10,
-
-      marginTop: 22,
-    },
-
-
-    resultCard: {
-      width: "48%",
-
-      minHeight: 90,
-
-      borderRadius: 18,
-
-      backgroundColor:
-        "#F7F8FC",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-    },
-
-
-    header: {
-      flexDirection:
-        "row",
-
-      alignItems:
-        "flex-start",
-
       justifyContent:
         "space-between",
-
-      gap: 12,
     },
 
 
-    headerTextBox: {
-      flex: 1,
-    },
-
-
-    levelBadge: {
-      paddingHorizontal: 13,
-
-      paddingVertical: 8,
-
-      borderRadius: 15,
-
+    levelNumber: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       backgroundColor:
-        "#EEE9FF",
+        "#7C6CFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
     },
 
 
-    levelBadgeText: {
-      color: "#6D5CE7",
-
-      fontSize: 12,
-
+    levelNumberText: {
+      color:
+        "#FFFFFF",
+      fontSize: 16,
       fontWeight: "800",
     },
 
 
-    timeRow: {
-      flexDirection:
-        "row",
-
-      gap: 10,
-
-      marginTop: 18,
+    selectedText: {
+      color:
+        "#7C6CFF",
+      fontSize: 11,
+      fontWeight: "800",
     },
 
 
-    timeCard: {
-      flex: 1,
+    levelTitle: {
+      marginTop: 20,
+      color:
+        "#202033",
+      fontSize: 20,
+      fontWeight: "800",
+    },
 
-      minHeight: 70,
 
-      padding: 12,
+    levelDescription: {
+      marginTop: 7,
+      color:
+        "#77778A",
+      fontSize: 14,
+      lineHeight: 21,
+    },
 
-      borderRadius: 17,
 
+    levelDivider: {
+      height: 1,
+      marginTop: 20,
+      marginBottom: 16,
       backgroundColor:
-        "#F7F8FC",
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      gap: 10,
+        "#EEEEF5",
     },
 
 
-    timeLabel: {
-      color: "#77778A",
+    levelStats: {
+      flexDirection:
+        "row",
+    },
 
+
+    levelStat: {
+      flex: 1,
+    },
+
+
+    smallLabel: {
+      color:
+        "#9999AA",
       fontSize: 11,
     },
 
 
-    timeValue: {
-      color: "#202033",
-
+    smallValue: {
+      marginTop: 4,
+      color:
+        "#303044",
+      fontSize: 15,
       fontWeight: "800",
+    },
 
-      marginTop: 2,
+
+    startButton: {
+      height: 56,
+      marginTop: 24,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 8,
+    },
+
+
+    startButtonText: {
+      color:
+        "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "700",
+    },
+
+
+    loadingContainer: {
+      width: "100%",
+      minHeight: 300,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    loadingText: {
+      color:
+        "#77778A",
+      fontSize: 14,
+    },
+
+
+    gameHeader: {
+      gap: 18,
+      marginBottom: 24,
+    },
+
+
+    gameTitle: {
+      marginTop: 4,
+      color:
+        "#202033",
+      fontSize: 30,
+      fontWeight: "800",
+    },
+
+
+    statsRow: {
+      flexDirection:
+        "row",
+      gap: 8,
+    },
+
+
+    headerStat: {
+      flex: 1,
+      minHeight: 67,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+      justifyContent:
+        "center",
+    },
+
+
+    headerTimeStat: {
+      flex: 1,
+      minHeight: 67,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      borderRadius: 16,
+      backgroundColor:
+        "#7C6CFF",
+      justifyContent:
+        "center",
+    },
+
+
+    headerStatLabel: {
+      color:
+        "#9999AA",
+      fontSize: 10,
+    },
+
+
+    headerStatValue: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    headerTimeLabel: {
+      color:
+        "rgba(255,255,255,0.75)",
+      fontSize: 10,
+    },
+
+
+    headerTimeValue: {
+      marginTop: 3,
+      color:
+        "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "800",
     },
 
 
     pausedBox: {
-      padding: 13,
-
-      borderRadius: 15,
-
+      marginBottom: 18,
+      padding: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#FDE68A",
       backgroundColor:
-        "#FEF3C7",
-
-      marginTop: 16,
-
+        "#FFFBEB",
       alignItems:
         "center",
     },
 
 
     pausedText: {
-      color: "#B45309",
+      color:
+        "#B45309",
+      fontWeight: "700",
+    },
 
+
+    board: {
+      width: "100%",
+      padding: 18,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+    },
+
+
+    questionHeader: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "space-between",
+    },
+
+
+    questionHeaderLabel: {
+      color:
+        "#9999AA",
+      fontSize: 11,
       fontWeight: "800",
     },
 
 
-    progressHeader: {
-      flexDirection:
-        "row",
-
-      justifyContent:
-        "space-between",
-
-      alignItems:
-        "center",
-
-      marginTop: 20,
+    questionCount: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
     },
 
 
-    progressText: {
-      color: "#64748B",
+    questionTime: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap: 6,
+    },
 
-      fontSize: 12,
 
-      fontWeight: "700",
+    questionTimeText: {
+      color:
+        "#77778A",
+      fontSize: 13,
     },
 
 
     progressTrack: {
       width: "100%",
-
-      height: 7,
-
-      borderRadius: 20,
-
+      height: 8,
+      marginTop: 18,
+      borderRadius: 999,
       backgroundColor:
         "#F0EFF7",
-
       overflow:
         "hidden",
-
-      marginTop: 8,
     },
 
 
     progressBar: {
       height: "100%",
-
-      borderRadius: 20,
-
+      borderRadius: 999,
       backgroundColor:
-        "#7B6EF6",
+        "#7C6CFF",
     },
 
 
     storyCard: {
-      marginTop: 20,
-
+      marginTop: 26,
       padding: 20,
-
-      borderRadius: 22,
-
-      backgroundColor:
-        "#F7F8FC",
-
+      borderRadius: 28,
       borderWidth: 1,
-
       borderColor:
         "#ECECF4",
-
+      backgroundColor:
+        "#F7F8FC",
       alignItems:
         "center",
     },
 
 
     storyTitle: {
-      color: "#7B6EF6",
-
-      fontSize: 12,
-
+      color:
+        "#7C6CFF",
+      fontSize: 11,
       fontWeight: "800",
-
       textAlign:
         "center",
     },
 
 
     storyDescription: {
-      color: "#77778A",
-
+      marginTop: 7,
+      color:
+        "#77778A",
       fontSize: 13,
-
       lineHeight: 20,
-
       textAlign:
         "center",
-
-      marginTop: 7,
     },
 
 
     visualContainer: {
-      minHeight: 135,
-
       width: "100%",
-
+      minHeight: 180,
+      marginTop: 18,
       alignItems:
         "center",
-
       justifyContent:
         "center",
-
-      gap: 16,
-
-      marginTop: 14,
+      gap: 12,
     },
 
 
     visualRow: {
       flexDirection:
         "row",
-
       flexWrap:
         "wrap",
     },
@@ -3209,87 +3595,64 @@ const styles =
     visualItem: {
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
 
-    visualSymbol: {
-      fontSize: 58,
-
-      fontWeight: "900",
-
-      lineHeight: 66,
-    },
-
-
     visualLabel: {
-      color: "#303044",
-
+      marginTop: 3,
+      color:
+        "#303044",
       fontSize: 12,
-
       fontWeight: "700",
-
-      marginTop: 2,
     },
 
 
-    questionLabel: {
-      color: "#9999AA",
+    mainQuestionSection: {
+      marginTop: 26,
+      alignItems:
+        "center",
+    },
 
+
+    mainQuestionLabel: {
+      color:
+        "#9999AA",
       fontSize: 11,
-
       fontWeight: "800",
-
-      textAlign:
-        "center",
-
-      marginTop: 22,
     },
 
 
-    questionText: {
-      color: "#202033",
-
+    mainQuestionText: {
+      marginTop: 7,
+      color:
+        "#202033",
       fontSize: 20,
-
       lineHeight: 27,
-
       fontWeight: "800",
-
       textAlign:
         "center",
-
-      marginTop: 7,
     },
 
 
     answersContainer: {
-      gap: 10,
-
-      marginTop: 18,
+      marginTop: 20,
+      gap: 12,
     },
 
 
     answerButton: {
       width: "100%",
-
-      minHeight: 65,
-
-      borderRadius: 17,
-
+      minHeight: 72,
+      paddingHorizontal: 16,
+      borderRadius: 16,
       borderWidth: 2,
-
       flexDirection:
         "row",
-
       alignItems:
         "center",
-
-      paddingHorizontal: 14,
-
-      gap: 12,
+      gap: 14,
     },
 
 
@@ -3299,98 +3662,259 @@ const styles =
 
 
     answerLetter: {
-      width: 35,
-
-      height: 35,
-
-      borderRadius: 11,
-
+      width: 36,
+      height: 36,
+      borderRadius: 12,
       backgroundColor:
         "#FFFFFF",
-
       alignItems:
         "center",
-
       justifyContent:
         "center",
     },
 
 
     answerLetterText: {
-      color: "#7B6EF6",
-
-      fontWeight: "900",
+      color:
+        "#7C6CFF",
+      fontSize: 13,
+      fontWeight: "800",
     },
 
 
     answerText: {
       flex: 1,
-
-      color: "#303044",
-
+      color:
+        "#303044",
       fontSize: 14,
-
       fontWeight: "700",
     },
 
 
-    metricsGrid: {
-      flexDirection:
-        "row",
-
-      flexWrap:
-        "wrap",
-
-      gap: 8,
-
-      marginTop: 22,
+    metricsDivider: {
+      width: "100%",
+      height: 1,
+      marginTop: 26,
+      backgroundColor:
+        "#EEEEF5",
     },
 
 
-    metricBox: {
-      width: "48%",
+    liveMetrics: {
+      marginTop: 20,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      justifyContent:
+        "center",
+      gap: 24,
+    },
 
-      minHeight: 72,
 
-      borderRadius: 16,
-
-      backgroundColor:
-        "#F7F8FC",
-
+    liveMetric: {
+      minWidth: 56,
       alignItems:
         "center",
+    },
 
+
+    liveLabel: {
+      color:
+        "#9999AA",
+      fontSize: 11,
+      textAlign:
+        "center",
+    },
+
+
+    liveValue: {
+      marginTop: 3,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    resultScreen: {
+      width: "100%",
+    },
+
+
+    resultPanel: {
+      width: "100%",
+      padding: 22,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+    },
+
+
+    resultIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      backgroundColor:
+        "#F2EEFF",
+      alignItems:
+        "center",
       justifyContent:
         "center",
     },
 
 
-    metricLabel: {
-      color: "#77778A",
+    resultCategory: {
+      marginTop: 18,
+      color:
+        "#7C6CFF",
+      fontSize: 12,
+      fontWeight: "800",
+      textAlign:
+        "center",
+    },
 
+
+    resultTitle: {
+      marginTop: 6,
+      color:
+        "#202033",
+      fontSize: 27,
+      fontWeight: "800",
+      textAlign:
+        "center",
+    },
+
+
+    resultLevel: {
+      marginTop: 8,
+      color:
+        "#77778A",
+      fontSize: 14,
+    },
+
+
+    resultGrid: {
+      width: "100%",
+      marginTop: 24,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+    },
+
+
+    resultMetric: {
+      width: "48%",
+      minHeight: 95,
+      padding: 12,
+      borderRadius: 16,
+      backgroundColor:
+        "#F7F8FC",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    resultMetricValue: {
+      marginTop: 6,
+      color:
+        "#303044",
+      fontSize: 22,
+      fontWeight: "800",
+    },
+
+
+    secondaryGrid: {
+      width: "100%",
+      marginTop: 10,
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 10,
+    },
+
+
+    secondaryCard: {
+      width: "48%",
+      minHeight: 85,
+      padding: 15,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#ECECF4",
+      justifyContent:
+        "center",
+    },
+
+
+    secondaryValue: {
+      marginTop: 5,
+      color:
+        "#303044",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+
+    insightBox: {
+      width: "100%",
+      marginTop: 16,
+      padding: 17,
+      borderRadius: 16,
+      backgroundColor:
+        "#F2EEFF",
+    },
+
+
+    insightTitle: {
+      color:
+        "#7C6CFF",
       fontSize: 11,
+      fontWeight: "800",
     },
 
 
-    metricValue: {
-      color: "#202033",
-
-      fontSize: 19,
-
-      fontWeight: "800",
-
-      marginTop: 3,
+    insightText: {
+      marginTop: 7,
+      color:
+        "#555568",
+      fontSize: 13,
+      lineHeight: 20,
     },
 
 
-    metricValueSmall: {
-      color: "#202033",
+    restartButton: {
+      width: "100%",
+      height: 52,
+      marginTop: 20,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#E4E4EC",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 8,
+    },
 
-      fontSize: 15,
 
-      fontWeight: "800",
-
-      marginTop: 3,
+    restartText: {
+      color:
+        "#303044",
+      fontWeight: "700",
     },
 
   });
