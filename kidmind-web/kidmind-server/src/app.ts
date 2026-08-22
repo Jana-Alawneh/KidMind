@@ -1,8 +1,12 @@
 import express from "express";
+
 import cors from "cors";
 
 import childrenRoutes from "./routes/childrenRoutes";
+
 import sessionsRoutes from "./routes/sessionsRoutes";
+
+import userRoutes from "./routes/userRoutes";
 
 
 const app = express();
@@ -31,6 +35,12 @@ app.use(
 app.use(
   "/sessions",
   sessionsRoutes
+);
+
+
+app.use(
+  "/users",
+  userRoutes
 );
 
 

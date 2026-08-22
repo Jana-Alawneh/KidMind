@@ -1,15 +1,467 @@
-import {
+import type {
   Request,
   Response,
 } from "express";
 
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
 import {
+  createUser,
+  deleteUser,
+  getAllChildAssignments,
   getAllUsers,
+  getUserByEmail,
+  getUserById,
+  getUsersForChild,
+  linkUserToChild,
+  unlinkUserFromChild,
+  updateLastLogin,
+  updateUserActiveStatus,
+  updateUserByAdmin,
+  type UserRole,
+} from "../models/userModel";
+
+import {
   getChildById,
-  addChild,
-  deleteChild,
-  updateChild as updateChildInDatabase,
 } from "../models/childModel";
+
+import type {
+  AuthenticatedRequest,
+} from "../middleware/authMiddleware";
+
+
+const allowedRoles: UserRole[] = [
+  "therapist",
+  "parent",
+  "admin",
+];
+
+
+const createToken = (
+  id: number,
+  role: UserRole
+) => {
+
+  const secret =
+    process.env.JWT_SECRET ||
+    "kidmind-development-secret";
+
+
+  return jwt.sign(
+    {
+      id,
+      role,
+    },
+    secret,
+    {
+      expiresIn: "7d",
+    }
+  );
+
+};
+
+
+export const registerUser = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const {
+      full_name,
+      email,
+      password,
+      role,
+      phone,
+    } = req.body;
+
+
+    const normalizedName =
+      String(
+        full_name || ""
+      ).trim();
+
+
+    const normalizedEmail =
+      String(
+        email || ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const normalizedPassword =
+      String(
+        password || ""
+      );
+
+
+    const normalizedRole =
+      String(
+        role || ""
+      )
+        .trim()
+        .toLowerCase() as UserRole;
+
+
+    if (
+      !normalizedName ||
+      !normalizedEmail ||
+      !normalizedPassword ||
+      !allowedRoles.includes(
+        normalizedRole
+      )
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Please provide valid user information",
+      });
+
+    }
+
+
+    if (
+      normalizedPassword.length < 6
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Password must be at least 6 characters",
+      });
+
+    }
+
+
+    const existingUser =
+      await getUserByEmail(
+        normalizedEmail
+      );
+
+
+    if (existingUser) {
+
+      return res.status(409).json({
+        message:
+          "Email already exists",
+      });
+
+    }
+
+
+    const passwordHash =
+      await bcrypt.hash(
+        normalizedPassword,
+        12
+      );
+
+
+    const result =
+      await createUser(
+        normalizedName,
+        normalizedEmail,
+        passwordHash,
+        normalizedRole,
+        phone
+          ? String(
+              phone
+            ).trim()
+          : null,
+        null
+      );
+
+
+    const user =
+      await getUserById(
+        result.insertId
+      );
+
+
+    if (!user) {
+
+      return res.status(500).json({
+        message:
+          "Failed to create user",
+      });
+
+    }
+
+
+    return res.status(201).json({
+      message:
+        "User registered successfully",
+
+      user: {
+        id:
+          user.id,
+
+        full_name:
+          user.full_name,
+
+        email:
+          user.email,
+
+        role:
+          user.role,
+
+        phone:
+          user.phone,
+
+        avatar_url:
+          user.avatar_url,
+
+        is_active:
+          user.is_active,
+      },
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Register user error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const loginUser = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const normalizedEmail =
+      String(
+        req.body.email || ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const password =
+      String(
+        req.body.password || ""
+      );
+
+
+    if (
+      !normalizedEmail ||
+      !password
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Email and password are required",
+      });
+
+    }
+
+
+    const user =
+      await getUserByEmail(
+        normalizedEmail
+      );
+
+
+    if (!user) {
+
+      return res.status(401).json({
+        message:
+          "Invalid email or password",
+      });
+
+    }
+
+
+    if (!user.is_active) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const passwordMatches =
+      await bcrypt.compare(
+        password,
+        user.password_hash
+      );
+
+
+    if (!passwordMatches) {
+
+      return res.status(401).json({
+        message:
+          "Invalid email or password",
+      });
+
+    }
+
+
+    await updateLastLogin(
+      user.id
+    );
+
+
+    const token =
+      createToken(
+        user.id,
+        user.role
+      );
+
+
+    return res.json({
+      message:
+        "Login successful",
+
+      token,
+
+      user: {
+        id:
+          user.id,
+
+        full_name:
+          user.full_name,
+
+        email:
+          user.email,
+
+        role:
+          user.role,
+
+        phone:
+          user.phone,
+
+        avatar_url:
+          user.avatar_url,
+
+        is_active:
+          user.is_active,
+      },
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Login error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchCurrentUser = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (!user.is_active) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    return res.json({
+      user: {
+        id:
+          user.id,
+
+        full_name:
+          user.full_name,
+
+        email:
+          user.email,
+
+        role:
+          user.role,
+
+        phone:
+          user.phone,
+
+        avatar_url:
+          user.avatar_url,
+
+        is_active:
+          user.is_active,
+
+        last_login_at:
+          user.last_login_at,
+
+        created_at:
+          user.created_at,
+      },
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Fetch current user error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
 
 
 export const fetchUsers = async (
@@ -22,14 +474,22 @@ export const fetchUsers = async (
     const users =
       await getAllUsers();
 
-    return res.json(users);
+
+    return res.json(
+      users
+    );
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Fetch users error:",
+      error
+    );
+
 
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -37,166 +497,161 @@ export const fetchUsers = async (
 };
 
 
-export const fetchChildById = async (
+export const updateUserAsAdmin = async (
   req: Request,
   res: Response
 ) => {
 
   try {
 
-    const id =
-      Number(req.params.id);
+    const userId =
+      Number(
+        req.params.userId
+      );
 
 
     if (
-      !Number.isInteger(id) ||
-      id <= 0
-    ) {
-
-      return res.status(400).json({
-        message: "Invalid child ID",
-      });
-
-    }
-
-
-    const child =
-      await getChildById(id);
-
-
-    if (!child) {
-
-      return res.status(404).json({
-        message: "Child not found",
-      });
-
-    }
-
-
-    return res.json(child);
-
-  } catch (error) {
-
-    console.error(error);
-
-    return res.status(500).json({
-      message: "Server Error",
-    });
-
-  }
-
-};
-
-
-export const createChild = async (
-  req: Request,
-  res: Response
-) => {
-
-  try {
-
-    const {
-      full_name,
-      age,
-      gender,
-      parent_name,
-      region,
-      notes,
-    } = req.body;
-
-
-    const numericAge =
-      Number(age);
-
-
-    if (
-      !full_name ||
-      !String(full_name).trim() ||
-      !Number.isInteger(numericAge) ||
-      numericAge <= 0 ||
-      !gender ||
-      !String(gender).trim() ||
-      !parent_name ||
-      !String(parent_name).trim() ||
-      !region ||
-      !String(region).trim()
+      !Number.isInteger(
+        userId
+      ) ||
+      userId <= 0
     ) {
 
       return res.status(400).json({
         message:
-          "Please provide all required fields",
+          "Invalid user ID",
       });
 
     }
 
 
-    await addChild(
-      String(full_name).trim(),
-      numericAge,
-      String(gender).trim(),
-      String(parent_name).trim(),
-      String(region).trim(),
-      notes
-        ? String(notes).trim()
-        : ""
-    );
+    const user =
+      await getUserById(
+        userId
+      );
 
 
-    return res.status(201).json({
-      message:
-        "Child added successfully",
-    });
+    if (!user) {
 
-  } catch (error) {
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
 
-    console.error(error);
-
-    return res.status(500).json({
-      message: "Server Error",
-    });
-
-  }
-
-};
+    }
 
 
-export const removeChild = async (
-  req: Request,
-  res: Response
-) => {
+    const fullName =
+      String(
+        req.body.full_name || ""
+      ).trim();
 
-  try {
 
-    const id =
-      Number(req.params.id);
+    const email =
+      String(
+        req.body.email || ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const phone =
+      req.body.phone
+        ? String(
+            req.body.phone
+          ).trim()
+        : null;
 
 
     if (
-      !Number.isInteger(id) ||
-      id <= 0
+      !fullName ||
+      !email
     ) {
 
       return res.status(400).json({
-        message: "Invalid child ID",
+        message:
+          "Full name and email are required",
       });
 
     }
 
 
-    await deleteChild(id);
+    const existingEmailUser =
+      await getUserByEmail(
+        email
+      );
+
+
+    if (
+      existingEmailUser &&
+      Number(
+        existingEmailUser.id
+      ) !== userId
+    ) {
+
+      return res.status(409).json({
+        message:
+          "Email already exists",
+      });
+
+    }
+
+
+    await updateUserByAdmin(
+      userId,
+      fullName,
+      email,
+      phone
+    );
+
+
+    const updatedUser =
+      await getUserById(
+        userId
+      );
 
 
     return res.json({
       message:
-        "Child deleted successfully",
+        "User updated successfully",
+
+      user: updatedUser
+        ? {
+            id:
+              updatedUser.id,
+
+            full_name:
+              updatedUser.full_name,
+
+            email:
+              updatedUser.email,
+
+            role:
+              updatedUser.role,
+
+            phone:
+              updatedUser.phone,
+
+            avatar_url:
+              updatedUser.avatar_url,
+
+            is_active:
+              updatedUser.is_active,
+          }
+        : null,
     });
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Update user error:",
+      error
+    );
+
 
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -204,75 +659,160 @@ export const removeChild = async (
 };
 
 
-export const editChild = async (
+export const changeUserStatus = async (
   req: Request,
   res: Response
 ) => {
 
   try {
 
-    const id =
-      Number(req.params.id);
-
-
-    const {
-      full_name,
-      age,
-      gender,
-      parent_name,
-      region,
-      notes,
-    } = req.body;
-
-
-    const numericAge =
-      Number(age);
+    const userId =
+      Number(
+        req.params.userId
+      );
 
 
     if (
-      !Number.isInteger(id) ||
-      id <= 0
+      !Number.isInteger(
+        userId
+      ) ||
+      userId <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid child ID",
+        message:
+          "Invalid user ID",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        userId
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    const isActive =
+      req.body.is_active;
+
+
+    if (
+      typeof isActive !==
+      "boolean"
+    ) {
+
+      return res.status(400).json({
+        message:
+          "is_active must be true or false",
+      });
+
+    }
+
+
+    await updateUserActiveStatus(
+      userId,
+      isActive
+    );
+
+
+    return res.json({
+      message:
+        isActive
+          ? "User activated successfully"
+          : "User deactivated successfully",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Update user status error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const removeUser = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    const userId =
+      Number(
+        req.params.userId
+      );
+
+
+    if (
+      !Number.isInteger(
+        userId
+      ) ||
+      userId <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Invalid user ID",
       });
 
     }
 
 
     if (
-      !full_name ||
-      !String(full_name).trim() ||
-      !Number.isInteger(numericAge) ||
-      numericAge <= 0 ||
-      !gender ||
-      !String(gender).trim() ||
-      !parent_name ||
-      !String(parent_name).trim() ||
-      !region ||
-      !String(region).trim()
+      req.auth &&
+      Number(
+        req.auth.id
+      ) === userId
     ) {
 
       return res.status(400).json({
         message:
-          "Please provide all required fields",
+          "You cannot delete your own account",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        userId
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
       });
 
     }
 
 
     const affectedRows =
-      await updateChildInDatabase(
-        id,
-        String(full_name).trim(),
-        numericAge,
-        String(gender).trim(),
-        String(parent_name).trim(),
-        String(region).trim(),
-        notes
-          ? String(notes).trim()
-          : null
+      await deleteUser(
+        userId
       );
 
 
@@ -281,7 +821,8 @@ export const editChild = async (
     ) {
 
       return res.status(404).json({
-        message: "Child not found",
+        message:
+          "User not found",
       });
 
     }
@@ -289,15 +830,346 @@ export const editChild = async (
 
     return res.json({
       message:
-        "Child updated successfully",
+        "User deleted successfully",
     });
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Delete user error:",
+      error
+    );
+
 
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchAssignments = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const assignments =
+      await getAllChildAssignments();
+
+
+    return res.json(
+      assignments
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch assignments error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchChildUsers = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const childId =
+      Number(
+        req.params.childId
+      );
+
+
+    if (
+      !Number.isInteger(
+        childId
+      ) ||
+      childId <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Invalid child ID",
+      });
+
+    }
+
+
+    const child =
+      await getChildById(
+        childId
+      );
+
+
+    if (!child) {
+
+      return res.status(404).json({
+        message:
+          "Child not found",
+      });
+
+    }
+
+
+    const users =
+      await getUsersForChild(
+        childId
+      );
+
+
+    return res.json(
+      users
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch child users error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const assignUserToChild = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const childId =
+      Number(
+        req.body.child_id
+      );
+
+
+    const userId =
+      Number(
+        req.body.user_id
+      );
+
+
+    if (
+      !Number.isInteger(
+        childId
+      ) ||
+      childId <= 0 ||
+      !Number.isInteger(
+        userId
+      ) ||
+      userId <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Valid child ID and user ID are required",
+      });
+
+    }
+
+
+    const child =
+      await getChildById(
+        childId
+      );
+
+
+    if (!child) {
+
+      return res.status(404).json({
+        message:
+          "Child not found",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        userId
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (
+      user.role !==
+        "parent" &&
+      user.role !==
+        "therapist"
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Only parents and therapists can be assigned to children",
+      });
+
+    }
+
+
+    if (
+      Number(
+        user.is_active
+      ) !== 1
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Inactive users cannot be assigned to children",
+      });
+
+    }
+
+
+    const result =
+      await linkUserToChild(
+        userId,
+        childId
+      );
+
+
+    if (
+      result.affectedRows === 0
+    ) {
+
+      return res.json({
+        message:
+          "User is already assigned to this child",
+      });
+
+    }
+
+
+    return res.status(201).json({
+      message:
+        "User assigned to child successfully",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Assign user to child error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const removeUserFromChild = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const childId =
+      Number(
+        req.params.childId
+      );
+
+
+    const userId =
+      Number(
+        req.params.userId
+      );
+
+
+    if (
+      !Number.isInteger(
+        childId
+      ) ||
+      childId <= 0 ||
+      !Number.isInteger(
+        userId
+      ) ||
+      userId <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Invalid child or user ID",
+      });
+
+    }
+
+
+    const affectedRows =
+      await unlinkUserFromChild(
+        userId,
+        childId
+      );
+
+
+    if (
+      affectedRows === 0
+    ) {
+
+      return res.status(404).json({
+        message:
+          "Assignment not found",
+      });
+
+    }
+
+
+    return res.json({
+      message:
+        "User removed from child successfully",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Remove user from child error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
     });
 
   }
