@@ -11,6 +11,15 @@ import {
   updateChild as updateChildInDatabase,
 } from "../models/childModel";
 
+import {
+  getChildForUser,
+  getUserById,
+} from "../models/userModel";
+
+import type {
+  AuthenticatedRequest,
+} from "../middleware/authMiddleware";
+
 
 export const fetchUsers = async (
   req: Request,
@@ -298,6 +307,192 @@ export const editChild = async (
 
     return res.status(500).json({
       message: "Server Error",
+    });
+
+  }
+
+};
+
+
+export const editParentChild = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    if (
+      req.auth.role !==
+      "parent"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Parent access required",
+      });
+
+    }
+
+
+    const id =
+      Number(
+        req.params.id
+      );
+
+
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Invalid child ID",
+      });
+
+    }
+
+
+    const parent =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!parent) {
+
+      return res.status(404).json({
+        message:
+          "Parent account not found",
+      });
+
+    }
+
+
+    if (
+      Number(
+        parent.is_active
+      ) !== 1
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const child =
+      await getChildForUser(
+        req.auth.id,
+        id
+      );
+
+
+    if (!child) {
+
+      return res.status(404).json({
+        message:
+          "Child not found or not linked to this parent",
+      });
+
+    }
+
+
+    const {
+      full_name,
+      age,
+      gender,
+      region,
+    } = req.body;
+
+
+    const numericAge =
+      Number(age);
+
+
+    if (
+      !full_name ||
+      !String(full_name).trim() ||
+      !Number.isInteger(
+        numericAge
+      ) ||
+      numericAge <= 0 ||
+      !gender ||
+      !String(gender).trim() ||
+      !region ||
+      !String(region).trim()
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Please provide all required fields",
+      });
+
+    }
+
+
+    const affectedRows =
+      await updateChildInDatabase(
+        id,
+        String(
+          full_name
+        ).trim(),
+        numericAge,
+        String(
+          gender
+        ).trim(),
+        String(
+          child.parent_name ||
+          parent.full_name ||
+          ""
+        ).trim(),
+        String(
+          region
+        ).trim(),
+        child.notes ?? null
+      );
+
+
+    if (
+      affectedRows === 0
+    ) {
+
+      return res.status(404).json({
+        message:
+          "Child not found",
+      });
+
+    }
+
+
+    return res.json({
+      message:
+        "Child updated successfully",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Parent child update error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
     });
 
   }

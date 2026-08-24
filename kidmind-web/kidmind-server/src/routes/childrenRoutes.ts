@@ -1,4 +1,6 @@
-import { Router } from "express";
+import {
+  Router,
+} from "express";
 
 import {
   fetchUsers,
@@ -6,25 +8,57 @@ import {
   createChild,
   removeChild,
   editChild,
+  editParentChild,
 } from "../controllers/childController";
 
-
-const router = Router();
-
-
-router.get("/", fetchUsers);
-
-
-router.get("/:id", fetchChildById);
+import {
+  authenticate,
+  authorizeRoles,
+} from "../middleware/authMiddleware";
 
 
-router.post("/", createChild);
+const router =
+  Router();
 
 
-router.put("/:id", editChild);
+router.get(
+  "/",
+  fetchUsers
+);
 
 
-router.delete("/:id", removeChild);
+router.put(
+  "/parent/:id",
+  authenticate,
+  authorizeRoles(
+    "parent"
+  ),
+  editParentChild
+);
+
+
+router.get(
+  "/:id",
+  fetchChildById
+);
+
+
+router.post(
+  "/",
+  createChild
+);
+
+
+router.put(
+  "/:id",
+  editChild
+);
+
+
+router.delete(
+  "/:id",
+  removeChild
+);
 
 
 export default router;

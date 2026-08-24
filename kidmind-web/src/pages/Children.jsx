@@ -1,3 +1,8 @@
+import {
+    useEffect,
+    useState
+} from "react";
+
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 
@@ -5,11 +10,6 @@ import ChildrenHeader from "../components/children/ChildrenHeader";
 import ChildrenTable from "../components/children/ChildrenTable";
 import AddChildModal from "../components/children/AddChildModal";
 import EditChildModal from "../components/children/EditChildModal";
-
-import {
-    useEffect,
-    useState
-} from "react";
 
 import {
     deleteChild,
@@ -20,269 +20,39 @@ import {
     getSessions
 } from "../api/sessionsApi";
 
-
-const domainConfigs = [
-    {
-        gameName: "focus finder",
-    },
-    {
-        gameName: "memory match",
-    },
-    {
-        gameName: "puzzle path",
-    },
-    {
-        gameName: "reading adventure",
-    },
-    {
-        gameName: "quick match",
-    },
-];
-
-
-const normalizeGameName = (
-    value
-) => {
-
-    return String(
-        value || ""
-    )
-        .trim()
-        .toLowerCase();
-
-};
-
-
-const getTimestamp = (
-    game,
-    session
-) => {
-
-    const value =
-        game?.ended_at ||
-        game?.started_at ||
-        game?.updated_at ||
-        game?.created_at ||
-        session?.ended_at ||
-        session?.started_at ||
-        session?.updated_at ||
-        session?.created_at;
-
-
-    if (!value) {
-        return 0;
-    }
-
-
-    const timestamp =
-        new Date(
-            String(value).replace(
-                " ",
-                "T"
-            )
-        ).getTime();
-
-
-    return Number.isFinite(
-        timestamp
-    )
-        ? timestamp
-        : 0;
-
-};
-
-
-const getLatestGameScore = (
-    sessions,
-    gameName
-) => {
-
-    const matches = [];
-
-
-    sessions.forEach(
-        (session) => {
-
-            if (
-                !Array.isArray(
-                    session.games
-                )
-            ) {
-                return;
-            }
-
-
-            session.games.forEach(
-                (game) => {
-
-                    const isFinished =
-                        game.status ===
-                            "Completed" ||
-                        game.status ===
-                            "Failed";
-
-
-                    const score =
-                        Number(
-                            game.score
-                        );
-
-
-                    if (
-                        !isFinished ||
-                        normalizeGameName(
-                            game.game_name
-                        ) !== gameName ||
-                        !Number.isFinite(
-                            score
-                        )
-                    ) {
-                        return;
-                    }
-
-
-                    matches.push({
-                        score:
-                            Math.max(
-                                0,
-                                Math.min(
-                                    100,
-                                    Math.round(
-                                        score
-                                    )
-                                )
-                            ),
-
-                        timestamp:
-                            getTimestamp(
-                                game,
-                                session
-                            ),
-                    });
-
-                }
-            );
-
-        }
-    );
-
-
-    if (
-        matches.length === 0
-    ) {
-        return null;
-    }
-
-
-    matches.sort(
-        (
-            first,
-            second
-        ) =>
-            second.timestamp -
-            first.timestamp
-    );
-
-
-    return matches[0].score;
-
-};
-
-
-const calculateOverallScore = (
-    sessions
-) => {
-
-    const domainScores =
-        domainConfigs.map(
-            (domain) =>
-                getLatestGameScore(
-                    sessions,
-                    domain.gameName
-                )
-        );
-
-
-    const availableValues =
-        domainScores.filter(
-            (value) =>
-                typeof value ===
-                    "number" &&
-                Number.isFinite(
-                    value
-                )
-        );
-
-
-    if (
-        availableValues.length === 0
-    ) {
-        return null;
-    }
-
-
-    return Math.round(
-        availableValues.reduce(
-            (
-                total,
-                value
-            ) =>
-                total +
-                value,
-            0
-        ) /
-        availableValues.length
-    );
-
-};
-
-
-const getSessionTimestamp = (
-    session
-) => {
-
-    const value =
-        session?.ended_at ||
-        session?.updated_at ||
-        session?.started_at ||
-        session?.created_at;
-
-
-    if (!value) {
-        return 0;
-    }
-
-
-    const timestamp =
-        new Date(
-            String(value).replace(
-                " ",
-                "T"
-            )
-        ).getTime();
-
-
-    return Number.isFinite(
-        timestamp
-    )
-        ? timestamp
-        : 0;
-
-};
+import {
+    calculateCognitiveScore,
+    getLatestCompletedAssessment,
+} from "../utils/cognitiveScores";
 
 
 const formatAssessmentDate = (
-    timestamp
+    session
 ) => {
 
-    if (!timestamp) {
+    if (!session) {
+        return "Not assessed";
+    }
+
+
+    const value =
+        session.ended_at ||
+        session.updated_at ||
+        session.started_at ||
+        session.created_at;
+
+
+    if (!value) {
         return "Not assessed";
     }
 
 
     const date =
         new Date(
-            timestamp
+            String(value).replace(
+                " ",
+                "T"
+            )
         );
 
 
@@ -302,40 +72,6 @@ const formatAssessmentDate = (
             month: "short",
             year: "numeric",
         }
-    );
-
-};
-
-
-const getLastAssessment = (
-    sessions
-) => {
-
-    const assessedSessions =
-        sessions.filter(
-            (session) =>
-                session.status ===
-                "Completed"
-        );
-
-
-    if (
-        assessedSessions.length === 0
-    ) {
-        return "Not assessed";
-    }
-
-
-    const latestTimestamp =
-        Math.max(
-            ...assessedSessions.map(
-                getSessionTimestamp
-            )
-        );
-
-
-    return formatAssessmentDate(
-        latestTimestamp
     );
 
 };
@@ -379,6 +115,14 @@ const Children = () => {
                     ]);
 
 
+                const allChildren =
+                    Array.isArray(
+                        childrenData
+                    )
+                        ? childrenData
+                        : [];
+
+
                 const allSessions =
                     Array.isArray(
                         sessionsData
@@ -388,12 +132,12 @@ const Children = () => {
 
 
                 const formattedChildren =
-                    childrenData.map(
-                        (child) => {
+                    allChildren.map(
+                        child => {
 
                             const childSessions =
                                 allSessions.filter(
-                                    (session) =>
+                                    session =>
                                         Number(
                                             session.child_id
                                         ) ===
@@ -403,15 +147,21 @@ const Children = () => {
                                 );
 
 
-                            const overallScore =
-                                calculateOverallScore(
+                            const currentCognitiveScore =
+                                calculateCognitiveScore(
+                                    childSessions
+                                );
+
+
+                            const latestAssessment =
+                                getLatestCompletedAssessment(
                                     childSessions
                                 );
 
 
                             const lastAssessment =
-                                getLastAssessment(
-                                    childSessions
+                                formatAssessmentDate(
+                                    latestAssessment
                                 );
 
 
@@ -429,9 +179,9 @@ const Children = () => {
                                     `https://i.pravatar.cc/100?u=kidmind-${child.id}`,
 
                                 score:
-                                    typeof overallScore ===
+                                    typeof currentCognitiveScore ===
                                         "number"
-                                        ? `${overallScore}%`
+                                        ? `${currentCognitiveScore}%`
                                         : "—",
 
                                 lastAssessment,
@@ -541,7 +291,7 @@ const Children = () => {
     const filteredChildren =
         normalizedSearch
             ? children.filter(
-                (child) => {
+                child => {
 
                     const childId =
                         String(

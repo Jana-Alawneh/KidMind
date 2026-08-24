@@ -26,6 +26,7 @@ import FocusFinder from "./pages/FocusFinder";
 import AssessmentReport from "./pages/AssessmentReport";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
+import ParentDashboard from "./pages/ParentDashboard";
 
 
 const getHomeByRole = (
@@ -241,74 +242,6 @@ function ProtectedRoute({
 }
 
 
-function ParentPlaceholder() {
-
-  return (
-
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "#f8f7ff",
-        padding: "60px",
-        fontFamily:
-          "Inter, system-ui, sans-serif",
-      }}
-    >
-
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          background: "white",
-          borderRadius: "28px",
-          padding: "48px",
-          boxShadow:
-            "0 15px 50px rgba(124,108,255,.10)",
-          border:
-            "1px solid #eceaf8",
-        }}
-      >
-
-        <img
-          src="/logo.png"
-          alt="KidMind"
-          style={{
-            width: "220px",
-            marginBottom: "30px",
-          }}
-        />
-
-        <h1
-          style={{
-            margin: "0 0 12px",
-            color: "#30286f",
-            fontSize: "38px",
-          }}
-        >
-          Parent Portal
-        </h1>
-
-        <p
-          style={{
-            margin: 0,
-            color: "#81859b",
-            fontSize: "17px",
-          }}
-        >
-          Parent dashboard will
-          be built later.
-        </p>
-
-      </div>
-
-    </div>
-
-  );
-
-}
-
-
 function App() {
 
   const therapistOnly = [
@@ -369,7 +302,7 @@ function App() {
             ]}
           >
 
-            <ParentPlaceholder />
+            <ParentDashboard />
 
           </ProtectedRoute>
         }

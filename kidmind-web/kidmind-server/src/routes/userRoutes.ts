@@ -8,6 +8,9 @@ import {
   fetchAssignments,
   fetchChildUsers,
   fetchCurrentUser,
+  fetchParentChild,
+  fetchParentChildren,
+  fetchParentTherapists,
   fetchUsers,
   loginUser,
   registerUser,
@@ -36,6 +39,36 @@ router.get(
   "/me",
   authenticate,
   fetchCurrentUser
+);
+
+
+router.get(
+  "/parent/children",
+  authenticate,
+  authorizeRoles(
+    "parent"
+  ),
+  fetchParentChildren
+);
+
+
+router.get(
+  "/parent/children/:childId",
+  authenticate,
+  authorizeRoles(
+    "parent"
+  ),
+  fetchParentChild
+);
+
+
+router.get(
+  "/parent/therapists",
+  authenticate,
+  authorizeRoles(
+    "parent"
+  ),
+  fetchParentTherapists
 );
 
 

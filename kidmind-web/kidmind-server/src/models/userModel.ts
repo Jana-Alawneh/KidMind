@@ -413,6 +413,129 @@ export const getChildrenForUser =
   };
 
 
+export const getChildForUser =
+  async (
+    userId: number,
+    childId: number
+  ) => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          c.*
+        FROM children c
+
+        INNER JOIN child_users cu
+          ON cu.child_id = c.id
+
+        WHERE
+          cu.user_id = ?
+          AND c.id = ?
+
+        LIMIT 1
+        `,
+        [
+          userId,
+          childId,
+        ]
+      );
+
+    return (
+      rows[0] ??
+      null
+    );
+
+  };
+
+
+export const isUserLinkedToChild =
+  async (
+    userId: number,
+    childId: number
+  ) => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          cu.id
+        FROM child_users cu
+
+        WHERE
+          cu.user_id = ?
+          AND cu.child_id = ?
+
+        LIMIT 1
+        `,
+        [
+          userId,
+          childId,
+        ]
+      );
+
+    return (
+      rows.length >
+      0
+    );
+
+  };
+
+
+export const getTherapistsForUserChildren =
+  async (
+    userId: number
+  ) => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT DISTINCT
+          therapist.id,
+          therapist.full_name,
+          therapist.email,
+          therapist.phone,
+          therapist.avatar_url,
+          therapist.is_active,
+
+          therapist_link.child_id,
+
+          child.full_name
+            AS child_name
+
+        FROM child_users owner_link
+
+        INNER JOIN children child
+          ON child.id =
+            owner_link.child_id
+
+        INNER JOIN child_users therapist_link
+          ON therapist_link.child_id =
+            owner_link.child_id
+
+        INNER JOIN users therapist
+          ON therapist.id =
+            therapist_link.user_id
+
+        WHERE
+          owner_link.user_id = ?
+          AND therapist.role =
+            'therapist'
+
+        ORDER BY
+          child.full_name ASC,
+          therapist.full_name ASC
+        `,
+        [
+          userId,
+        ]
+      );
+
+    return rows;
+
+  };
+
+
 export const getUsersForChild =
   async (
     childId: number

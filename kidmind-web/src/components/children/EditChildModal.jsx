@@ -1,11 +1,18 @@
-import { useState } from "react";
+import {
+    useMemo,
+    useState
+} from "react";
 
 import {
     X,
     Pencil
 } from "lucide-react";
 
-import { updateChild } from "../../api/childrenApi";
+import {
+    updateChild
+} from "../../api/childrenApi";
+
+import api from "../../services/api";
 
 
 const EditChildModal = ({
@@ -14,7 +21,40 @@ const EditChildModal = ({
     onSuccess
 }) => {
 
-    const [formData, setFormData] = useState({
+    const isParent =
+        useMemo(
+            () => {
+
+                try {
+
+                    const user =
+                        JSON.parse(
+                            sessionStorage.getItem(
+                                "kidmind_user"
+                            ) || "{}"
+                        );
+
+
+                    return (
+                        user.role ===
+                        "parent"
+                    );
+
+                } catch {
+
+                    return false;
+
+                }
+
+            },
+            []
+        );
+
+
+    const [
+        formData,
+        setFormData
+    ] = useState({
         full_name:
             child.full_name ||
             child.name ||
@@ -35,6 +75,7 @@ const EditChildModal = ({
             child.notes ||
             "",
     });
+
 
     const [
         saving,
@@ -61,33 +102,61 @@ const EditChildModal = ({
 
         event.preventDefault();
 
+
         try {
 
             setSaving(true);
 
-            await updateChild(
-                child.id,
-                {
-                    ...formData,
 
-                    full_name:
-                        formData.full_name.trim(),
+            if (isParent) {
 
-                    age:
-                        Number(
-                            formData.age
-                        ),
+                await api.put(
+                    `/children/parent/${child.id}`,
+                    {
+                        full_name:
+                            formData.full_name.trim(),
 
-                    parent_name:
-                        formData.parent_name.trim(),
+                        age:
+                            Number(
+                                formData.age
+                            ),
 
-                    region:
-                        formData.region.trim(),
+                        gender:
+                            formData.gender,
 
-                    notes:
-                        formData.notes.trim(),
-                }
-            );
+                        region:
+                            formData.region.trim(),
+                    }
+                );
+
+            } else {
+
+                await updateChild(
+                    child.id,
+                    {
+                        ...formData,
+
+                        full_name:
+                            formData.full_name.trim(),
+
+                        age:
+                            Number(
+                                formData.age
+                            ),
+
+                        parent_name:
+                            formData.parent_name.trim(),
+
+                        region:
+                            formData.region.trim(),
+
+                        notes:
+                            formData.notes.trim(),
+                    }
+                );
+
+            }
+
 
             await onSuccess();
 
@@ -100,7 +169,11 @@ const EditChildModal = ({
                 error
             );
 
+
             alert(
+                error?.response
+                    ?.data
+                    ?.message ||
                 error?.message ||
                 "Failed to update child"
             );
@@ -195,7 +268,11 @@ const EditChildModal = ({
                                 text-slate-500
                                 "
                             >
-                                Update child information
+                                {
+                                    isParent
+                                        ? "Update basic child information"
+                                        : "Update child information"
+                                }
                             </p>
 
                         </div>
@@ -365,42 +442,48 @@ const EditChildModal = ({
                     </div>
 
 
-                    <div>
+                    {
+                        !isParent && (
 
-                        <label
-                            className="
-                            text-sm
-                            text-slate-500
-                            "
-                        >
-                            Parent Name
-                        </label>
+                            <div>
 
-                        <input
-                            type="text"
-                            name="parent_name"
-                            value={
-                                formData.parent_name
-                            }
-                            onChange={
-                                handleChange
-                            }
-                            placeholder="Parent name"
-                            className="
-                            w-full
-                            mt-2
-                            h-12
-                            rounded-xl
-                            border
-                            px-4
-                            outline-none
-                            focus:border-[#7B6EF6]
-                            "
-                            required
-                            disabled={saving}
-                        />
+                                <label
+                                    className="
+                                    text-sm
+                                    text-slate-500
+                                    "
+                                >
+                                    Parent Name
+                                </label>
 
-                    </div>
+                                <input
+                                    type="text"
+                                    name="parent_name"
+                                    value={
+                                        formData.parent_name
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Parent name"
+                                    className="
+                                    w-full
+                                    mt-2
+                                    h-12
+                                    rounded-xl
+                                    border
+                                    px-4
+                                    outline-none
+                                    focus:border-[#7B6EF6]
+                                    "
+                                    required
+                                    disabled={saving}
+                                />
+
+                            </div>
+
+                        )
+                    }
 
 
                     <div>
@@ -441,41 +524,47 @@ const EditChildModal = ({
                     </div>
 
 
-                    <div>
+                    {
+                        !isParent && (
 
-                        <label
-                            className="
-                            text-sm
-                            text-slate-500
-                            "
-                        >
-                            Notes
-                        </label>
+                            <div>
 
-                        <textarea
-                            name="notes"
-                            value={
-                                formData.notes
-                            }
-                            onChange={
-                                handleChange
-                            }
-                            placeholder="Additional notes"
-                            rows="3"
-                            className="
-                            w-full
-                            mt-2
-                            rounded-xl
-                            border
-                            p-4
-                            resize-none
-                            outline-none
-                            focus:border-[#7B6EF6]
-                            "
-                            disabled={saving}
-                        />
+                                <label
+                                    className="
+                                    text-sm
+                                    text-slate-500
+                                    "
+                                >
+                                    Notes
+                                </label>
 
-                    </div>
+                                <textarea
+                                    name="notes"
+                                    value={
+                                        formData.notes
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
+                                    placeholder="Additional notes"
+                                    rows="3"
+                                    className="
+                                    w-full
+                                    mt-2
+                                    rounded-xl
+                                    border
+                                    p-4
+                                    resize-none
+                                    outline-none
+                                    focus:border-[#7B6EF6]
+                                    "
+                                    disabled={saving}
+                                />
+
+                            </div>
+
+                        )
+                    }
 
 
                     <div

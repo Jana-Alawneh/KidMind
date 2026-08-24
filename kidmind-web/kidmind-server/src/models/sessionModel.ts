@@ -135,6 +135,58 @@ export const getAllSessions = async () => {
 };
 
 
+export const getSessionsForUser = async (
+  userId: number
+) => {
+
+  const [rows] =
+    await db.query<RowDataPacket[]>(
+      `
+      SELECT DISTINCT
+        sessions.id,
+        sessions.child_id,
+        children.full_name AS child_name,
+        children.age AS child_age,
+        children.gender AS child_gender,
+        children.region AS child_region,
+        sessions.game_name,
+        sessions.status,
+        sessions.scheduled_at,
+        sessions.started_at,
+        sessions.ended_at,
+        sessions.duration_seconds,
+        sessions.score,
+        sessions.difficulty,
+        sessions.created_at,
+        sessions.updated_at
+
+      FROM sessions
+
+      INNER JOIN children
+        ON children.id =
+          sessions.child_id
+
+      INNER JOIN child_users
+        ON child_users.child_id =
+          sessions.child_id
+
+      WHERE
+        child_users.user_id = ?
+
+      ORDER BY
+        sessions.created_at DESC,
+        sessions.id DESC
+      `,
+      [
+        userId,
+      ]
+    );
+
+  return rows;
+
+};
+
+
 export const getSessionById = async (
   id: number
 ) => {
@@ -164,6 +216,59 @@ export const getSessionById = async (
       WHERE sessions.id = ?
       `,
       [id]
+    );
+
+  return rows[0] ?? null;
+
+};
+
+
+export const getSessionForUser = async (
+  userId: number,
+  sessionId: number
+) => {
+
+  const [rows] =
+    await db.query<RowDataPacket[]>(
+      `
+      SELECT
+        sessions.id,
+        sessions.child_id,
+        children.full_name AS child_name,
+        children.age AS child_age,
+        children.gender AS child_gender,
+        children.region AS child_region,
+        sessions.game_name,
+        sessions.status,
+        sessions.scheduled_at,
+        sessions.started_at,
+        sessions.ended_at,
+        sessions.duration_seconds,
+        sessions.score,
+        sessions.difficulty,
+        sessions.created_at,
+        sessions.updated_at
+
+      FROM sessions
+
+      INNER JOIN children
+        ON children.id =
+          sessions.child_id
+
+      INNER JOIN child_users
+        ON child_users.child_id =
+          sessions.child_id
+
+      WHERE
+        child_users.user_id = ?
+        AND sessions.id = ?
+
+      LIMIT 1
+      `,
+      [
+        userId,
+        sessionId,
+      ]
     );
 
   return rows[0] ?? null;

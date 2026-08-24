@@ -14,9 +14,11 @@ import {
   getAllSessions,
   getNextPendingGame,
   getSessionById,
+  getSessionForUser,
   getSessionGameById,
   getSessionGames,
   getSessionGamesSummary,
+  getSessionsForUser,
   pauseActiveGameBySessionId,
   pauseSessionById,
   resumePausedGameBySessionId,
@@ -32,20 +34,32 @@ import {
   getChildById,
 } from "../models/childModel";
 
+import {
+  getUserById,
+} from "../models/userModel";
+
+import type {
+  AuthenticatedRequest,
+} from "../middleware/authMiddleware";
+
 
 const getSessionDetails = async (
   sessionId: number
 ) => {
 
   const session =
-    await getSessionById(sessionId);
+    await getSessionById(
+      sessionId
+    );
 
   if (!session) {
     return null;
   }
 
   const games =
-    await getSessionGames(sessionId);
+    await getSessionGames(
+      sessionId
+    );
 
   return {
     ...session,
@@ -53,6 +67,40 @@ const getSessionDetails = async (
   };
 
 };
+
+
+const getParentSessionDetails =
+  async (
+    userId: number,
+    sessionId: number
+  ) => {
+
+    const session =
+      await getSessionForUser(
+        userId,
+        sessionId
+      );
+
+
+    if (!session) {
+
+      return null;
+
+    }
+
+
+    const games =
+      await getSessionGames(
+        sessionId
+      );
+
+
+    return {
+      ...session,
+      games,
+    };
+
+  };
 
 
 const isFinishedStatus = (
@@ -91,6 +139,7 @@ export const fetchAllSessions = async (
     const sessionRows =
       await getAllSessions();
 
+
     const sessions =
       await Promise.all(
         sessionRows.map(
@@ -98,8 +147,11 @@ export const fetchAllSessions = async (
 
             const games =
               await getSessionGames(
-                Number(session.id)
+                Number(
+                  session.id
+                )
               );
+
 
             return {
               ...session,
@@ -109,6 +161,7 @@ export const fetchAllSessions = async (
           }
         )
       );
+
 
     return res.json({
       sessions,
@@ -121,13 +174,248 @@ export const fetchAllSessions = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
 
 };
+
+
+export const fetchParentSessions =
+  async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      if (!req.auth) {
+
+        return res.status(401).json({
+          message:
+            "Authentication required",
+        });
+
+      }
+
+
+      if (
+        req.auth.role !==
+        "parent"
+      ) {
+
+        return res.status(403).json({
+          message:
+            "Parent access required",
+        });
+
+      }
+
+
+      const parent =
+        await getUserById(
+          req.auth.id
+        );
+
+
+      if (!parent) {
+
+        return res.status(404).json({
+          message:
+            "Parent account not found",
+        });
+
+      }
+
+
+      if (
+        Number(
+          parent.is_active
+        ) !== 1
+      ) {
+
+        return res.status(403).json({
+          message:
+            "This account is inactive",
+        });
+
+      }
+
+
+      const sessionRows =
+        await getSessionsForUser(
+          req.auth.id
+        );
+
+
+      const sessions =
+        await Promise.all(
+          sessionRows.map(
+            async (session) => {
+
+              const games =
+                await getSessionGames(
+                  Number(
+                    session.id
+                  )
+                );
+
+
+              return {
+                ...session,
+                games,
+              };
+
+            }
+          )
+        );
+
+
+      return res.json({
+        sessions,
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Failed to load parent sessions:",
+        error
+      );
+
+
+      return res.status(500).json({
+        message:
+          "Server Error",
+      });
+
+    }
+
+  };
+
+
+export const fetchParentSessionById =
+  async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      if (!req.auth) {
+
+        return res.status(401).json({
+          message:
+            "Authentication required",
+        });
+
+      }
+
+
+      if (
+        req.auth.role !==
+        "parent"
+      ) {
+
+        return res.status(403).json({
+          message:
+            "Parent access required",
+        });
+
+      }
+
+
+      const sessionId =
+        Number(
+          req.params.sessionId
+        );
+
+
+      if (
+        !Number.isInteger(
+          sessionId
+        ) ||
+        sessionId <= 0
+      ) {
+
+        return res.status(400).json({
+          message:
+            "Invalid session ID",
+        });
+
+      }
+
+
+      const parent =
+        await getUserById(
+          req.auth.id
+        );
+
+
+      if (!parent) {
+
+        return res.status(404).json({
+          message:
+            "Parent account not found",
+        });
+
+      }
+
+
+      if (
+        Number(
+          parent.is_active
+        ) !== 1
+      ) {
+
+        return res.status(403).json({
+          message:
+            "This account is inactive",
+        });
+
+      }
+
+
+      const session =
+        await getParentSessionDetails(
+          req.auth.id,
+          sessionId
+        );
+
+
+      if (!session) {
+
+        return res.status(404).json({
+          message:
+            "Session not found or not linked to this parent",
+        });
+
+      }
+
+
+      return res.json(
+        session
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Failed to load parent session:",
+        error
+      );
+
+
+      return res.status(500).json({
+        message:
+          "Server Error",
+      });
+
+    }
+
+  };
 
 
 export const createSession = async (
@@ -138,36 +426,46 @@ export const createSession = async (
   try {
 
     const childId =
-      Number(req.body.child_id);
+      Number(
+        req.body.child_id
+      );
 
 
     if (
-      !Number.isInteger(childId) ||
+      !Number.isInteger(
+        childId
+      ) ||
       childId <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid child ID",
+        message:
+          "Invalid child ID",
       });
 
     }
 
 
     const child =
-      await getChildById(childId);
+      await getChildById(
+        childId
+      );
 
 
     if (!child) {
 
       return res.status(404).json({
-        message: "Child not found",
+        message:
+          "Child not found",
       });
 
     }
 
 
     const rawGames =
-      Array.isArray(req.body.games) &&
+      Array.isArray(
+        req.body.games
+      ) &&
       req.body.games.length > 0
         ? req.body.games
         : [
@@ -181,39 +479,40 @@ export const createSession = async (
           ];
 
 
-    const games: SessionGameInput[] =
-      rawGames.map(
-        (
-          game: {
-            game_name?: unknown;
-            difficulty?: unknown;
+    const games:
+      SessionGameInput[] =
+        rawGames.map(
+          (
+            game: {
+              game_name?: unknown;
+              difficulty?: unknown;
+            }
+          ) => {
+
+            return {
+
+              game_name:
+                typeof game.game_name ===
+                "string"
+                  ? game.game_name.trim()
+                  : "",
+
+              difficulty:
+                typeof game.difficulty ===
+                  "string" &&
+                game.difficulty.trim()
+                  ? game.difficulty.trim()
+                  : null,
+
+            };
+
           }
-        ) => {
-
-          return {
-
-            game_name:
-              typeof game.game_name ===
-              "string"
-                ? game.game_name.trim()
-                : "",
-
-            difficulty:
-              typeof game.difficulty ===
-                "string" &&
-              game.difficulty.trim()
-                ? game.difficulty.trim()
-                : null,
-
-          };
-
-        }
-      );
+        );
 
 
     const invalidGame =
       games.some(
-        (game) =>
+        game =>
           !game.game_name
       );
 
@@ -264,8 +563,10 @@ export const createSession = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -281,35 +582,45 @@ export const fetchSessionById = async (
   try {
 
     const id =
-      Number(req.params.id);
+      Number(
+        req.params.id
+      );
 
 
     if (
-      !Number.isInteger(id) ||
+      !Number.isInteger(
+        id
+      ) ||
       id <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid session ID",
+        message:
+          "Invalid session ID",
       });
 
     }
 
 
     const session =
-      await getSessionDetails(id);
+      await getSessionDetails(
+        id
+      );
 
 
     if (!session) {
 
       return res.status(404).json({
-        message: "Session not found",
+        message:
+          "Session not found",
       });
 
     }
 
 
-    return res.json(session);
+    return res.json(
+      session
+    );
 
   } catch (error) {
 
@@ -318,8 +629,10 @@ export const fetchSessionById = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -335,7 +648,10 @@ export const pauseSession = async (
   try {
 
     const id =
-      Number(req.params.id);
+      Number(
+        req.params.id
+      );
+
 
     const durationSeconds =
       Number(
@@ -344,12 +660,15 @@ export const pauseSession = async (
 
 
     if (
-      !Number.isInteger(id) ||
+      !Number.isInteger(
+        id
+      ) ||
       id <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid session ID",
+        message:
+          "Invalid session ID",
       });
 
     }
@@ -371,13 +690,16 @@ export const pauseSession = async (
 
 
     const currentSession =
-      await getSessionById(id);
+      await getSessionById(
+        id
+      );
 
 
     if (!currentSession) {
 
       return res.status(404).json({
-        message: "Session not found",
+        message:
+          "Session not found",
       });
 
     }
@@ -409,7 +731,9 @@ export const pauseSession = async (
 
 
     const session =
-      await getSessionDetails(id);
+      await getSessionDetails(
+        id
+      );
 
 
     return res.json({
@@ -426,8 +750,10 @@ export const pauseSession = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -443,7 +769,10 @@ export const resumeSession = async (
   try {
 
     const id =
-      Number(req.params.id);
+      Number(
+        req.params.id
+      );
+
 
     const durationSeconds =
       Number(
@@ -452,12 +781,15 @@ export const resumeSession = async (
 
 
     if (
-      !Number.isInteger(id) ||
+      !Number.isInteger(
+        id
+      ) ||
       id <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid session ID",
+        message:
+          "Invalid session ID",
       });
 
     }
@@ -479,13 +811,16 @@ export const resumeSession = async (
 
 
     const currentSession =
-      await getSessionById(id);
+      await getSessionById(
+        id
+      );
 
 
     if (!currentSession) {
 
       return res.status(404).json({
-        message: "Session not found",
+        message:
+          "Session not found",
       });
 
     }
@@ -517,7 +852,9 @@ export const resumeSession = async (
 
 
     const session =
-      await getSessionDetails(id);
+      await getSessionDetails(
+        id
+      );
 
 
     return res.json({
@@ -534,8 +871,10 @@ export const resumeSession = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -551,24 +890,33 @@ export const completeSession = async (
   try {
 
     const id =
-      Number(req.params.id);
+      Number(
+        req.params.id
+      );
+
 
     const durationSeconds =
       Number(
         req.body.duration_seconds
       );
 
+
     const score =
-      Number(req.body.score);
+      Number(
+        req.body.score
+      );
 
 
     if (
-      !Number.isInteger(id) ||
+      !Number.isInteger(
+        id
+      ) ||
       id <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid session ID",
+        message:
+          "Invalid session ID",
       });
 
     }
@@ -590,7 +938,9 @@ export const completeSession = async (
 
 
     if (
-      !Number.isInteger(score) ||
+      !Number.isInteger(
+        score
+      ) ||
       score < 0 ||
       score > 100
     ) {
@@ -604,13 +954,16 @@ export const completeSession = async (
 
 
     const currentSession =
-      await getSessionById(id);
+      await getSessionById(
+        id
+      );
 
 
     if (!currentSession) {
 
       return res.status(404).json({
-        message: "Session not found",
+        message:
+          "Session not found",
       });
 
     }
@@ -638,7 +991,9 @@ export const completeSession = async (
 
 
     const session =
-      await getSessionDetails(id);
+      await getSessionDetails(
+        id
+      );
 
 
     return res.json({
@@ -655,8 +1010,10 @@ export const completeSession = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -672,7 +1029,10 @@ export const endSession = async (
   try {
 
     const id =
-      Number(req.params.id);
+      Number(
+        req.params.id
+      );
+
 
     const durationSeconds =
       Number(
@@ -681,12 +1041,15 @@ export const endSession = async (
 
 
     if (
-      !Number.isInteger(id) ||
+      !Number.isInteger(
+        id
+      ) ||
       id <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid session ID",
+        message:
+          "Invalid session ID",
       });
 
     }
@@ -708,13 +1071,16 @@ export const endSession = async (
 
 
     const currentSession =
-      await getSessionById(id);
+      await getSessionById(
+        id
+      );
 
 
     if (!currentSession) {
 
       return res.status(404).json({
-        message: "Session not found",
+        message:
+          "Session not found",
       });
 
     }
@@ -760,7 +1126,9 @@ export const endSession = async (
 
 
     const session =
-      await getSessionDetails(id);
+      await getSessionDetails(
+        id
+      );
 
 
     return res.json({
@@ -777,8 +1145,10 @@ export const endSession = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -794,7 +1164,10 @@ export const cancelSession = async (
   try {
 
     const id =
-      Number(req.params.id);
+      Number(
+        req.params.id
+      );
+
 
     const durationSeconds =
       Number(
@@ -803,25 +1176,31 @@ export const cancelSession = async (
 
 
     if (
-      !Number.isInteger(id) ||
+      !Number.isInteger(
+        id
+      ) ||
       id <= 0
     ) {
 
       return res.status(400).json({
-        message: "Invalid session ID",
+        message:
+          "Invalid session ID",
       });
 
     }
 
 
     const currentSession =
-      await getSessionById(id);
+      await getSessionById(
+        id
+      );
 
 
     if (!currentSession) {
 
       return res.status(404).json({
-        message: "Session not found",
+        message:
+          "Session not found",
       });
 
     }
@@ -853,7 +1232,9 @@ export const cancelSession = async (
 
 
     const session =
-      await getSessionDetails(id);
+      await getSessionDetails(
+        id
+      );
 
 
     return res.json({
@@ -870,8 +1251,10 @@ export const cancelSession = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -891,6 +1274,7 @@ export const startSessionGame = async (
         req.params.sessionId
       );
 
+
     const gameId =
       Number(
         req.params.gameId
@@ -902,7 +1286,9 @@ export const startSessionGame = async (
         sessionId
       ) ||
       sessionId <= 0 ||
-      !Number.isInteger(gameId) ||
+      !Number.isInteger(
+        gameId
+      ) ||
       gameId <= 0
     ) {
 
@@ -919,6 +1305,7 @@ export const startSessionGame = async (
         sessionId
       );
 
+
     const game =
       await getSessionGameById(
         sessionId,
@@ -926,7 +1313,10 @@ export const startSessionGame = async (
       );
 
 
-    if (!session || !game) {
+    if (
+      !session ||
+      !game
+    ) {
 
       return res.status(404).json({
         message:
@@ -951,7 +1341,8 @@ export const startSessionGame = async (
 
 
     if (
-      game.status !== "Pending"
+      game.status !==
+      "Pending"
     ) {
 
       return res.status(409).json({
@@ -969,7 +1360,9 @@ export const startSessionGame = async (
       );
 
 
-    if (affectedRows === 0) {
+    if (
+      affectedRows === 0
+    ) {
 
       return res.status(409).json({
         message:
@@ -989,7 +1382,8 @@ export const startSessionGame = async (
       message:
         "Game started successfully",
 
-      session: updatedSession,
+      session:
+        updatedSession,
     });
 
   } catch (error) {
@@ -999,8 +1393,10 @@ export const startSessionGame = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }
@@ -1020,15 +1416,18 @@ export const completeSessionGame = async (
         req.params.sessionId
       );
 
+
     const gameId =
       Number(
         req.params.gameId
       );
 
+
     const durationSeconds =
       Number(
         req.body.duration_seconds
       );
+
 
     const sessionDurationSeconds =
       Number(
@@ -1036,8 +1435,11 @@ export const completeSessionGame = async (
           .session_duration_seconds
       );
 
+
     const score =
-      Number(req.body.score);
+      Number(
+        req.body.score
+      );
 
 
     if (
@@ -1045,7 +1447,9 @@ export const completeSessionGame = async (
         sessionId
       ) ||
       sessionId <= 0 ||
-      !Number.isInteger(gameId) ||
+      !Number.isInteger(
+        gameId
+      ) ||
       gameId <= 0
     ) {
 
@@ -1073,7 +1477,9 @@ export const completeSessionGame = async (
 
 
     if (
-      !Number.isInteger(score) ||
+      !Number.isInteger(
+        score
+      ) ||
       score < 0 ||
       score > 100
     ) {
@@ -1150,7 +1556,8 @@ export const completeSessionGame = async (
     if (
       game.status !==
         "In Progress" &&
-      game.status !== "Paused"
+      game.status !==
+        "Paused"
     ) {
 
       return res.status(409).json({
@@ -1172,7 +1579,8 @@ export const completeSessionGame = async (
     const accuracy =
       req.body.accuracy ===
         undefined ||
-      req.body.accuracy === null
+      req.body.accuracy ===
+        null
         ? null
         : Number(
             req.body.accuracy
@@ -1182,7 +1590,8 @@ export const completeSessionGame = async (
     const mistakes =
       req.body.mistakes ===
         undefined ||
-      req.body.mistakes === null
+      req.body.mistakes ===
+        null
         ? null
         : Number(
             req.body.mistakes
@@ -1202,14 +1611,18 @@ export const completeSessionGame = async (
 
     const safeAccuracy =
       accuracy !== null &&
-      Number.isFinite(accuracy)
+      Number.isFinite(
+        accuracy
+      )
         ? accuracy
         : null;
 
 
     const safeMistakes =
       mistakes !== null &&
-      Number.isFinite(mistakes)
+      Number.isFinite(
+        mistakes
+      )
         ? mistakes
         : null;
 
@@ -1252,7 +1665,10 @@ export const completeSessionGame = async (
       false;
 
 
-    if (remainingGames === 0) {
+    if (
+      remainingGames ===
+      0
+    ) {
 
       const averageScore =
         Math.round(
@@ -1285,7 +1701,8 @@ export const completeSessionGame = async (
       );
 
 
-      allGamesCompleted = true;
+      allGamesCompleted =
+        true;
 
     }
 
@@ -1306,18 +1723,22 @@ export const completeSessionGame = async (
 
     return res.json({
       message:
-        gameStatus === "Completed"
+        gameStatus ===
+        "Completed"
           ? "Game completed successfully"
           : "Game finished without successful completion",
 
-      game_status: gameStatus,
+      game_status:
+        gameStatus,
 
       all_games_completed:
         allGamesCompleted,
 
-      next_game: nextGame,
+      next_game:
+        nextGame,
 
-      session: updatedSession,
+      session:
+        updatedSession,
     });
 
   } catch (error) {
@@ -1327,8 +1748,10 @@ export const completeSessionGame = async (
       error
     );
 
+
     return res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
 
   }

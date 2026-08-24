@@ -9,14 +9,42 @@ import {
   createSession,
   endSession,
   fetchAllSessions,
+  fetchParentSessionById,
+  fetchParentSessions,
   fetchSessionById,
   pauseSession,
   resumeSession,
   startSessionGame,
 } from "../controllers/sessionController";
 
+import {
+  authenticate,
+  authorizeRoles,
+} from "../middleware/authMiddleware";
 
-const router = Router();
+
+const router =
+  Router();
+
+
+router.get(
+  "/parent",
+  authenticate,
+  authorizeRoles(
+    "parent"
+  ),
+  fetchParentSessions
+);
+
+
+router.get(
+  "/parent/:sessionId",
+  authenticate,
+  authorizeRoles(
+    "parent"
+  ),
+  fetchParentSessionById
+);
 
 
 router.post(

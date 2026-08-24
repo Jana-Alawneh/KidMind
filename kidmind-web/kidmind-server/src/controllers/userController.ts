@@ -11,6 +11,9 @@ import {
   deleteUser,
   getAllChildAssignments,
   getAllUsers,
+  getChildForUser,
+  getChildrenForUser,
+  getTherapistsForUserChildren,
   getUserByEmail,
   getUserById,
   getUsersForChild,
@@ -450,6 +453,240 @@ export const fetchCurrentUser = async (
 
     console.error(
       "Fetch current user error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchParentChildren = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    if (
+      req.auth.role !==
+      "parent"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Parent access required",
+      });
+
+    }
+
+
+    const parent =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!parent) {
+
+      return res.status(404).json({
+        message:
+          "Parent account not found",
+      });
+
+    }
+
+
+    if (
+      !parent.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const children =
+      await getChildrenForUser(
+        req.auth.id
+      );
+
+
+    return res.json(
+      children
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch parent children error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchParentChild = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    if (
+      req.auth.role !==
+      "parent"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Parent access required",
+      });
+
+    }
+
+
+    const childId =
+      Number(
+        req.params.childId
+      );
+
+
+    if (
+      !Number.isInteger(
+        childId
+      ) ||
+      childId <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Invalid child ID",
+      });
+
+    }
+
+
+    const child =
+      await getChildForUser(
+        req.auth.id,
+        childId
+      );
+
+
+    if (!child) {
+
+      return res.status(404).json({
+        message:
+          "Child not found or not linked to this parent",
+      });
+
+    }
+
+
+    return res.json(
+      child
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch parent child error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchParentTherapists = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    if (
+      req.auth.role !==
+      "parent"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Parent access required",
+      });
+
+    }
+
+
+    const therapists =
+      await getTherapistsForUserChildren(
+        req.auth.id
+      );
+
+
+    return res.json(
+      therapists
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch parent therapists error:",
       error
     );
 
