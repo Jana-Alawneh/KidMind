@@ -51,6 +51,8 @@ import {
   type AuthUser,
 } from "../api/authApi";
 
+import MobileSettings from "@/components/settings/MobileSettings";
+
 import {
   calculateCognitiveScore,
   domainConfigs,
@@ -1201,45 +1203,16 @@ export default function Parent() {
   );
 
   const renderSettings = () => (
-    <>
-      {renderHeader(
-        "Settings",
-        "View your KidMind parent account information."
-      )}
-
-      <Panel>
-        <View style={styles.settingsHeader}>
-          <View style={styles.settingsAvatar}>
-            <Text style={styles.settingsAvatarText}>
-              {getInitials(currentUser?.full_name)}
-            </Text>
-          </View>
-
-          <View style={styles.flexOne}>
-            <Text style={styles.settingsName}>
-              {currentUser?.full_name || "Parent"}
-            </Text>
-            <Text style={styles.settingsRole}>Parent Account</Text>
-          </View>
-        </View>
-
-        <View style={styles.settingsGrid}>
-          <InfoBlock
-            label="Full Name"
-            value={currentUser?.full_name || "—"}
-          />
-          <InfoBlock
-            label="Email"
-            value={currentUser?.email || "—"}
-          />
-          <InfoBlock
-            label="Phone"
-            value={currentUser?.phone || "—"}
-          />
-          <InfoBlock label="Account Type" value="Parent" />
-        </View>
-      </Panel>
-    </>
+    <MobileSettings
+      role="parent"
+      onProfileUpdated={
+        updatedUser => {
+          setCurrentUser(
+            updatedUser
+          );
+        }
+      }
+    />
   );
 
   const renderContent = () => {

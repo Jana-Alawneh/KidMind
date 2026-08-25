@@ -34,6 +34,7 @@ import {
 
 import api from "../services/api";
 import EditChildModal from "../components/children/EditChildModal";
+import ParentSettings from "../components/parent/ParentSettings";
 
 import {
   calculateCognitiveScore,
@@ -549,8 +550,11 @@ export default function ParentDashboard() {
     useState(null);
 
 
-  const currentUser =
-    useMemo(
+  const [
+    currentUser,
+    setCurrentUser,
+  ] =
+    useState(
       () => {
 
         try {
@@ -567,8 +571,7 @@ export default function ParentDashboard() {
 
         }
 
-      },
-      []
+      }
     );
 
 
@@ -2679,90 +2682,20 @@ export default function ParentDashboard() {
     () => {
 
       return (
-        <>
-
-          {
-            renderHeader(
-              "Settings",
-              "View your KidMind parent account information."
-            )
+        <ParentSettings
+          onProfileUpdated={
+            updatedUser =>
+              setCurrentUser(
+                previous => ({
+                  ...previous,
+                  ...updatedUser,
+                })
+              )
           }
-
-
-          <section className="parent-panel settings-panel">
-
-            <div className="settings-avatar">
-              {
-                getInitials(
-                  currentUser.full_name
-                )
-              }
-            </div>
-
-
-            <div className="settings-details">
-
-              <div>
-                <span>
-                  Full Name
-                </span>
-
-                <strong>
-                  {
-                    currentUser.full_name ||
-                    "—"
-                  }
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  Email
-                </span>
-
-                <strong>
-                  {
-                    currentUser.email ||
-                    "—"
-                  }
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  Phone
-                </span>
-
-                <strong>
-                  {
-                    currentUser.phone ||
-                    "—"
-                  }
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  Account Type
-                </span>
-
-                <strong>
-                  Parent
-                </strong>
-              </div>
-
-            </div>
-
-          </section>
-
-        </>
+        />
       );
 
     };
-
 
   const renderContent =
     () => {

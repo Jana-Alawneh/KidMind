@@ -57,6 +57,7 @@ import AdminParents from "@/components/admin/AdminParents";
 import AdminTherapists from "@/components/admin/AdminTherapists";
 import AdminAssignments from "@/components/admin/AdminAssignments";
 import AdminReports from "@/components/admin/AdminReports";
+import MobileSettings from "@/components/settings/MobileSettings";
 
 
 type UserRole =
@@ -1766,6 +1767,25 @@ export default function AdminDashboard() {
       ) {
         return (
           <AdminReports />
+        );
+      }
+
+
+      if (
+        activeSection ===
+        "settings"
+      ) {
+        return (
+          <MobileSettings
+            role="admin"
+            onProfileUpdated={
+              updatedUser =>
+                setCurrentUser({
+                  full_name:
+                    updatedUser.full_name,
+                })
+            }
+          />
         );
       }
 

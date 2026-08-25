@@ -17,6 +17,33 @@ export type ChildLinkType =
   | "parent";
 
 
+export type AppearanceMode =
+  | "system"
+  | "light"
+  | "dark";
+
+
+export interface UserSettingsRow
+  extends RowDataPacket {
+
+  user_id: number;
+  email_notifications: number;
+  account_notifications: number;
+  session_notifications: number;
+  progress_notifications: number;
+  appearance: AppearanceMode;
+  created_at:
+    | string
+    | Date
+    | null;
+  updated_at:
+    | string
+    | Date
+    | null;
+
+}
+
+
 export interface UserRow
   extends RowDataPacket {
 
@@ -270,6 +297,89 @@ export const updateUserProfile =
   };
 
 
+export const updateOwnUserProfile =
+  async (
+    id: number,
+    fullName: string,
+    email: string,
+    phone: string | null,
+    avatarUrl: string | null,
+    region:
+      | string
+      | null
+      | undefined =
+        undefined
+  ) => {
+
+    const normalizedEmail =
+      email
+        .trim()
+        .toLowerCase();
+
+
+    if (
+      region ===
+      undefined
+    ) {
+
+      const [result] =
+        await db.query<ResultSetHeader>(
+          `
+          UPDATE users
+          SET
+            full_name = ?,
+            email = ?,
+            phone = ?,
+            avatar_url = ?
+          WHERE id = ?
+          `,
+          [
+            fullName.trim(),
+            normalizedEmail,
+            phone,
+            avatarUrl,
+            id,
+          ]
+        );
+
+      return result.affectedRows;
+
+    }
+
+
+    const normalizedRegion =
+      region
+        ? region.trim()
+        : null;
+
+
+    const [result] =
+      await db.query<ResultSetHeader>(
+        `
+        UPDATE users
+        SET
+          full_name = ?,
+          email = ?,
+          phone = ?,
+          avatar_url = ?,
+          region = ?
+        WHERE id = ?
+        `,
+        [
+          fullName.trim(),
+          normalizedEmail,
+          phone,
+          avatarUrl,
+          normalizedRegion,
+          id,
+        ]
+      );
+
+    return result.affectedRows;
+
+  };
+
+
 export const updateUserByAdmin =
   async (
     id: number,
@@ -368,6 +478,158 @@ export const updateUserPassword =
       );
 
     return result.affectedRows;
+
+  };
+
+
+export const getOrCreateUserSettings =
+  async (
+    userId: number
+  ) => {
+
+    await db.query(
+      `
+      INSERT INTO user_settings
+      (
+        user_id
+      )
+      VALUES
+      (?)
+      ON DUPLICATE KEY UPDATE
+        user_id = VALUES(user_id)
+      `,
+      [userId]
+    );
+
+
+    const [rows] =
+      await db.query<UserSettingsRow[]>(
+        `
+        SELECT
+          user_id,
+          email_notifications,
+          account_notifications,
+          session_notifications,
+          progress_notifications,
+          appearance,
+          created_at,
+          updated_at
+        FROM user_settings
+        WHERE user_id = ?
+        LIMIT 1
+        `,
+        [userId]
+      );
+
+    return rows[0] ?? null;
+
+  };
+
+
+export const updateUserSettings =
+  async (
+    userId: number,
+    emailNotifications: boolean,
+    accountNotifications: boolean,
+    sessionNotifications: boolean,
+    progressNotifications: boolean,
+    appearance: AppearanceMode
+  ) => {
+
+    const [result] =
+      await db.query<ResultSetHeader>(
+        `
+        INSERT INTO user_settings
+        (
+          user_id,
+          email_notifications,
+          account_notifications,
+          session_notifications,
+          progress_notifications,
+          appearance
+        )
+        VALUES
+        (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          email_notifications =
+            VALUES(email_notifications),
+          account_notifications =
+            VALUES(account_notifications),
+          session_notifications =
+            VALUES(session_notifications),
+          progress_notifications =
+            VALUES(progress_notifications),
+          appearance =
+            VALUES(appearance)
+        `,
+        [
+          userId,
+          emailNotifications
+            ? 1
+            : 0,
+          accountNotifications
+            ? 1
+            : 0,
+          sessionNotifications
+            ? 1
+            : 0,
+          progressNotifications
+            ? 1
+            : 0,
+          appearance,
+        ]
+      );
+
+    return result.affectedRows;
+
+  };
+
+
+export const getAdminSettingsSummary =
+  async () => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          (
+            SELECT COUNT(*)
+            FROM users
+          ) AS total_users,
+          (
+            SELECT COUNT(*)
+            FROM users
+            WHERE role = 'admin'
+          ) AS total_admins,
+          (
+            SELECT COUNT(*)
+            FROM users
+            WHERE role = 'therapist'
+          ) AS total_therapists,
+          (
+            SELECT COUNT(*)
+            FROM users
+            WHERE role = 'parent'
+          ) AS total_parents,
+          (
+            SELECT COUNT(*)
+            FROM children
+          ) AS total_children,
+          (
+            SELECT COUNT(*)
+            FROM sessions
+          ) AS total_sessions
+        `
+      );
+
+    return rows[0] ?? {
+      total_users: 0,
+      total_admins: 0,
+      total_therapists: 0,
+      total_parents: 0,
+      total_children: 0,
+      total_sessions: 0,
+    };
 
   };
 

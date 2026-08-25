@@ -4,6 +4,7 @@ import {
 
 import {
   assignUserToChild,
+  changeCurrentUserPassword,
   changeUserStatus,
   fetchAssignments,
   fetchAvailableChildren,
@@ -12,12 +13,15 @@ import {
   fetchParentChild,
   fetchParentChildren,
   fetchParentTherapists,
+  fetchSettings,
   fetchUserDeleteInfo,
   fetchUsers,
   loginUser,
   registerUser,
   removeUser,
   removeUserFromChild,
+  updateCurrentUserProfile,
+  updateCurrentUserSettings,
   updateUserAsAdmin,
 } from "../controllers/userController";
 
@@ -41,6 +45,34 @@ router.get(
   "/me",
   authenticate,
   fetchCurrentUser
+);
+
+
+router.get(
+  "/settings",
+  authenticate,
+  fetchSettings
+);
+
+
+router.put(
+  "/settings/profile",
+  authenticate,
+  updateCurrentUserProfile
+);
+
+
+router.put(
+  "/settings/password",
+  authenticate,
+  changeCurrentUserPassword
+);
+
+
+router.put(
+  "/settings/preferences",
+  authenticate,
+  updateCurrentUserSettings
 );
 
 

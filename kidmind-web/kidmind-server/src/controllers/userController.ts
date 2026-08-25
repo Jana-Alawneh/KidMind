@@ -10,12 +10,14 @@ import {
   createUser,
   deleteAllAssignmentsForUser,
   deleteUser,
+  getAdminSettingsSummary,
   getAllChildAssignments,
   getAllUsers,
   getAvailableChildrenForRole,
   getChildForUser,
   getChildrenForUser,
   getLinkedChildrenForUser,
+  getOrCreateUserSettings,
   getSelectedLinkedChildren,
   getTherapistsForUserChildren,
   getUserByEmail,
@@ -24,8 +26,12 @@ import {
   linkUserToChild,
   unlinkUserFromChild,
   updateLastLogin,
+  updateOwnUserProfile,
   updateUserActiveStatus,
   updateUserByAdmin,
+  updateUserPassword,
+  updateUserSettings,
+  type AppearanceMode,
   type ChildLinkType,
   type UserRole,
 } from "../models/userModel";
@@ -594,6 +600,838 @@ export const fetchCurrentUser = async (
 
     console.error(
       "Fetch current user error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchSettings = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (!user.is_active) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const settings =
+      await getOrCreateUserSettings(
+        user.id
+      );
+
+
+    let roleInfo:
+      Record<string, unknown>;
+
+
+    if (
+      user.role ===
+      "admin"
+    ) {
+
+      const summary =
+        await getAdminSettingsSummary();
+
+      roleInfo = {
+        type:
+          "admin",
+        system: {
+          name:
+            "KIDMIND",
+          version:
+            process.env.APP_VERSION ||
+            "1.0.0",
+        },
+        summary,
+      };
+
+    } else {
+
+      const children =
+        await getLinkedChildrenForUser(
+          user.id
+        );
+
+      const safeChildren =
+        user.role ===
+        "parent"
+          ? children.map(
+              sanitizeParentChild
+            )
+          : children;
+
+      roleInfo = {
+        type:
+          user.role,
+        child_count:
+          safeChildren.length,
+        children:
+          safeChildren,
+      };
+
+    }
+
+
+    return res.json({
+      user: {
+        id:
+          user.id,
+        full_name:
+          user.full_name,
+        email:
+          user.email,
+        role:
+          user.role,
+        phone:
+          user.phone,
+        region:
+          user.region,
+        avatar_url:
+          user.avatar_url,
+        is_active:
+          Boolean(
+            user.is_active
+          ),
+        last_login_at:
+          user.last_login_at,
+        created_at:
+          user.created_at,
+      },
+      settings: {
+        email_notifications:
+          Boolean(
+            settings
+              ?.email_notifications
+          ),
+        account_notifications:
+          Boolean(
+            settings
+              ?.account_notifications
+          ),
+        session_notifications:
+          Boolean(
+            settings
+              ?.session_notifications
+          ),
+        progress_notifications:
+          Boolean(
+            settings
+              ?.progress_notifications
+          ),
+        appearance:
+          settings?.appearance ||
+          "system",
+      },
+      role_info:
+        roleInfo,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Fetch settings error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const updateCurrentUserProfile = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (!user.is_active) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const fullName =
+      String(
+        req.body.full_name ||
+        ""
+      ).trim();
+
+
+    const email =
+      String(
+        req.body.email ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const phone =
+      req.body.phone
+        ? String(
+            req.body.phone
+          ).trim()
+        : null;
+
+
+    const avatarUrl =
+      req.body.avatar_url ===
+        undefined
+        ? user.avatar_url
+        : req.body.avatar_url
+          ? String(
+              req.body.avatar_url
+            ).trim()
+          : null;
+
+
+    const region =
+      req.body.region ===
+        undefined
+        ? undefined
+        : req.body.region
+          ? String(
+              req.body.region
+            ).trim()
+          : null;
+
+
+    if (
+      !fullName ||
+      !email
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Full name and email are required",
+      });
+
+    }
+
+
+    const finalRegion =
+      region ===
+        undefined
+        ? user.region
+        : region;
+
+
+    if (
+      user.role ===
+        "parent" &&
+      !finalRegion
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Region is required for parents",
+      });
+
+    }
+
+
+    const existingEmailUser =
+      await getUserByEmail(
+        email
+      );
+
+
+    if (
+      existingEmailUser &&
+      Number(
+        existingEmailUser.id
+      ) !==
+        Number(
+          user.id
+        )
+    ) {
+
+      return res.status(409).json({
+        message:
+          "Email already exists",
+      });
+
+    }
+
+
+    await updateOwnUserProfile(
+      user.id,
+      fullName,
+      email,
+      phone,
+      avatarUrl,
+      finalRegion
+    );
+
+
+    if (
+      user.role ===
+      "parent" &&
+      user.full_name !==
+        fullName
+    ) {
+
+      const children =
+        await getLinkedChildrenForUser(
+          user.id
+        );
+
+      for (
+        const child of
+        children
+      ) {
+
+        await syncLegacyParentName(
+          Number(
+            child.id
+          ),
+          fullName
+        );
+
+      }
+
+    }
+
+
+    const updatedUser =
+      await getUserById(
+        user.id
+      );
+
+
+    if (!updatedUser) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    return res.json({
+      message:
+        "Profile updated successfully",
+      user: {
+        id:
+          updatedUser.id,
+        full_name:
+          updatedUser.full_name,
+        email:
+          updatedUser.email,
+        role:
+          updatedUser.role,
+        phone:
+          updatedUser.phone,
+        region:
+          updatedUser.region,
+        avatar_url:
+          updatedUser.avatar_url,
+        is_active:
+          Boolean(
+            updatedUser.is_active
+          ),
+      },
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Update current user profile error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const changeCurrentUserPassword = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (!user.is_active) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const currentPassword =
+      String(
+        req.body.current_password ||
+        ""
+      );
+
+
+    const newPassword =
+      String(
+        req.body.new_password ||
+        ""
+      );
+
+
+    const confirmPassword =
+      req.body.confirm_password ===
+        undefined
+        ? null
+        : String(
+            req.body.confirm_password
+          );
+
+
+    if (
+      !currentPassword ||
+      !newPassword
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Current password and new password are required",
+      });
+
+    }
+
+
+    if (
+      newPassword.length < 6
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Password must be at least 6 characters",
+      });
+
+    }
+
+
+    if (
+      confirmPassword !==
+        null &&
+      newPassword !==
+        confirmPassword
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Password confirmation does not match",
+      });
+
+    }
+
+
+    const passwordMatches =
+      await bcrypt.compare(
+        currentPassword,
+        user.password_hash
+      );
+
+
+    if (!passwordMatches) {
+
+      return res.status(400).json({
+        message:
+          "Current password is incorrect",
+      });
+
+    }
+
+
+    const samePassword =
+      await bcrypt.compare(
+        newPassword,
+        user.password_hash
+      );
+
+
+    if (samePassword) {
+
+      return res.status(400).json({
+        message:
+          "New password must be different from current password",
+      });
+
+    }
+
+
+    const passwordHash =
+      await bcrypt.hash(
+        newPassword,
+        12
+      );
+
+
+    await updateUserPassword(
+      user.id,
+      passwordHash
+    );
+
+
+    return res.json({
+      message:
+        "Password changed successfully",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Change password error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const updateCurrentUserSettings = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (!user.is_active) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    const currentSettings =
+      await getOrCreateUserSettings(
+        user.id
+      );
+
+
+    const appearance =
+      req.body.appearance ===
+        undefined
+        ? (
+            currentSettings
+              ?.appearance ||
+            "system"
+          )
+        : String(
+            req.body.appearance
+          )
+            .trim()
+            .toLowerCase() as
+              AppearanceMode;
+
+
+    const allowedAppearances:
+      AppearanceMode[] = [
+        "system",
+        "light",
+        "dark",
+      ];
+
+
+    if (
+      !allowedAppearances.includes(
+        appearance
+      )
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Appearance must be system, light, or dark",
+      });
+
+    }
+
+
+    const readBoolean = (
+      value: unknown,
+      fallback: boolean
+    ) => {
+
+      if (
+        value === undefined
+      ) {
+        return fallback;
+      }
+
+      if (
+        typeof value !==
+        "boolean"
+      ) {
+        return null;
+      }
+
+      return value;
+
+    };
+
+
+    const emailNotifications =
+      readBoolean(
+        req.body
+          .email_notifications,
+        Boolean(
+          currentSettings
+            ?.email_notifications
+        )
+      );
+
+
+    const accountNotifications =
+      readBoolean(
+        req.body
+          .account_notifications,
+        Boolean(
+          currentSettings
+            ?.account_notifications
+        )
+      );
+
+
+    const sessionNotifications =
+      readBoolean(
+        req.body
+          .session_notifications,
+        Boolean(
+          currentSettings
+            ?.session_notifications
+        )
+      );
+
+
+    const progressNotifications =
+      readBoolean(
+        req.body
+          .progress_notifications,
+        Boolean(
+          currentSettings
+            ?.progress_notifications
+        )
+      );
+
+
+    if (
+      emailNotifications ===
+        null ||
+      accountNotifications ===
+        null ||
+      sessionNotifications ===
+        null ||
+      progressNotifications ===
+        null
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Notification settings must be true or false",
+      });
+
+    }
+
+
+    await updateUserSettings(
+      user.id,
+      emailNotifications,
+      accountNotifications,
+      sessionNotifications,
+      progressNotifications,
+      appearance
+    );
+
+
+    const updatedSettings =
+      await getOrCreateUserSettings(
+        user.id
+      );
+
+
+    return res.json({
+      message:
+        "Settings updated successfully",
+      settings: {
+        email_notifications:
+          Boolean(
+            updatedSettings
+              ?.email_notifications
+          ),
+        account_notifications:
+          Boolean(
+            updatedSettings
+              ?.account_notifications
+          ),
+        session_notifications:
+          Boolean(
+            updatedSettings
+              ?.session_notifications
+          ),
+        progress_notifications:
+          Boolean(
+            updatedSettings
+              ?.progress_notifications
+          ),
+        appearance:
+          updatedSettings
+            ?.appearance ||
+          "system",
+      },
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Update settings error:",
       error
     );
 

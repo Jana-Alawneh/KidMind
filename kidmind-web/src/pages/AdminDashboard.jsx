@@ -29,6 +29,7 @@ import AdminParents from "../components/admin/AdminParents";
 import AdminTherapists from "../components/admin/AdminTherapists";
 import AdminAssignments from "../components/admin/AdminAssignments";
 import AdminReports from "../components/admin/AdminReports";
+import AdminSettings from "../components/admin/AdminSettings";
 
 
 const menu = [
@@ -151,27 +152,28 @@ export default function AdminDashboard() {
   ] = useState("");
 
 
-  const currentUser =
-    useMemo(
-      () => {
+  const [
+    currentUser,
+    setCurrentUser,
+  ] = useState(
+    () => {
 
-        try {
+      try {
 
-          return JSON.parse(
-            sessionStorage.getItem(
-              "kidmind_user"
-            ) || "{}"
-          );
+        return JSON.parse(
+          sessionStorage.getItem(
+            "kidmind_user"
+          ) || "{}"
+        );
 
-        } catch {
+      } catch {
 
-          return {};
+        return {};
 
-        }
+      }
 
-      },
-      []
-    );
+    }
+  );
 
 
   const loadDashboard =
@@ -1416,7 +1418,22 @@ export default function AdminDashboard() {
                       : activeSection ===
                         "reports"
                         ? <AdminReports />
-                        : renderPlaceholder()
+                        : activeSection ===
+                          "settings"
+                          ? (
+                            <AdminSettings
+                              onProfileUpdated={
+                                updatedUser =>
+                                  setCurrentUser(
+                                    previous => ({
+                                      ...previous,
+                                      ...updatedUser,
+                                    })
+                                  )
+                              }
+                            />
+                          )
+                          : renderPlaceholder()
           }
 
         </div>
