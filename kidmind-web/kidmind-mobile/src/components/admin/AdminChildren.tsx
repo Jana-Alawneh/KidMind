@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Link2,
   MapPin,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -66,6 +67,17 @@ type ChildItem = {
   parent_name?:
     | string
     | null;
+  notes?:
+    | string
+    | null;
+  current_cognitive_score?:
+    | number
+    | string
+    | null;
+  assessment_count?:
+    | number
+    | string
+    | null;
 };
 
 
@@ -74,351 +86,65 @@ type AssignmentItem = {
   user_id: number;
   user_name: string;
   user_email: string;
-  role:
+  role?:
     | "parent"
-    | "therapist";
+    | "therapist"
+    | null;
+  link_type?:
+    | "parent"
+    | "therapist"
+    | null;
   is_active?:
     | number
     | boolean;
 };
 
 
-type SessionGame = {
-  game_name?: string | null;
-  status?: string | null;
-  score?: number | string | null;
-  started_at?: string | null;
-  ended_at?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
-
-
-type SessionItem = {
-  id: number;
-  child_id: number;
-  status?: string | null;
-  games?: SessionGame[];
-  started_at?: string | null;
-  ended_at?: string | null;
-  scheduled_at?: string | null;
-  created_at?: string | null;
-};
-
-
 type PickerMode =
   | "parent"
   | "therapist"
+  | "form_parent"
+  | "form_therapist"
   | null;
 
 
-const normalizeGameName =
-  (
-    value:
-      string |
-      null |
-      undefined
-  ) =>
-    String(
-      value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-const domainGames = {
-  attention:
-    "focus finder",
-
-  workingMemory:
-    "memory match",
-
-  visualSpatial:
-    "puzzle path",
-
-  reading:
-    "reading adventure",
-
-  processingSpeed:
-    "quick match",
+type ChildForm = {
+  full_name: string;
+  age: string;
+  gender: string;
+  region: string;
+  notes: string;
+  parent_id:
+    | number
+    | null;
+  therapist_id:
+    | number
+    | null;
 };
 
 
-const getGameDate =
-  (
-    game:
-      SessionGame,
-    session:
-      SessionItem
-  ) => {
-
-    const value =
-      game.ended_at ||
-      game.started_at ||
-      game.updated_at ||
-      game.created_at ||
-      session.ended_at ||
-      session.started_at ||
-      session.scheduled_at ||
-      session.created_at;
-
-
-    const time =
-      value
-        ? new Date(
-            value
-          ).getTime()
-        : 0;
-
-
-    return Number.isFinite(
-      time
-    )
-      ? time
-      : 0;
-
+const emptyChildForm:
+  ChildForm = {
+    full_name: "",
+    age: "",
+    gender: "",
+    region: "",
+    notes: "",
+    parent_id: null,
+    therapist_id: null,
   };
 
 
-const calculateChildScore =
+const isActiveUser =
   (
-    childId:
-      number,
-    sessions:
-      SessionItem[]
-  ) => {
-
-    const latestByDomain:
-      Record<
-        string,
-        {
-          score:
-            number;
-          time:
-            number;
-        }
-      > = {};
-
-
-    sessions
-      .filter(
-        session =>
-          Number(
-            session.child_id
-          ) ===
-          Number(
-            childId
-          )
-      )
-      .forEach(
-        session => {
-
-          const games =
-            Array.isArray(
-              session.games
-            )
-              ? session.games
-              : [];
-
-
-          games.forEach(
-            game => {
-
-              const status =
-                String(
-                  game.status ||
-                  ""
-                )
-                  .trim()
-                  .toLowerCase();
-
-
-              if (
-                status !==
-                  "completed" &&
-                status !==
-                  "failed"
-              ) {
-
-                return;
-
-              }
-
-
-              const score =
-                Number(
-                  game.score
-                );
-
-
-              if (
-                !Number.isFinite(
-                  score
-                )
-              ) {
-
-                return;
-
-              }
-
-
-              const gameName =
-                normalizeGameName(
-                  game.game_name
-                );
-
-
-              const domain =
-                Object.entries(
-                  domainGames
-                ).find(
-                  (
-                    [
-                      ,
-                      expectedGame,
-                    ]
-                  ) =>
-                    gameName ===
-                    expectedGame
-                )?.[0];
-
-
-              if (
-                !domain
-              ) {
-
-                return;
-
-              }
-
-
-              const time =
-                getGameDate(
-                  game,
-                  session
-                );
-
-
-              const existing =
-                latestByDomain[
-                  domain
-                ];
-
-
-              if (
-                !existing ||
-                time >=
-                  existing.time
-              ) {
-
-                latestByDomain[
-                  domain
-                ] = {
-
-                  score:
-                    Math.max(
-                      0,
-                      Math.min(
-                        100,
-                        Math.round(
-                          score
-                        )
-                      )
-                    ),
-
-                  time,
-
-                };
-
-              }
-
-            }
-          );
-
-        }
-      );
-
-
-    const scores =
-      Object.values(
-        latestByDomain
-      ).map(
-        item =>
-          item.score
-      );
-
-
-    if (
-      scores.length ===
-      0
-    ) {
-
-      return null;
-
-    }
-
-
-    return Math.round(
-      scores.reduce(
-        (
-          total,
-          score
-        ) =>
-          total +
-          score,
-        0
-      ) /
-        scores.length
-    );
-
-  };
-
-
-const getChildAssessmentCount =
-  (
-    childId:
-      number,
-    sessions:
-      SessionItem[]
-  ) => {
-
-    return sessions.filter(
-      session => {
-
-        if (
-          Number(
-            session.child_id
-          ) !==
-          Number(
-            childId
-          )
-        ) {
-
-          return false;
-
-        }
-
-
-        const status =
-          String(
-            session.status ||
-            ""
-          )
-            .trim()
-            .toLowerCase();
-
-
-        return (
-          status ===
-            "completed" ||
-          status ===
-            "ended"
-        );
-
-      }
-    ).length;
-
-  };
+    user:
+      UserItem
+  ) =>
+    user.is_active ===
+      true ||
+    Number(
+      user.is_active
+    ) === 1;
 
 
 export default function AdminChildren() {
@@ -447,15 +173,6 @@ export default function AdminChildren() {
   ] =
     useState<
       AssignmentItem[]
-    >([]);
-
-
-  const [
-    sessions,
-    setSessions,
-  ] =
-    useState<
-      SessionItem[]
     >([]);
 
 
@@ -533,6 +250,50 @@ export default function AdminChildren() {
     useState(false);
 
 
+  const [
+    childModalMode,
+    setChildModalMode,
+  ] =
+    useState<
+      "add" |
+      "edit" |
+      null
+    >(null);
+
+
+  const [
+    editingChild,
+    setEditingChild,
+  ] =
+    useState<
+      ChildItem |
+      null
+    >(null);
+
+
+  const [
+    childForm,
+    setChildForm,
+  ] =
+    useState<ChildForm>(
+      emptyChildForm
+    );
+
+
+  const [
+    childSaving,
+    setChildSaving,
+  ] =
+    useState(false);
+
+
+  const [
+    deleteSaving,
+    setDeleteSaving,
+  ] =
+    useState(false);
+
+
   const loadData =
     async (
       manual =
@@ -567,7 +328,6 @@ export default function AdminChildren() {
           childrenData,
           usersData,
           assignmentsData,
-          sessionsData,
         ] =
           await Promise.all([
 
@@ -587,12 +347,6 @@ export default function AdminChildren() {
               AssignmentItem[]
             >(
               "/users/assignments"
-            ),
-
-            authRequest<
-              SessionItem[]
-            >(
-              "/sessions"
             ),
 
           ]);
@@ -624,14 +378,6 @@ export default function AdminChildren() {
             : []
         );
 
-
-        setSessions(
-          Array.isArray(
-            sessionsData
-          )
-            ? sessionsData
-            : []
-        );
 
       } catch (
         requestError
@@ -680,10 +426,9 @@ export default function AdminChildren() {
           user =>
             user.role ===
               "parent" &&
-            Number(
-              user.is_active
-            ) ===
-              1
+            isActiveUser(
+              user
+            )
         ),
       [
         users,
@@ -698,10 +443,9 @@ export default function AdminChildren() {
           user =>
             user.role ===
               "therapist" &&
-            Number(
-              user.is_active
-            ) ===
-              1
+            isActiveUser(
+              user
+            )
         ),
       [
         users,
@@ -1095,6 +839,512 @@ export default function AdminChildren() {
     };
 
 
+  const openAddChild =
+    () => {
+
+      setEditingChild(
+        null
+      );
+
+      setChildForm({
+        ...emptyChildForm,
+      });
+
+      setChildModalMode(
+        "add"
+      );
+
+      setError(
+        ""
+      );
+
+    };
+
+
+  const openEditChild =
+    (
+      child:
+        ChildItem
+    ) => {
+
+      setEditingChild(
+        child
+      );
+
+      setChildForm({
+        full_name:
+          child.full_name ||
+          "",
+        age:
+          child.age ===
+            null ||
+          child.age ===
+            undefined
+            ? ""
+            : String(
+                child.age
+              ),
+        gender:
+          child.gender ||
+          "",
+        region:
+          child.region ||
+          "",
+        notes:
+          child.notes ||
+          "",
+        parent_id:
+          null,
+        therapist_id:
+          null,
+      });
+
+      setChildModalMode(
+        "edit"
+      );
+
+      setError(
+        ""
+      );
+
+    };
+
+
+  const closeChildModal =
+    () => {
+
+      if (
+        childSaving
+      ) {
+
+        return;
+
+      }
+
+      setChildModalMode(
+        null
+      );
+
+      setEditingChild(
+        null
+      );
+
+      setChildForm({
+        ...emptyChildForm,
+      });
+
+      setPickerMode(
+        null
+      );
+
+    };
+
+
+  const updateChildForm =
+    <
+      K extends
+        keyof ChildForm,
+    >(
+      key:
+        K,
+      value:
+        ChildForm[K]
+    ) => {
+
+      setChildForm(
+        previous => ({
+          ...previous,
+          [key]:
+            value,
+        })
+      );
+
+    };
+
+
+  const saveChild =
+    async () => {
+
+      const fullName =
+        childForm.full_name
+          .trim();
+
+      const age =
+        Number(
+          childForm.age
+        );
+
+      const gender =
+        childForm.gender
+          .trim();
+
+      const region =
+        childForm.region
+          .trim();
+
+
+      if (
+        !fullName ||
+        !Number.isInteger(
+          age
+        ) ||
+        age <= 0 ||
+        !gender ||
+        !region
+      ) {
+
+        setError(
+          "Full name, age, gender and region are required."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setChildSaving(
+          true
+        );
+
+        setError(
+          ""
+        );
+
+
+        if (
+          childModalMode ===
+          "add"
+        ) {
+
+          await authRequest(
+            "/children",
+            {
+              method:
+                "POST",
+              body:
+                JSON.stringify({
+                  full_name:
+                    fullName,
+                  age,
+                  gender,
+                  region,
+                  notes:
+                    childForm.notes
+                      .trim(),
+                  parent_id:
+                    childForm.parent_id,
+                  therapist_id:
+                    childForm.therapist_id,
+                }),
+            }
+          );
+
+        } else if (
+          childModalMode ===
+            "edit" &&
+          editingChild
+        ) {
+
+          await authRequest(
+            `/children/${editingChild.id}`,
+            {
+              method:
+                "PUT",
+              body:
+                JSON.stringify({
+                  full_name:
+                    fullName,
+                  age,
+                  gender,
+                  region,
+                  notes:
+                    childForm.notes
+                      .trim(),
+                }),
+            }
+          );
+
+        }
+
+
+        setChildModalMode(
+          null
+        );
+
+        setEditingChild(
+          null
+        );
+
+        setChildForm({
+          ...emptyChildForm,
+        });
+
+        setPickerMode(
+          null
+        );
+
+
+        await loadData(
+          true
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : childModalMode ===
+                "add"
+              ? "Unable to add child."
+              : "Unable to update child."
+        );
+
+      } finally {
+
+        setChildSaving(
+          false
+        );
+
+      }
+
+    };
+
+
+  const performDeleteChild =
+    async (
+      child:
+        ChildItem,
+      deleteParent:
+        boolean
+    ) => {
+
+      try {
+
+        setDeleteSaving(
+          true
+        );
+
+        setError(
+          ""
+        );
+
+
+        await authRequest(
+          `/children/${child.id}`,
+          {
+            method:
+              "DELETE",
+            body:
+              JSON.stringify({
+                delete_parent:
+                  deleteParent,
+              }),
+          }
+        );
+
+
+        await loadData(
+          true
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to delete child."
+        );
+
+      } finally {
+
+        setDeleteSaving(
+          false
+        );
+
+      }
+
+    };
+
+
+  const deleteChild =
+    async (
+      child:
+        ChildItem
+    ) => {
+
+      if (
+        deleteSaving
+      ) {
+
+        return;
+
+      }
+
+
+      try {
+
+        setError(
+          ""
+        );
+
+
+        const info =
+          await authRequest<{
+            parent?:
+              {
+                id:
+                  number;
+                full_name:
+                  string;
+                email?:
+                  string |
+                  null;
+              } |
+              null;
+            parent_children?:
+              ChildItem[];
+            parent_has_other_children?:
+              boolean;
+          }>(
+            `/children/${child.id}/delete-info`
+          );
+
+
+        if (
+          info?.parent
+        ) {
+
+          const otherChildren =
+            Array.isArray(
+              info.parent_children
+            )
+              ? info.parent_children.filter(
+                  item =>
+                    Number(
+                      item.id
+                    ) !==
+                    Number(
+                      child.id
+                    )
+                )
+              : [];
+
+
+          const warning =
+            info.parent_has_other_children
+              ? `\n\n${info.parent.full_name} is also linked to ${otherChildren.length} other child${otherChildren.length === 1 ? "" : "ren"}. Deleting the parent account will remove those parent links, but the other children will remain.`
+              : "";
+
+
+          Alert.alert(
+            "Delete Child",
+            `Delete ${child.full_name}?${warning}`,
+            [
+              {
+                text:
+                  "Cancel",
+                style:
+                  "cancel",
+              },
+              {
+                text:
+                  "Child Only",
+                style:
+                  "destructive",
+                onPress:
+                  () => {
+
+                    void performDeleteChild(
+                      child,
+                      false
+                    );
+
+                  },
+              },
+              {
+                text:
+                  "Child & Parent",
+                style:
+                  "destructive",
+                onPress:
+                  () => {
+
+                    void performDeleteChild(
+                      child,
+                      true
+                    );
+
+                  },
+              },
+            ]
+          );
+
+          return;
+
+        }
+
+
+        Alert.alert(
+          "Delete Child",
+          `Delete ${child.full_name}?`,
+          [
+            {
+              text:
+                "Cancel",
+              style:
+                "cancel",
+            },
+            {
+              text:
+                "Delete",
+              style:
+                "destructive",
+              onPress:
+                () => {
+
+                  void performDeleteChild(
+                    child,
+                    false
+                  );
+
+                },
+            },
+          ]
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load deletion information."
+        );
+
+      }
+
+    };
+
+
   const selectedAssignments =
     selectedChild
       ? assignmentsByChild[
@@ -1108,47 +1358,35 @@ export default function AdminChildren() {
   const selectedParents =
     selectedAssignments.filter(
       item =>
+        item.link_type ===
+          "parent" ||
         item.role ===
-        "parent"
+          "parent"
     );
 
 
   const selectedTherapists =
     selectedAssignments.filter(
       item =>
+        item.link_type ===
+          "therapist" ||
         item.role ===
-        "therapist"
+          "therapist"
     );
 
 
   const availableParents =
-    parentUsers.filter(
-      user =>
-        !selectedParents.some(
-          item =>
-            Number(
-              item.user_id
-            ) ===
-            Number(
-              user.id
-            )
-        )
-    );
+    selectedParents.length >
+      0
+      ? []
+      : parentUsers;
 
 
   const availableTherapists =
-    therapistUsers.filter(
-      user =>
-        !selectedTherapists.some(
-          item =>
-            Number(
-              item.user_id
-            ) ===
-            Number(
-              user.id
-            )
-        )
-    );
+    selectedTherapists.length >
+      0
+      ? []
+      : therapistUsers;
 
 
   const selectedParent =
@@ -1177,12 +1415,18 @@ export default function AdminChildren() {
 
   const pickerUsers =
     pickerMode ===
-    "parent"
+      "parent"
       ? availableParents
       : pickerMode ===
-        "therapist"
+          "therapist"
         ? availableTherapists
-        : [];
+        : pickerMode ===
+            "form_parent"
+          ? parentUsers
+          : pickerMode ===
+              "form_therapist"
+            ? therapistUsers
+            : [];
 
 
   const choosePickerUser =
@@ -1209,6 +1453,32 @@ export default function AdminChildren() {
       ) {
 
         setSelectedTherapistId(
+          user.id
+        );
+
+      }
+
+
+      if (
+        pickerMode ===
+        "form_parent"
+      ) {
+
+        updateChildForm(
+          "parent_id",
+          user.id
+        );
+
+      }
+
+
+      if (
+        pickerMode ===
+        "form_therapist"
+      ) {
+
+        updateChildForm(
+          "therapist_id",
           user.id
         );
 
@@ -1265,62 +1535,85 @@ export default function AdminChildren() {
               styles.subtitle
             }
           >
-            View every child,
-            assessment results,
-            parents, and assigned
-            therapists.
+            Add, edit and manage children,
+            assessments, parents,
+            and therapists.
           </Text>
 
         </View>
 
 
-        <Pressable
-          style={[
-            styles.refreshButton,
-
-            refreshing &&
-              styles.disabledButton,
-          ]}
-          disabled={
-            refreshing
-          }
-          onPress={() =>
-            loadData(
-              true
-            )
+        <View
+          style={
+            styles.headingActions
           }
         >
 
-          {
-            refreshing
-              ? (
-
-                <ActivityIndicator
-                  size="small"
-                  color="#7164D8"
-                />
-
-              )
-              : (
-
-                <RefreshCw
-                  size={17}
-                  color="#7164D8"
-                />
-
-              )
-          }
-
-
-          <Text
+          <Pressable
             style={
-              styles.refreshText
+              styles.addChildButton
+            }
+            onPress={
+              openAddChild
             }
           >
-            Refresh
-          </Text>
 
-        </Pressable>
+            <Plus
+              size={17}
+              color="#FFFFFF"
+            />
+
+            <Text
+              style={
+                styles.addChildButtonText
+              }
+            >
+              Add
+            </Text>
+
+          </Pressable>
+
+
+          <Pressable
+            style={[
+              styles.refreshButton,
+
+              refreshing &&
+                styles.disabledButton,
+            ]}
+            disabled={
+              refreshing
+            }
+            onPress={() =>
+              loadData(
+                true
+              )
+            }
+          >
+
+            {
+              refreshing
+                ? (
+
+                  <ActivityIndicator
+                    size="small"
+                    color="#7164D8"
+                  />
+
+                )
+                : (
+
+                  <RefreshCw
+                    size={17}
+                    color="#7164D8"
+                  />
+
+                )
+            }
+
+          </Pressable>
+
+        </View>
 
       </View>
 
@@ -1562,31 +1855,65 @@ export default function AdminChildren() {
                       const linkedParents =
                         childAssignments.filter(
                           item =>
+                            item.link_type ===
+                              "parent" ||
                             item.role ===
-                            "parent"
+                              "parent"
                         );
 
 
                       const linkedTherapists =
                         childAssignments.filter(
                           item =>
+                            item.link_type ===
+                              "therapist" ||
                             item.role ===
-                            "therapist"
+                              "therapist"
                         );
 
 
+                      const rawScore =
+                        child.current_cognitive_score;
+
+
+                      const numericScore =
+                        rawScore ===
+                          null ||
+                        rawScore ===
+                          undefined ||
+                        rawScore ===
+                          ""
+                          ? null
+                          : Number(
+                              rawScore
+                            );
+
+
                       const score =
-                        calculateChildScore(
-                          child.id,
-                          sessions
+                        numericScore !==
+                          null &&
+                        Number.isFinite(
+                          numericScore
+                        )
+                          ? Math.round(
+                              numericScore
+                            )
+                          : null;
+
+
+                      const assessmentValue =
+                        Number(
+                          child.assessment_count ??
+                          0
                         );
 
 
                       const assessments =
-                        getChildAssessmentCount(
-                          child.id,
-                          sessions
-                        );
+                        Number.isFinite(
+                          assessmentValue
+                        )
+                          ? assessmentValue
+                          : 0;
 
 
                       return (
@@ -1681,7 +2008,7 @@ export default function AdminChildren() {
                                   score ===
                                   null
                                     ? "—"
-                                    : score
+                                    : `${score}%`
                                 }
                               </Text>
 
@@ -1691,7 +2018,7 @@ export default function AdminChildren() {
                                   styles.scoreLabel
                                 }
                               >
-                                Score
+                                Cognitive
                               </Text>
 
                             </View>
@@ -1762,41 +2089,9 @@ export default function AdminChildren() {
                           </View>
 
 
-                          <View
-                            style={
-                              styles.legacyParent
-                            }
-                          >
-
-                            <Text
-                              style={
-                                styles.legacyLabel
-                              }
-                            >
-                              Parent name on child record
-                            </Text>
-
-
-                            <Text
-                              numberOfLines={
-                                1
-                              }
-                              style={
-                                styles.legacyValue
-                              }
-                            >
-                              {
-                                child.parent_name ||
-                                "—"
-                              }
-                            </Text>
-
-                          </View>
-
-
                           <RelationshipSection
                             type="parent"
-                            title="Parents"
+                            title="Parent"
                             items={
                               linkedParents
                             }
@@ -1806,7 +2101,7 @@ export default function AdminChildren() {
 
                           <RelationshipSection
                             type="therapist"
-                            title="Therapists"
+                            title="Therapist"
                             items={
                               linkedTherapists
                             }
@@ -1814,32 +2109,101 @@ export default function AdminChildren() {
                           />
 
 
-                          <Pressable
+                          <View
                             style={
-                              styles.manageButton
-                            }
-                            onPress={() =>
-                              openAssignments(
-                                child
-                              )
+                              styles.childActions
                             }
                           >
 
-                            <Link2
-                              size={17}
-                              color="#7565E6"
-                            />
-
-
-                            <Text
-                              style={
-                                styles.manageButtonText
+                            <Pressable
+                              style={[
+                                styles.manageButton,
+                                styles.assignmentAction,
+                              ]}
+                              onPress={() =>
+                                openAssignments(
+                                  child
+                                )
                               }
                             >
-                              Manage Assignments
-                            </Text>
 
-                          </Pressable>
+                              <Link2
+                                size={16}
+                                color="#7565E6"
+                              />
+
+                              <Text
+                                style={
+                                  styles.manageButtonText
+                                }
+                              >
+                                Assign
+                              </Text>
+
+                            </Pressable>
+
+
+                            <Pressable
+                              style={
+                                styles.editButton
+                              }
+                              onPress={() =>
+                                openEditChild(
+                                  child
+                                )
+                              }
+                            >
+
+                              <Pencil
+                                size={15}
+                                color="#4D87B5"
+                              />
+
+                              <Text
+                                style={
+                                  styles.editButtonText
+                                }
+                              >
+                                Edit
+                              </Text>
+
+                            </Pressable>
+
+
+                            <Pressable
+                              style={[
+                                styles.deleteButton,
+                                deleteSaving &&
+                                  styles.disabledButton,
+                              ]}
+                              disabled={
+                                deleteSaving
+                              }
+                              onPress={() => {
+
+                                void deleteChild(
+                                  child
+                                );
+
+                              }}
+                            >
+
+                              <Trash2
+                                size={15}
+                                color="#C95166"
+                              />
+
+                              <Text
+                                style={
+                                  styles.deleteButtonText
+                                }
+                              >
+                                Delete
+                              </Text>
+
+                            </Pressable>
+
+                          </View>
 
                         </View>
 
@@ -1853,6 +2217,429 @@ export default function AdminChildren() {
 
             )
       }
+
+
+      <Modal
+        visible={
+          childModalMode !==
+          null
+        }
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={
+          closeChildModal
+        }
+      >
+
+        <View
+          style={
+            styles.modalOverlay
+          }
+        >
+
+          <Pressable
+            style={
+              styles.modalBackdrop
+            }
+            onPress={
+              closeChildModal
+            }
+          />
+
+
+          <View
+            style={
+              styles.childFormModal
+            }
+          >
+
+            <View
+              style={
+                styles.modalHeader
+              }
+            >
+
+              <View
+                style={
+                  styles.modalHeaderText
+                }
+              >
+
+                <Text
+                  style={
+                    styles.modalEyebrow
+                  }
+                >
+                  {
+                    childModalMode ===
+                    "add"
+                      ? "ADD CHILD"
+                      : "EDIT CHILD"
+                  }
+                </Text>
+
+                <Text
+                  style={
+                    styles.modalTitle
+                  }
+                >
+                  {
+                    childModalMode ===
+                    "add"
+                      ? "New Child"
+                      : editingChild
+                          ?.full_name ||
+                        "Edit Child"
+                  }
+                </Text>
+
+              </View>
+
+
+              <Pressable
+                style={
+                  styles.closeButton
+                }
+                disabled={
+                  childSaving
+                }
+                onPress={
+                  closeChildModal
+                }
+              >
+
+                <X
+                  size={20}
+                  color="#85889B"
+                />
+
+              </Pressable>
+
+            </View>
+
+
+            <View
+              style={
+                styles.childFormBody
+              }
+            >
+
+              <FormField
+                label="Full Name"
+                value={
+                  childForm.full_name
+                }
+                placeholder="Child full name"
+                onChangeText={
+                  value =>
+                    updateChildForm(
+                      "full_name",
+                      value
+                    )
+                }
+              />
+
+
+              <View
+                style={
+                  styles.formRow
+                }
+              >
+
+                <View
+                  style={
+                    styles.formHalf
+                  }
+                >
+
+                  <FormField
+                    label="Age"
+                    value={
+                      childForm.age
+                    }
+                    placeholder="Age"
+                    keyboardType="number-pad"
+                    onChangeText={
+                      value =>
+                        updateChildForm(
+                          "age",
+                          value
+                        )
+                    }
+                  />
+
+                </View>
+
+
+                <View
+                  style={
+                    styles.formHalf
+                  }
+                >
+
+                  <Text
+                    style={
+                      styles.formLabel
+                    }
+                  >
+                    Gender
+                  </Text>
+
+                  <View
+                    style={
+                      styles.genderRow
+                    }
+                  >
+
+                    {
+                      [
+                        "Male",
+                        "Female",
+                      ].map(
+                        gender => (
+
+                          <Pressable
+                            key={
+                              gender
+                            }
+                            style={[
+                              styles.genderButton,
+                              childForm.gender ===
+                                gender &&
+                                styles.genderButtonActive,
+                            ]}
+                            onPress={() =>
+                              updateChildForm(
+                                "gender",
+                                gender
+                              )
+                            }
+                          >
+
+                            <Text
+                              style={[
+                                styles.genderButtonText,
+                                childForm.gender ===
+                                  gender &&
+                                  styles.genderButtonTextActive,
+                              ]}
+                            >
+                              {
+                                gender
+                              }
+                            </Text>
+
+                          </Pressable>
+
+                        )
+                      )
+                    }
+
+                  </View>
+
+                </View>
+
+              </View>
+
+
+              <FormField
+                label="Region"
+                value={
+                  childForm.region
+                }
+                placeholder="Region"
+                onChangeText={
+                  value =>
+                    updateChildForm(
+                      "region",
+                      value
+                    )
+                }
+              />
+
+
+              <FormField
+                label="Notes"
+                value={
+                  childForm.notes
+                }
+                placeholder="Therapist or admin notes"
+                multiline
+                onChangeText={
+                  value =>
+                    updateChildForm(
+                      "notes",
+                      value
+                    )
+                }
+              />
+
+
+              {
+                childModalMode ===
+                "add" && (
+
+                  <View
+                    style={
+                      styles.optionalLinks
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.optionalLinksTitle
+                      }
+                    >
+                      Optional Assignments
+                    </Text>
+
+
+                    <SelectionField
+                      value={
+                        childForm.parent_id
+                          ? parentUsers.find(
+                              user =>
+                                Number(
+                                  user.id
+                                ) ===
+                                Number(
+                                  childForm.parent_id
+                                )
+                            )
+                              ?.full_name ||
+                            "Select parent"
+                          : "No parent yet"
+                      }
+                      disabled={
+                        parentUsers.length ===
+                        0
+                      }
+                      onPress={() =>
+                        setPickerMode(
+                          "form_parent"
+                        )
+                      }
+                    />
+
+
+                    <SelectionField
+                      value={
+                        childForm.therapist_id
+                          ? therapistUsers.find(
+                              user =>
+                                Number(
+                                  user.id
+                                ) ===
+                                Number(
+                                  childForm.therapist_id
+                                )
+                            )
+                              ?.full_name ||
+                            "Select therapist"
+                          : "No therapist yet"
+                      }
+                      disabled={
+                        therapistUsers.length ===
+                        0
+                      }
+                      onPress={() =>
+                        setPickerMode(
+                          "form_therapist"
+                        )
+                      }
+                    />
+
+                  </View>
+
+                )
+              }
+
+
+              <View
+                style={
+                  styles.formActions
+                }
+              >
+
+                <Pressable
+                  style={
+                    styles.cancelButton
+                  }
+                  disabled={
+                    childSaving
+                  }
+                  onPress={
+                    closeChildModal
+                  }
+                >
+
+                  <Text
+                    style={
+                      styles.cancelButtonText
+                    }
+                  >
+                    Cancel
+                  </Text>
+
+                </Pressable>
+
+
+                <Pressable
+                  style={[
+                    styles.saveButton,
+                    childSaving &&
+                      styles.disabledButton,
+                  ]}
+                  disabled={
+                    childSaving
+                  }
+                  onPress={() => {
+
+                    void saveChild();
+
+                  }}
+                >
+
+                  {
+                    childSaving
+                      ? (
+
+                        <ActivityIndicator
+                          size="small"
+                          color="#FFFFFF"
+                        />
+
+                      )
+                      : (
+
+                        <Text
+                          style={
+                            styles.saveButtonText
+                          }
+                        >
+                          {
+                            childModalMode ===
+                            "add"
+                              ? "Add Child"
+                              : "Save Changes"
+                          }
+                        </Text>
+
+                      )
+                  }
+
+                </Pressable>
+
+              </View>
+
+            </View>
+
+          </View>
+
+        </View>
+
+      </Modal>
 
 
       <Modal
@@ -1995,7 +2782,7 @@ export default function AdminChildren() {
                         styles.assignmentSubtitle
                       }
                     >
-                      Link parents to this child
+                      Each child can have one parent account
                     </Text>
 
                   </View>
@@ -2069,95 +2856,98 @@ export default function AdminChildren() {
 
 
                 {
-                  parentUsers.length >
-                  0
-                    ? (
+                  selectedParents.length ===
+                    0 && (
 
-                      <View
-                        style={
-                          styles.addSection
-                        }
-                      >
+                    parentUsers.length >
+                      0
+                      ? (
 
-                        <SelectionField
-                          value={
-                            selectedParent
-                              ? `${selectedParent.full_name} — ${selectedParent.email}`
-                              : "Select parent"
-                          }
-                          disabled={
-                            availableParents.length ===
-                            0
-                          }
-                          onPress={() =>
-                            setPickerMode(
-                              "parent"
-                            )
-                          }
-                        />
-
-
-                        <Pressable
-                          style={[
-                            styles.addButton,
-
-                            (
-                              !selectedParentId ||
-                              saving
-                            ) &&
-                              styles.addButtonDisabled,
-                          ]}
-                          disabled={
-                            !selectedParentId ||
-                            saving
-                          }
-                          onPress={() =>
-                            assignUser(
-                              selectedParentId
-                            )
+                        <View
+                          style={
+                            styles.addSection
                           }
                         >
 
-                          <Plus
-                            size={16}
-                            color="#FFFFFF"
+                          <SelectionField
+                            value={
+                              selectedParent
+                                ? `${selectedParent.full_name} — ${selectedParent.email}`
+                                : "Select parent"
+                            }
+                            disabled={
+                              availableParents.length ===
+                              0
+                            }
+                            onPress={() =>
+                              setPickerMode(
+                                "parent"
+                              )
+                            }
                           />
 
 
-                          <Text
-                            style={
-                              styles.addButtonText
+                          <Pressable
+                            style={[
+                              styles.addButton,
+
+                              (
+                                !selectedParentId ||
+                                saving
+                              ) &&
+                                styles.addButtonDisabled,
+                            ]}
+                            disabled={
+                              !selectedParentId ||
+                              saving
+                            }
+                            onPress={() =>
+                              assignUser(
+                                selectedParentId
+                              )
                             }
                           >
-                            Link Parent
-                          </Text>
 
-                        </Pressable>
+                            <Plus
+                              size={16}
+                              color="#FFFFFF"
+                            />
 
-                      </View>
 
-                    )
-                    : (
+                            <Text
+                              style={
+                                styles.addButtonText
+                              }
+                            >
+                              Link Parent
+                            </Text>
 
-                      <View
-                        style={
-                          styles.noAccounts
-                        }
-                      >
+                          </Pressable>
 
-                        <Text
+                        </View>
+
+                      )
+                      : (
+
+                        <View
                           style={
-                            styles.noAccountsText
+                            styles.noAccounts
                           }
                         >
-                          No parent accounts exist yet.
-                          Create them from the Parents
-                          section first.
-                        </Text>
 
-                      </View>
+                          <Text
+                            style={
+                              styles.noAccountsText
+                            }
+                          >
+                            No active parent accounts exist yet.
+                          </Text>
 
-                    )
+                        </View>
+
+                      )
+
+                  )
                 }
 
               </View>
@@ -2201,8 +2991,7 @@ export default function AdminChildren() {
                         styles.assignmentSubtitle
                       }
                     >
-                      Assign therapists responsible
-                      for this child
+                      Each child can have one therapist
                     </Text>
 
                   </View>
@@ -2275,68 +3064,100 @@ export default function AdminChildren() {
                 }
 
 
-                <View
-                  style={
-                    styles.addSection
-                  }
-                >
+                {
+                  selectedTherapists.length ===
+                    0 && (
 
-                  <SelectionField
-                    value={
-                      selectedTherapist
-                        ? `${selectedTherapist.full_name} — ${selectedTherapist.email}`
-                        : "Select therapist"
-                    }
-                    disabled={
-                      availableTherapists.length ===
+                    therapistUsers.length >
                       0
-                    }
-                    onPress={() =>
-                      setPickerMode(
-                        "therapist"
+                      ? (
+
+                        <View
+                          style={
+                            styles.addSection
+                          }
+                        >
+
+                          <SelectionField
+                            value={
+                              selectedTherapist
+                                ? `${selectedTherapist.full_name} — ${selectedTherapist.email}`
+                                : "Select therapist"
+                            }
+                            disabled={
+                              availableTherapists.length ===
+                              0
+                            }
+                            onPress={() =>
+                              setPickerMode(
+                                "therapist"
+                              )
+                            }
+                          />
+
+
+                          <Pressable
+                            style={[
+                              styles.addButton,
+
+                              (
+                                !selectedTherapistId ||
+                                saving
+                              ) &&
+                                styles.addButtonDisabled,
+                            ]}
+                            disabled={
+                              !selectedTherapistId ||
+                              saving
+                            }
+                            onPress={() =>
+                              assignUser(
+                                selectedTherapistId
+                              )
+                            }
+                          >
+
+                            <Plus
+                              size={16}
+                              color="#FFFFFF"
+                            />
+
+
+                            <Text
+                              style={
+                                styles.addButtonText
+                              }
+                            >
+                              Assign Therapist
+                            </Text>
+
+                          </Pressable>
+
+                        </View>
+
                       )
-                    }
-                  />
+                      : (
 
+                        <View
+                          style={
+                            styles.noAccounts
+                          }
+                        >
 
-                  <Pressable
-                    style={[
-                      styles.addButton,
+                          <Text
+                            style={
+                              styles.noAccountsText
+                            }
+                          >
+                            No active therapist accounts exist yet.
+                          </Text>
 
-                      (
-                        !selectedTherapistId ||
-                        saving
-                      ) &&
-                        styles.addButtonDisabled,
-                    ]}
-                    disabled={
-                      !selectedTherapistId ||
-                      saving
-                    }
-                    onPress={() =>
-                      assignUser(
-                        selectedTherapistId
+                        </View>
+
                       )
-                    }
-                  >
 
-                    <Plus
-                      size={16}
-                      color="#FFFFFF"
-                    />
-
-
-                    <Text
-                      style={
-                        styles.addButtonText
-                      }
-                    >
-                      Assign Therapist
-                    </Text>
-
-                  </Pressable>
-
-                </View>
+                  )
+                }
 
               </View>
 
@@ -2441,7 +3262,9 @@ export default function AdminChildren() {
                 >
                   {
                     pickerMode ===
-                    "parent"
+                      "parent" ||
+                    pickerMode ===
+                      "form_parent"
                       ? "Select Parent"
                       : "Select Therapist"
                   }
@@ -2930,6 +3753,81 @@ function AssignedUser({
 }
 
 
+function FormField({
+  label,
+  value,
+  placeholder,
+  multiline =
+    false,
+  keyboardType =
+    "default",
+  onChangeText,
+}: {
+  label:
+    string;
+  value:
+    string;
+  placeholder:
+    string;
+  multiline?:
+    boolean;
+  keyboardType?:
+    "default" |
+    "number-pad";
+  onChangeText:
+    (
+      value:
+        string
+    ) => void;
+}) {
+
+  return (
+
+    <View
+      style={
+        styles.formField
+      }
+    >
+
+      <Text
+        style={
+          styles.formLabel
+        }
+      >
+        {label}
+      </Text>
+
+      <TextInput
+        value={
+          value
+        }
+        placeholder={
+          placeholder
+        }
+        placeholderTextColor="#A3A5B5"
+        multiline={
+          multiline
+        }
+        keyboardType={
+          keyboardType
+        }
+        onChangeText={
+          onChangeText
+        }
+        style={[
+          styles.formInput,
+          multiline &&
+            styles.formTextArea,
+        ]}
+      />
+
+    </View>
+
+  );
+
+}
+
+
 function SelectionField({
   value,
   disabled,
@@ -3017,6 +3915,46 @@ const styles =
     },
 
 
+    headingActions: {
+      alignItems:
+        "center",
+      gap:
+        8,
+    },
+
+
+    addChildButton: {
+      minWidth:
+        80,
+      height:
+        40,
+      paddingHorizontal:
+        12,
+      borderRadius:
+        13,
+      backgroundColor:
+        "#7969EA",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap:
+        6,
+    },
+
+
+    addChildButtonText: {
+      color:
+        "#FFFFFF",
+      fontSize:
+        11,
+      fontWeight:
+        "700",
+    },
+
+
     eyebrow: {
       color:
         "#8172EA",
@@ -3055,7 +3993,7 @@ const styles =
 
     refreshButton: {
       minWidth:
-        100,
+        80,
       height:
         40,
       paddingHorizontal:
@@ -3499,48 +4437,321 @@ const styles =
     },
 
 
-    legacyParent: {
+    childActions: {
       marginTop:
-        11,
-      padding:
-        11,
+        15,
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap:
+        7,
+    },
+
+
+    assignmentAction: {
+      flex:
+        1,
+      width:
+        "auto",
+      height:
+        41,
+      marginTop:
+        0,
+    },
+
+
+    editButton: {
+      flex:
+        1,
+      height:
+        41,
+      borderRadius:
+        13,
       borderWidth:
         1,
       borderColor:
-        "#EFEDF6",
-      borderRadius:
-        12,
+        "#DCEBF7",
+      backgroundColor:
+        "#F2F8FD",
       flexDirection:
         "row",
       alignItems:
         "center",
       justifyContent:
-        "space-between",
+        "center",
       gap:
-        10,
+        6,
     },
 
 
-    legacyLabel: {
-      flex:
-        1,
+    editButtonText: {
       color:
-        "#A1A3B3",
-      fontSize:
-        9.5,
-    },
-
-
-    legacyValue: {
-      maxWidth:
-        130,
-      color:
-        "#686A80",
+        "#4D87B5",
       fontSize:
         10.5,
       fontWeight:
         "700",
     },
+
+
+    deleteButton: {
+      flex:
+        1,
+      height:
+        41,
+      borderRadius:
+        13,
+      borderWidth:
+        1,
+      borderColor:
+        "#F6DDE2",
+      backgroundColor:
+        "#FFF4F6",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap:
+        6,
+    },
+
+
+    deleteButtonText: {
+      color:
+        "#C95166",
+      fontSize:
+        10.5,
+      fontWeight:
+        "700",
+    },
+
+
+    childFormModal: {
+      width:
+        "92%",
+      maxHeight:
+        "92%",
+      borderRadius:
+        23,
+      backgroundColor:
+        "#FFFFFF",
+      padding:
+        20,
+    },
+
+
+    childFormBody: {
+      marginTop:
+        16,
+      gap:
+        13,
+    },
+
+
+    formRow: {
+      flexDirection:
+        "row",
+      gap:
+        10,
+    },
+
+
+    formHalf: {
+      flex:
+        1,
+    },
+
+
+    formField: {
+      gap:
+        7,
+    },
+
+
+    formLabel: {
+      color:
+        "#6B6E83",
+      fontSize:
+        10.5,
+      fontWeight:
+        "700",
+    },
+
+
+    formInput: {
+      height:
+        44,
+      paddingHorizontal:
+        12,
+      borderWidth:
+        1,
+      borderColor:
+        "#E2E2EB",
+      borderRadius:
+        12,
+      backgroundColor:
+        "#FBFBFD",
+      color:
+        "#45475F",
+      fontSize:
+        11.5,
+    },
+
+
+    formTextArea: {
+      height:
+        90,
+      paddingTop:
+        11,
+      textAlignVertical:
+        "top",
+    },
+
+
+    genderRow: {
+      height:
+        44,
+      flexDirection:
+        "row",
+      gap:
+        6,
+    },
+
+
+    genderButton: {
+      flex:
+        1,
+      borderWidth:
+        1,
+      borderColor:
+        "#E2E2EB",
+      borderRadius:
+        12,
+      backgroundColor:
+        "#FBFBFD",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    genderButtonActive: {
+      borderColor:
+        "#D9D2FF",
+      backgroundColor:
+        "#F2EFFF",
+    },
+
+
+    genderButtonText: {
+      color:
+        "#85889B",
+      fontSize:
+        10.5,
+      fontWeight:
+        "600",
+    },
+
+
+    genderButtonTextActive: {
+      color:
+        "#7565E6",
+    },
+
+
+    optionalLinks: {
+      paddingTop:
+        14,
+      borderTopWidth:
+        1,
+      borderTopColor:
+        "#EFEFF5",
+      gap:
+        10,
+    },
+
+
+    optionalLinksTitle: {
+      color:
+        "#55576D",
+      fontSize:
+        11,
+      fontWeight:
+        "800",
+    },
+
+
+    formActions: {
+      marginTop:
+        4,
+      flexDirection:
+        "row",
+      justifyContent:
+        "flex-end",
+      gap:
+        9,
+    },
+
+
+    cancelButton: {
+      flex:
+        1,
+      height:
+        42,
+      borderWidth:
+        1,
+      borderColor:
+        "#E4E4EC",
+      borderRadius:
+        12,
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    cancelButtonText: {
+      color:
+        "#777A8D",
+      fontSize:
+        10.5,
+      fontWeight:
+        "700",
+    },
+
+
+    saveButton: {
+      flex:
+        1.2,
+      height:
+        42,
+      borderRadius:
+        12,
+      backgroundColor:
+        "#7969EA",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+
+    saveButtonText: {
+      color:
+        "#FFFFFF",
+      fontSize:
+        10.5,
+      fontWeight:
+        "700",
+    },
+
 
 
     relationshipSection: {
@@ -3665,7 +4876,7 @@ const styles =
       color:
         "#7565E6",
       fontSize:
-        11,
+        10.5,
       fontWeight:
         "700",
     },

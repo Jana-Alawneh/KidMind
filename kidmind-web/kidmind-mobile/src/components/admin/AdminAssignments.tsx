@@ -79,9 +79,14 @@ type ChildItem = {
 type AssignmentItem = {
   child_id: number;
   user_id: number;
-  role:
+  role?:
     | "parent"
-    | "therapist";
+    | "therapist"
+    | null;
+  link_type?:
+    | "parent"
+    | "therapist"
+    | null;
   user_name?: string | null;
   user_email?: string | null;
   is_active?:
@@ -89,6 +94,28 @@ type AssignmentItem = {
     | boolean
     | null;
 };
+
+
+const isParentAssignment =
+  (
+    assignment:
+      AssignmentItem
+  ) =>
+    assignment.link_type ===
+      "parent" ||
+    assignment.role ===
+      "parent";
+
+
+const isTherapistAssignment =
+  (
+    assignment:
+      AssignmentItem
+  ) =>
+    assignment.link_type ===
+      "therapist" ||
+    assignment.role ===
+      "therapist";
 
 
 type CoordinationStatus =
@@ -579,17 +606,13 @@ export default function AdminAssignments() {
 
             const parentLinks =
               childAssignments.filter(
-                item =>
-                  item.role ===
-                  "parent"
+                isParentAssignment
               );
 
 
             const therapistLinks =
               childAssignments.filter(
-                item =>
-                  item.role ===
-                  "therapist"
+                isTherapistAssignment
               );
 
 
@@ -732,8 +755,9 @@ export default function AdminAssignments() {
                   assignments
                     .filter(
                       assignment =>
-                        assignment.role ===
-                          "therapist" &&
+                        isTherapistAssignment(
+                          assignment
+                        ) &&
                         Number(
                           assignment.user_id
                         ) ===
@@ -952,12 +976,18 @@ export default function AdminAssignments() {
 
 
   const visibleIds =
-    filteredRows.map(
-      row =>
-        Number(
-          row.child.id
-        )
-    );
+    filteredRows
+      .filter(
+        row =>
+          row.therapists.length ===
+          0
+      )
+      .map(
+        row =>
+          Number(
+            row.child.id
+          )
+      );
 
 
   const allVisibleSelected =
@@ -981,6 +1011,31 @@ export default function AdminAssignments() {
         Number(
           childId
         );
+
+
+      const coordination =
+        coordinationRows.find(
+          row =>
+            Number(
+              row.child.id
+            ) ===
+            numericId
+        );
+
+
+      if (
+        coordination &&
+        coordination.therapists.length >
+          0
+      ) {
+
+        setError(
+          "This child already has a therapist. Use Transfer Caseload to move the child."
+        );
+
+        return;
+
+      }
 
 
       setSelectedChildIds(
@@ -1082,26 +1137,18 @@ export default function AdminAssignments() {
           selectedChildIds
         ) {
 
-          const alreadyLinked =
+          const alreadyHasTherapist =
             (
               assignmentsByChild[
                 childId
               ] || []
             ).some(
-              assignment =>
-                assignment.role ===
-                  "therapist" &&
-                Number(
-                  assignment.user_id
-                ) ===
-                  Number(
-                    bulkTherapistId
-                  )
+              isTherapistAssignment
             );
 
 
           if (
-            alreadyLinked
+            alreadyHasTherapist
           ) {
 
             skipped +=
@@ -1142,7 +1189,7 @@ export default function AdminAssignments() {
           `Bulk assignment complete: ${created} linked${
             skipped >
             0
-              ? `, ${skipped} already assigned`
+              ? `, ${skipped} skipped because they already have a therapist`
               : ""
           }.`
         );
@@ -1191,8 +1238,9 @@ export default function AdminAssignments() {
     fromTherapistId
       ? assignments.filter(
           assignment =>
-            assignment.role ===
-              "therapist" &&
+            isTherapistAssignment(
+              assignment
+            ) &&
             Number(
               assignment.user_id
             ) ===
@@ -1293,27 +1341,16 @@ export default function AdminAssignments() {
           selectedTransferChildIds
         ) {
 
-          const targetAlreadyLinked =
-            (
-              assignmentsByChild[
-                childId
-              ] || []
-            ).some(
-              assignment =>
-                assignment.role ===
-                  "therapist" &&
-                Number(
-                  assignment.user_id
-                ) ===
-                  Number(
-                    toTherapistId
-                  )
-            );
+          await authRequest(
+            `/users/assignments/${childId}/${fromTherapistId}`,
+            {
+              method:
+                "DELETE",
+            }
+          );
 
 
-          if (
-            !targetAlreadyLinked
-          ) {
+          try {
 
             await authRequest(
               "/users/assignments",
@@ -1334,20 +1371,49 @@ export default function AdminAssignments() {
               }
             );
 
-          }
 
+            transferred +=
+              1;
 
-          await authRequest(
-            `/users/assignments/${childId}/${fromTherapistId}`,
-            {
-              method:
-                "DELETE",
+          } catch (
+            transferError
+          ) {
+
+            try {
+
+              await authRequest(
+                "/users/assignments",
+                {
+                  method:
+                    "POST",
+
+                  body:
+                    JSON.stringify({
+                      child_id:
+                        childId,
+
+                      user_id:
+                        Number(
+                          fromTherapistId
+                        ),
+                    }),
+                }
+              );
+
+            } catch (
+              rollbackError
+            ) {
+
+              console.error(
+                rollbackError
+              );
+
             }
-          );
 
 
-          transferred +=
-            1;
+            throw transferError;
+
+          }
 
         }
 
@@ -2199,6 +2265,11 @@ export default function AdminAssignments() {
                           );
 
 
+                        const canBulkAssign =
+                          row.therapists.length ===
+                          0;
+
+
                         return (
 
                           <View
@@ -2220,11 +2291,17 @@ export default function AdminAssignments() {
                             >
 
                               <Pressable
+                                disabled={
+                                  !canBulkAssign
+                                }
                                 style={[
                                   styles.checkbox,
 
                                   selected &&
                                     styles.checkboxSelected,
+
+                                  !canBulkAssign &&
+                                    styles.checkboxDisabled,
                                 ]}
                                 onPress={() =>
                                   toggleChild(
@@ -2757,8 +2834,9 @@ export default function AdminAssignments() {
             styles.note
           }
         >
-          Existing links to the same
-          therapist are skipped automatically.
+          Children who already have a
+          therapist are skipped. Use
+          Transfer Caseload to move them.
         </Text>
 
       </View>
@@ -3019,8 +3097,9 @@ export default function AdminAssignments() {
           }
         >
           The destination therapist
-          must be active. Existing
-          duplicate links are not recreated.
+          must be active. The previous
+          therapist is removed before
+          the new assignment is created.
         </Text>
 
       </View>
@@ -4434,6 +4513,14 @@ const styles =
         "#7868E6",
       backgroundColor:
         "#7868E6",
+    },
+
+
+    checkboxDisabled: {
+      opacity:
+        0.35,
+      backgroundColor:
+        "#F1F2F6",
     },
 
 

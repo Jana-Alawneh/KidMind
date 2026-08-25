@@ -5,6 +5,7 @@ import {
 import {
   fetchUsers,
   fetchChildById,
+  fetchChildDeleteInfo,
   createChild,
   removeChild,
   editChild,
@@ -34,6 +35,16 @@ router.put(
     "parent"
   ),
   editParentChild
+);
+
+
+router.get(
+  "/:id/delete-info",
+  authenticate,
+  authorizeRoles(
+    "admin"
+  ),
+  fetchChildDeleteInfo
 );
 
 

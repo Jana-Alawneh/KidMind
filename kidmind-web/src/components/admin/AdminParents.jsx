@@ -10,6 +10,7 @@ import {
   Edit3,
   Link2,
   Mail,
+  MapPin,
   Phone,
   Plus,
   Power,
@@ -28,6 +29,7 @@ const emptyForm = {
   full_name: "",
   email: "",
   phone: "",
+  region: "",
   password: "",
 };
 
@@ -112,6 +114,42 @@ export default function AdminParents() {
     selectedChildId,
     setSelectedChildId,
   ] = useState("");
+
+
+  const [
+    availableChildren,
+    setAvailableChildren,
+  ] = useState([]);
+
+
+  const [
+    availableChildrenLoading,
+    setAvailableChildrenLoading,
+  ] = useState(false);
+
+
+  const [
+    deleteInfo,
+    setDeleteInfo,
+  ] = useState(null);
+
+
+  const [
+    deleteMode,
+    setDeleteMode,
+  ] = useState("none");
+
+
+  const [
+    selectedDeleteChildIds,
+    setSelectedDeleteChildIds,
+  ] = useState([]);
+
+
+  const [
+    deleteLoading,
+    setDeleteLoading,
+  ] = useState(false);
 
 
   const loadData =
@@ -340,6 +378,7 @@ export default function AdminParents() {
                 parent.full_name,
                 parent.email,
                 parent.phone,
+                parent.region,
                 parent.id,
                 childrenText,
               ]
@@ -401,6 +440,27 @@ export default function AdminParents() {
         ""
       );
 
+
+      setAvailableChildren(
+        []
+      );
+
+
+      setDeleteInfo(
+        null
+      );
+
+
+      setDeleteMode(
+        "none"
+      );
+
+
+      setSelectedDeleteChildIds(
+        []
+      );
+
+
       setForm(
         emptyForm
       );
@@ -435,6 +495,10 @@ export default function AdminParents() {
           parent.phone ||
           "",
 
+        region:
+          parent.region ||
+          "",
+
         password:
           "",
       });
@@ -445,8 +509,87 @@ export default function AdminParents() {
     };
 
 
+  const loadAvailableChildren =
+    async parentId => {
+
+      if (!parentId) {
+
+        setAvailableChildren(
+          []
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setAvailableChildrenLoading(
+          true
+        );
+
+
+        const response =
+          await api.get(
+            "/users/available-children",
+            {
+              params: {
+                link_type:
+                  "parent",
+
+                user_id:
+                  Number(
+                    parentId
+                  ),
+              },
+            }
+          );
+
+
+        setAvailableChildren(
+          Array.isArray(
+            response.data
+          )
+            ? response.data
+            : []
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+
+        setAvailableChildren(
+          []
+        );
+
+
+        setError(
+          requestError
+            ?.response
+            ?.data
+            ?.message ||
+          "Unable to load available children."
+        );
+
+      } finally {
+
+        setAvailableChildrenLoading(
+          false
+        );
+
+      }
+
+    };
+
+
   const openChildren =
-    parent => {
+    async parent => {
 
       setModalMode(
         "children"
@@ -462,6 +605,11 @@ export default function AdminParents() {
 
       setError("");
       setSuccess("");
+
+
+      await loadAvailableChildren(
+        parent.id
+      );
 
     };
 
@@ -530,6 +678,10 @@ export default function AdminParents() {
           .toLowerCase();
 
 
+      const region =
+        form.region.trim();
+
+
       const password =
         form.password;
 
@@ -537,11 +689,12 @@ export default function AdminParents() {
       if (
         !fullName ||
         !email ||
+        !region ||
         !password
       ) {
 
         setError(
-          "Name, email and password are required."
+          "Name, email, region and password are required."
         );
 
         return;
@@ -585,6 +738,8 @@ export default function AdminParents() {
             phone:
               form.phone.trim() ||
               null,
+
+            region,
           }
         );
 
@@ -666,13 +821,18 @@ export default function AdminParents() {
           .toLowerCase();
 
 
+      const region =
+        form.region.trim();
+
+
       if (
         !fullName ||
-        !email
+        !email ||
+        !region
       ) {
 
         setError(
-          "Name and email are required."
+          "Name, email and region are required."
         );
 
         return;
@@ -698,6 +858,8 @@ export default function AdminParents() {
             phone:
               form.phone.trim() ||
               null,
+
+            region,
           }
         );
 
@@ -831,28 +993,181 @@ export default function AdminParents() {
     };
 
 
-  const deleteParent =
+  const openDeleteParent =
     async parent => {
 
-      const confirmed =
-        window.confirm(
-          `Delete ${parent.full_name} permanently?\n\nTheir child links will also be removed.`
+      try {
+
+        setModalMode(
+          "delete"
         );
 
+        setSelectedParent(
+          parent
+        );
 
-      if (!confirmed) {
-        return;
-      }
+        setDeleteInfo(
+          null
+        );
 
+        setDeleteMode(
+          "none"
+        );
 
-      try {
+        setSelectedDeleteChildIds(
+          []
+        );
+
+        setDeleteLoading(
+          true
+        );
 
         setError("");
         setSuccess("");
 
 
+        const response =
+          await api.get(
+            `/users/${parent.id}/delete-info`
+          );
+
+
+        setDeleteInfo(
+          response.data ||
+          null
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+
+        setModalMode(
+          null
+        );
+
+        setSelectedParent(
+          null
+        );
+
+
+        setError(
+          requestError
+            ?.response
+            ?.data
+            ?.message ||
+          "Unable to load deletion information."
+        );
+
+      } finally {
+
+        setDeleteLoading(
+          false
+        );
+
+      }
+
+    };
+
+
+  const toggleDeleteChild =
+    childId => {
+
+      const numericId =
+        Number(
+          childId
+        );
+
+
+      setSelectedDeleteChildIds(
+        previous =>
+          previous.includes(
+            numericId
+          )
+            ? previous.filter(
+                id =>
+                  id !==
+                  numericId
+              )
+            : [
+                ...previous,
+                numericId,
+              ]
+      );
+
+    };
+
+
+  const confirmDeleteParent =
+    async () => {
+
+      if (!selectedParent) {
+        return;
+      }
+
+
+      if (
+        deleteMode ===
+          "selected" &&
+        selectedDeleteChildIds.length ===
+          0
+      ) {
+
+        setError(
+          "Select at least one child to delete."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setSaving(true);
+        setError("");
+        setSuccess("");
+
+
         await api.delete(
-          `/users/${parent.id}`
+          `/users/${selectedParent.id}`,
+          {
+            data: {
+              delete_mode:
+                deleteMode,
+
+              child_ids:
+                deleteMode ===
+                  "selected"
+                  ? selectedDeleteChildIds
+                  : [],
+            },
+          }
+        );
+
+
+        setModalMode(
+          null
+        );
+
+        setSelectedParent(
+          null
+        );
+
+        setDeleteInfo(
+          null
+        );
+
+        setDeleteMode(
+          "none"
+        );
+
+        setSelectedDeleteChildIds(
+          []
         );
 
 
@@ -881,6 +1196,10 @@ export default function AdminParents() {
             ?.message ||
           "Unable to delete parent."
         );
+
+      } finally {
+
+        setSaving(false);
 
       }
 
@@ -933,6 +1252,11 @@ export default function AdminParents() {
 
         await loadData(
           true
+        );
+
+
+        await loadAvailableChildren(
+          selectedParent.id
         );
 
       } catch (
@@ -1006,6 +1330,11 @@ export default function AdminParents() {
           true
         );
 
+
+        await loadAvailableChildren(
+          selectedParent.id
+        );
+
       } catch (
         requestError
       ) {
@@ -1042,8 +1371,8 @@ export default function AdminParents() {
       : [];
 
 
-  const availableChildren =
-    children.filter(
+  const linkableChildren =
+    availableChildren.filter(
       child =>
         !selectedLinks.some(
           link =>
@@ -1197,8 +1526,10 @@ export default function AdminParents() {
             {
               assignments.filter(
                 item =>
+                  item.link_type ===
+                    "parent" ||
                   item.role ===
-                  "parent"
+                    "parent"
               ).length
             }
           </strong>
@@ -1226,7 +1557,7 @@ export default function AdminParents() {
                   event.target.value
                 )
             }
-            placeholder="Search parent, email, phone or child..."
+            placeholder="Search parent, email, phone, region or child..."
           />
 
         </div>
@@ -1435,6 +1766,22 @@ export default function AdminParents() {
 
                             </div>
 
+
+                            <div>
+
+                              <MapPin
+                                size={14}
+                              />
+
+                              <span>
+                                {
+                                  parent.region ||
+                                  "No region"
+                                }
+                              </span>
+
+                            </div>
+
                           </div>
 
 
@@ -1560,7 +1907,7 @@ export default function AdminParents() {
                             <button
                               className="delete"
                               onClick={() =>
-                                deleteParent(
+                                openDeleteParent(
                                   parent
                                 )
                               }
@@ -1628,7 +1975,10 @@ export default function AdminParents() {
                         : modalMode ===
                           "edit"
                           ? "Edit Parent"
-                          : "Manage Children"
+                          : modalMode ===
+                            "delete"
+                            ? "Delete Parent"
+                            : "Manage Children"
                     }
 
                   </h2>
@@ -1757,6 +2107,24 @@ export default function AdminParents() {
 
                     <label>
 
+                      Region
+
+                      <input
+                        name="region"
+                        value={
+                          form.region
+                        }
+                        onChange={
+                          handleField
+                        }
+                        placeholder="Parent region"
+                      />
+
+                    </label>
+
+
+                    <label>
+
                       Temporary Password
 
                       <input
@@ -1859,6 +2227,24 @@ export default function AdminParents() {
                           handleField
                         }
                         placeholder="Optional"
+                      />
+
+                    </label>
+
+
+                    <label>
+
+                      Region
+
+                      <input
+                        name="region"
+                        value={
+                          form.region
+                        }
+                        onChange={
+                          handleField
+                        }
+                        placeholder="Parent region"
                       />
 
                     </label>
@@ -2022,94 +2408,486 @@ export default function AdminParents() {
                             </div>
 
                           )
-                          : availableChildren.length ===
-                            0
+                          : availableChildrenLoading
                             ? (
 
                               <div className="no-linked-children">
 
-                                All available children
-                                are already linked.
+                                Loading available children...
 
                               </div>
 
                             )
-                            : (
+                            : linkableChildren.length ===
+                              0
+                              ? (
 
-                              <div className="link-child-row">
+                                <div className="no-linked-children">
 
-                                <select
-                                  value={
-                                    selectedChildId
-                                  }
-                                  onChange={
-                                    event =>
-                                      setSelectedChildId(
-                                        event.target.value
+                                  No unassigned children are available.
+
+                                </div>
+
+                              )
+                              : (
+
+                                <div className="link-child-row">
+
+                                  <select
+                                    value={
+                                      selectedChildId
+                                    }
+                                    onChange={
+                                      event =>
+                                        setSelectedChildId(
+                                          event.target.value
+                                        )
+                                    }
+                                  >
+
+                                    <option value="">
+                                      Select child
+                                    </option>
+
+
+                                    {
+                                      linkableChildren.map(
+                                        child => (
+
+                                          <option
+                                            key={
+                                              child.id
+                                            }
+                                            value={
+                                              child.id
+                                            }
+                                          >
+
+                                            {
+                                              child.full_name
+                                            }
+                                            {" — "}
+                                            ID #
+                                            {
+                                              child.id
+                                            }
+
+                                          </option>
+
+                                        )
                                       )
-                                  }
-                                >
+                                    }
 
-                                  <option value="">
-                                    Select child
-                                  </option>
+                                  </select>
 
 
-                                  {
-                                    availableChildren.map(
-                                      child => (
+                                  <button
+                                    onClick={
+                                      linkChild
+                                    }
+                                    disabled={
+                                      !selectedChildId ||
+                                      saving
+                                    }
+                                  >
 
-                                        <option
-                                          key={
-                                            child.id
-                                          }
-                                          value={
-                                            child.id
-                                          }
-                                        >
+                                    <Plus
+                                      size={16}
+                                    />
 
-                                          {
-                                            child.full_name
-                                          }
-                                          {" — "}
-                                          ID #
-                                          {
-                                            child.id
-                                          }
+                                    Link Child
 
-                                        </option>
+                                  </button>
 
-                                      )
-                                    )
-                                  }
+                                </div>
 
-                                </select>
-
-
-                                <button
-                                  onClick={
-                                    linkChild
-                                  }
-                                  disabled={
-                                    !selectedChildId ||
-                                    saving
-                                  }
-                                >
-
-                                  <Plus
-                                    size={16}
-                                  />
-
-                                  Link Child
-
-                                </button>
-
-                              </div>
-
-                            )
+                              )
                       }
 
                     </div>
+
+                  </div>
+
+                )
+              }
+
+
+              {
+                modalMode ===
+                "delete" &&
+                selectedParent && (
+
+                  <div className="delete-parent-content">
+
+                    {
+                      deleteLoading
+                        ? (
+
+                          <div className="delete-parent-loading">
+                            Loading...
+                          </div>
+
+                        )
+                        : (
+
+                          <>
+
+                            <div className="delete-parent-warning">
+
+                              <Trash2
+                                size={20}
+                              />
+
+                              <div>
+
+                                <strong>
+                                  Delete parent account?
+                                </strong>
+
+                                <span>
+                                  Choose what should happen to the linked children before deleting the account.
+                                </span>
+
+                              </div>
+
+                            </div>
+
+
+                            {
+                              Number(
+                                deleteInfo
+                                  ?.child_count ||
+                                0
+                              ) >
+                              0
+                                ? (
+
+                                  <div className="delete-options">
+
+                                    <label
+                                      className={
+                                        deleteMode ===
+                                        "none"
+                                          ? "delete-option selected"
+                                          : "delete-option"
+                                      }
+                                    >
+
+                                      <input
+                                        type="radio"
+                                        name="delete_mode"
+                                        value="none"
+                                        checked={
+                                          deleteMode ===
+                                          "none"
+                                        }
+                                        onChange={() => {
+                                          setDeleteMode(
+                                            "none"
+                                          );
+
+                                          setSelectedDeleteChildIds(
+                                            []
+                                          );
+                                        }}
+                                      />
+
+                                      <div>
+
+                                        <strong>
+                                          Keep children
+                                        </strong>
+
+                                        <span>
+                                          Delete only the parent account. The children will stay in KidMind and become unlinked from this parent.
+                                        </span>
+
+                                      </div>
+
+                                    </label>
+
+
+                                    {
+                                      Number(
+                                        deleteInfo
+                                          ?.child_count ||
+                                        0
+                                      ) ===
+                                      1
+                                        ? (
+
+                                          <label
+                                            className={
+                                              deleteMode ===
+                                              "all"
+                                                ? "delete-option selected"
+                                                : "delete-option"
+                                            }
+                                          >
+
+                                            <input
+                                              type="radio"
+                                              name="delete_mode"
+                                              value="all"
+                                              checked={
+                                                deleteMode ===
+                                                "all"
+                                              }
+                                              onChange={() => {
+                                                setDeleteMode(
+                                                  "all"
+                                                );
+
+                                                setSelectedDeleteChildIds(
+                                                  []
+                                                );
+                                              }}
+                                            />
+
+                                            <div>
+
+                                              <strong>
+                                                Delete linked child too
+                                              </strong>
+
+                                              <span>
+                                                Delete the parent and the linked child.
+                                              </span>
+
+                                            </div>
+
+                                          </label>
+
+                                        )
+                                        : (
+
+                                          <>
+
+                                            <label
+                                              className={
+                                                deleteMode ===
+                                                "selected"
+                                                  ? "delete-option selected"
+                                                  : "delete-option"
+                                              }
+                                            >
+
+                                              <input
+                                                type="radio"
+                                                name="delete_mode"
+                                                value="selected"
+                                                checked={
+                                                  deleteMode ===
+                                                  "selected"
+                                                }
+                                                onChange={() =>
+                                                  setDeleteMode(
+                                                    "selected"
+                                                  )
+                                                }
+                                              />
+
+                                              <div>
+
+                                                <strong>
+                                                  Delete selected children
+                                                </strong>
+
+                                                <span>
+                                                  Choose one or more children to delete with this parent.
+                                                </span>
+
+                                              </div>
+
+                                            </label>
+
+
+                                            {
+                                              deleteMode ===
+                                              "selected" && (
+
+                                                <div className="delete-child-selection">
+
+                                                  {
+                                                    (
+                                                      deleteInfo
+                                                        ?.children ||
+                                                      []
+                                                    ).map(
+                                                      child => {
+
+                                                        const childId =
+                                                          Number(
+                                                            child.id
+                                                          );
+
+                                                        return (
+
+                                                          <label
+                                                            key={
+                                                              childId
+                                                            }
+                                                          >
+
+                                                            <input
+                                                              type="checkbox"
+                                                              checked={
+                                                                selectedDeleteChildIds.includes(
+                                                                  childId
+                                                                )
+                                                              }
+                                                              onChange={() =>
+                                                                toggleDeleteChild(
+                                                                  childId
+                                                                )
+                                                              }
+                                                            />
+
+                                                            <div>
+
+                                                              <strong>
+                                                                {
+                                                                  child.full_name
+                                                                }
+                                                              </strong>
+
+                                                              <span>
+                                                                ID #
+                                                                {
+                                                                  child.id
+                                                                }
+                                                                {
+                                                                  child.region
+                                                                    ? ` • ${child.region}`
+                                                                    : ""
+                                                                }
+                                                              </span>
+
+                                                            </div>
+
+                                                          </label>
+
+                                                        );
+
+                                                      }
+                                                    )
+                                                  }
+
+                                                </div>
+
+                                              )
+                                            }
+
+
+                                            <label
+                                              className={
+                                                deleteMode ===
+                                                "all"
+                                                  ? "delete-option selected"
+                                                  : "delete-option"
+                                              }
+                                            >
+
+                                              <input
+                                                type="radio"
+                                                name="delete_mode"
+                                                value="all"
+                                                checked={
+                                                  deleteMode ===
+                                                  "all"
+                                                }
+                                                onChange={() => {
+                                                  setDeleteMode(
+                                                    "all"
+                                                  );
+
+                                                  setSelectedDeleteChildIds(
+                                                    []
+                                                  );
+                                                }}
+                                              />
+
+                                              <div>
+
+                                                <strong>
+                                                  Delete all linked children
+                                                </strong>
+
+                                                <span>
+                                                  Delete the parent and all {
+                                                    deleteInfo
+                                                      ?.child_count
+                                                  } linked children.
+                                                </span>
+
+                                              </div>
+
+                                            </label>
+
+                                          </>
+
+                                        )
+                                    }
+
+                                  </div>
+
+                                )
+                                : (
+
+                                  <div className="no-linked-children">
+
+                                    This parent has no linked children. Only the parent account will be deleted.
+
+                                  </div>
+
+                                )
+                            }
+
+
+                            <div className="delete-parent-actions">
+
+                              <button
+                                className="delete-cancel"
+                                onClick={
+                                  closeModal
+                                }
+                                disabled={
+                                  saving
+                                }
+                              >
+                                Cancel
+                              </button>
+
+                              <button
+                                className="delete-confirm"
+                                onClick={
+                                  confirmDeleteParent
+                                }
+                                disabled={
+                                  saving ||
+                                  (
+                                    deleteMode ===
+                                      "selected" &&
+                                    selectedDeleteChildIds.length ===
+                                      0
+                                  )
+                                }
+                              >
+
+                                {
+                                  saving
+                                    ? "Deleting..."
+                                    : "Delete Parent"
+                                }
+
+                              </button>
+
+                            </div>
+
+                          </>
+
+                        )
+                    }
 
                   </div>
 
@@ -2783,6 +3561,160 @@ export default function AdminParents() {
           opacity: .5;
           cursor: not-allowed;
         }
+
+        .delete-parent-content {
+          margin-top: 18px;
+        }
+
+        .delete-parent-loading {
+          min-height: 160px;
+          display: grid;
+          place-items: center;
+          color: #999CAB;
+          font-size: 11px;
+        }
+
+        .delete-parent-warning {
+          padding: 14px;
+          border-radius: 14px;
+          background: #FFF3F5;
+          color: #C45468;
+          display: flex;
+          gap: 11px;
+        }
+
+        .delete-parent-warning > div {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .delete-parent-warning strong {
+          color: #8E4554;
+          font-size: 12px;
+        }
+
+        .delete-parent-warning span {
+          margin-top: 4px;
+          color: #A37680;
+          font-size: 9.5px;
+          line-height: 1.5;
+        }
+
+        .delete-options {
+          margin-top: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+        }
+
+        .delete-option {
+          padding: 12px;
+          border: 1px solid #E9E9F1;
+          border-radius: 13px;
+          background: #FBFBFD;
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          cursor: pointer;
+        }
+
+        .delete-option.selected {
+          border-color: #D9CFF8;
+          background: #F8F5FF;
+        }
+
+        .delete-option input {
+          margin-top: 2px;
+        }
+
+        .delete-option > div {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .delete-option strong {
+          color: #55576D;
+          font-size: 10.5px;
+        }
+
+        .delete-option span {
+          margin-top: 3px;
+          color: #979AAA;
+          font-size: 9.5px;
+          line-height: 1.5;
+        }
+
+        .delete-child-selection {
+          padding: 10px;
+          border-radius: 13px;
+          background: #FAFAFC;
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .delete-child-selection > label {
+          min-height: 45px;
+          padding: 8px 10px;
+          border-radius: 10px;
+          background: white;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          cursor: pointer;
+        }
+
+        .delete-child-selection > label > div {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .delete-child-selection strong {
+          color: #5A5C70;
+          font-size: 10px;
+        }
+
+        .delete-child-selection span {
+          margin-top: 2px;
+          color: #A0A2B1;
+          font-size: 8.5px;
+        }
+
+        .delete-parent-actions {
+          margin-top: 18px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .delete-cancel,
+        .delete-confirm {
+          min-width: 110px;
+          height: 40px;
+          border-radius: 11px;
+          cursor: pointer;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .delete-cancel {
+          border: 1px solid #E4E4EC;
+          background: white;
+          color: #777A8D;
+        }
+
+        .delete-confirm {
+          border: 0;
+          background: #D9576C;
+          color: white;
+        }
+
+        .delete-cancel:disabled,
+        .delete-confirm:disabled {
+          opacity: .55;
+          cursor: not-allowed;
+        }
+
 
         @media (max-width: 1050px) {
 

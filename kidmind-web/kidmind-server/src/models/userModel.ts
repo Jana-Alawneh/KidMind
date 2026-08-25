@@ -12,14 +12,21 @@ export type UserRole =
   | "admin";
 
 
+export type ChildLinkType =
+  | "therapist"
+  | "parent";
+
+
 export interface UserRow
   extends RowDataPacket {
+
   id: number;
   full_name: string;
   email: string;
   password_hash: string;
   role: UserRole;
   phone: string | null;
+  region: string | null;
   avatar_url: string | null;
   is_active: number;
   last_login_at:
@@ -32,6 +39,7 @@ export interface UserRow
   updated_at:
     | string
     | Date;
+
 }
 
 
@@ -47,13 +55,16 @@ export const getAllUsers =
           email,
           role,
           phone,
+          region,
           avatar_url,
           is_active,
           last_login_at,
           created_at,
           updated_at
         FROM users
-        ORDER BY created_at DESC
+        ORDER BY
+          created_at DESC,
+          id DESC
         `
       );
 
@@ -75,15 +86,10 @@ export const getUserById =
         WHERE id = ?
         LIMIT 1
         `,
-        [
-          id,
-        ]
+        [id]
       );
 
-    return (
-      rows[0] ??
-      null
-    );
+    return rows[0] ?? null;
 
   };
 
@@ -107,15 +113,10 @@ export const getUserByEmail =
         WHERE email = ?
         LIMIT 1
         `,
-        [
-          normalizedEmail,
-        ]
+        [normalizedEmail]
       );
 
-    return (
-      rows[0] ??
-      null
-    );
+    return rows[0] ?? null;
 
   };
 
@@ -127,13 +128,20 @@ export const createUser =
     passwordHash: string,
     role: UserRole,
     phone: string | null = null,
-    avatarUrl: string | null = null
+    avatarUrl: string | null = null,
+    region: string | null = null
   ) => {
 
     const normalizedEmail =
       email
         .trim()
         .toLowerCase();
+
+
+    const normalizedRegion =
+      region
+        ? region.trim()
+        : null;
 
 
     const [result] =
@@ -146,10 +154,11 @@ export const createUser =
           password_hash,
           role,
           phone,
-          avatar_url
+          avatar_url,
+          region
         )
         VALUES
-        (?, ?, ?, ?, ?, ?)
+        (?, ?, ?, ?, ?, ?, ?)
         `,
         [
           fullName.trim(),
@@ -158,9 +167,9 @@ export const createUser =
           role,
           phone,
           avatarUrl,
+          normalizedRegion,
         ]
       );
-
 
     return result;
 
@@ -176,13 +185,12 @@ export const updateLastLogin =
       await db.query<ResultSetHeader>(
         `
         UPDATE users
-        SET last_login_at =
-          CURRENT_TIMESTAMP
+        SET
+          last_login_at =
+            CURRENT_TIMESTAMP
         WHERE id = ?
         `,
-        [
-          id,
-        ]
+        [id]
       );
 
     return result.affectedRows;
@@ -195,8 +203,47 @@ export const updateUserProfile =
     id: number,
     fullName: string,
     phone: string | null,
-    avatarUrl: string | null
+    avatarUrl: string | null,
+    region:
+      | string
+      | null
+      | undefined =
+        undefined
   ) => {
+
+    if (
+      region ===
+      undefined
+    ) {
+
+      const [result] =
+        await db.query<ResultSetHeader>(
+          `
+          UPDATE users
+          SET
+            full_name = ?,
+            phone = ?,
+            avatar_url = ?
+          WHERE id = ?
+          `,
+          [
+            fullName.trim(),
+            phone,
+            avatarUrl,
+            id,
+          ]
+        );
+
+      return result.affectedRows;
+
+    }
+
+
+    const normalizedRegion =
+      region
+        ? region.trim()
+        : null;
+
 
     const [result] =
       await db.query<ResultSetHeader>(
@@ -205,13 +252,15 @@ export const updateUserProfile =
         SET
           full_name = ?,
           phone = ?,
-          avatar_url = ?
+          avatar_url = ?,
+          region = ?
         WHERE id = ?
         `,
         [
           fullName.trim(),
           phone,
           avatarUrl,
+          normalizedRegion,
           id,
         ]
       );
@@ -226,13 +275,52 @@ export const updateUserByAdmin =
     id: number,
     fullName: string,
     email: string,
-    phone: string | null
+    phone: string | null,
+    region:
+      | string
+      | null
+      | undefined =
+        undefined
   ) => {
 
     const normalizedEmail =
       email
         .trim()
         .toLowerCase();
+
+
+    if (
+      region ===
+      undefined
+    ) {
+
+      const [result] =
+        await db.query<ResultSetHeader>(
+          `
+          UPDATE users
+          SET
+            full_name = ?,
+            email = ?,
+            phone = ?
+          WHERE id = ?
+          `,
+          [
+            fullName.trim(),
+            normalizedEmail,
+            phone,
+            id,
+          ]
+        );
+
+      return result.affectedRows;
+
+    }
+
+
+    const normalizedRegion =
+      region
+        ? region.trim()
+        : null;
 
 
     const [result] =
@@ -242,13 +330,15 @@ export const updateUserByAdmin =
         SET
           full_name = ?,
           email = ?,
-          phone = ?
+          phone = ?,
+          region = ?
         WHERE id = ?
         `,
         [
           fullName.trim(),
           normalizedEmail,
           phone,
+          normalizedRegion,
           id,
         ]
       );
@@ -319,12 +409,111 @@ export const deleteUser =
         DELETE FROM users
         WHERE id = ?
         `,
-        [
-          id,
-        ]
+        [id]
       );
 
     return result.affectedRows;
+
+  };
+
+
+export const getChildAssignmentByType =
+  async (
+    childId: number,
+    linkType: ChildLinkType
+  ) => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          cu.id AS assignment_id,
+          cu.child_id,
+          cu.user_id,
+          cu.link_type,
+          cu.created_at AS assigned_at,
+          u.full_name AS user_name,
+          u.email AS user_email,
+          u.phone,
+          u.region,
+          u.role
+        FROM child_users cu
+        INNER JOIN users u
+          ON u.id = cu.user_id
+        WHERE
+          cu.child_id = ?
+          AND cu.link_type = ?
+        LIMIT 1
+        `,
+        [
+          childId,
+          linkType,
+        ]
+      );
+
+    return rows[0] ?? null;
+
+  };
+
+
+export const isChildAssignedForType =
+  async (
+    childId: number,
+    linkType: ChildLinkType,
+    exceptUserId:
+      | number
+      | null =
+        null
+  ) => {
+
+    let query = `
+      SELECT id
+      FROM child_users
+      WHERE
+        child_id = ?
+        AND link_type = ?
+    `;
+
+
+    const params:
+      (
+        | number
+        | string
+      )[] = [
+        childId,
+        linkType,
+      ];
+
+
+    if (
+      exceptUserId !==
+      null
+    ) {
+
+      query += `
+        AND user_id <> ?
+      `;
+
+      params.push(
+        exceptUserId
+      );
+
+    }
+
+
+    query += `
+      LIMIT 1
+    `;
+
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        query,
+        params
+      );
+
+
+    return rows.length > 0;
 
   };
 
@@ -335,25 +524,108 @@ export const linkUserToChild =
     childId: number
   ) => {
 
+    const user =
+      await getUserById(
+        userId
+      );
+
+
+    if (!user) {
+
+      throw new Error(
+        "User not found"
+      );
+
+    }
+
+
+    if (
+      user.role !==
+        "parent" &&
+      user.role !==
+        "therapist"
+    ) {
+
+      throw new Error(
+        "Only parents and therapists can be linked to children"
+      );
+
+    }
+
+
+    const linkType:
+      ChildLinkType =
+        user.role;
+
+
+    const existingAssignment =
+      await getChildAssignmentByType(
+        childId,
+        linkType
+      );
+
+
+    if (
+      existingAssignment
+    ) {
+
+      if (
+        Number(
+          existingAssignment
+            .user_id
+        ) ===
+        Number(
+          userId
+        )
+      ) {
+
+        return {
+          alreadyLinked:
+            true,
+          assignmentId:
+            existingAssignment
+              .assignment_id,
+        };
+
+      }
+
+
+      throw new Error(
+        linkType ===
+        "parent"
+          ? "This child already has a parent"
+          : "This child already has a therapist"
+      );
+
+    }
+
+
     const [result] =
       await db.query<ResultSetHeader>(
         `
-        INSERT IGNORE
-        INTO child_users
+        INSERT INTO child_users
         (
           child_id,
-          user_id
+          user_id,
+          link_type
         )
         VALUES
-        (?, ?)
+        (?, ?, ?)
         `,
         [
           childId,
           userId,
+          linkType,
         ]
       );
 
-    return result;
+
+    return {
+      alreadyLinked:
+        false,
+      assignmentId:
+        result.insertId,
+    };
 
   };
 
@@ -383,6 +655,60 @@ export const unlinkUserFromChild =
   };
 
 
+export const getAvailableChildrenForRole =
+  async (
+    linkType: ChildLinkType,
+    currentUserId:
+      | number
+      | null =
+        null
+  ) => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          c.id,
+          c.full_name,
+          c.age,
+          c.gender,
+          c.region,
+          c.status,
+          c.created_at,
+          assignment.user_id
+            AS assigned_user_id
+        FROM children c
+        LEFT JOIN child_users assignment
+          ON assignment.child_id =
+            c.id
+          AND assignment.link_type =
+            ?
+        WHERE
+          assignment.id
+            IS NULL
+          OR
+          (
+            ?
+              IS NOT NULL
+            AND assignment.user_id =
+              ?
+          )
+        ORDER BY
+          c.full_name ASC,
+          c.id ASC
+        `,
+        [
+          linkType,
+          currentUserId,
+          currentUserId,
+        ]
+      );
+
+    return rows;
+
+  };
+
+
 export const getChildrenForUser =
   async (
     userId: number
@@ -394,18 +720,54 @@ export const getChildrenForUser =
         SELECT
           c.*
         FROM children c
-
         INNER JOIN child_users cu
-          ON cu.child_id = c.id
-
-        WHERE cu.user_id = ?
-
+          ON cu.child_id =
+            c.id
+        WHERE
+          cu.user_id = ?
         ORDER BY
-          c.created_at DESC
+          c.created_at DESC,
+          c.id DESC
         `,
-        [
-          userId,
-        ]
+        [userId]
+      );
+
+    return rows;
+
+  };
+
+
+export const getLinkedChildrenForUser =
+  async (
+    userId: number
+  ) => {
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          c.id,
+          c.full_name,
+          c.age,
+          c.gender,
+          c.region,
+          c.status,
+          cu.id
+            AS assignment_id,
+          cu.link_type,
+          cu.created_at
+            AS assigned_at
+        FROM child_users cu
+        INNER JOIN children c
+          ON c.id =
+            cu.child_id
+        WHERE
+          cu.user_id = ?
+        ORDER BY
+          c.full_name ASC,
+          c.id ASC
+        `,
+        [userId]
       );
 
     return rows;
@@ -425,14 +787,12 @@ export const getChildForUser =
         SELECT
           c.*
         FROM children c
-
         INNER JOIN child_users cu
-          ON cu.child_id = c.id
-
+          ON cu.child_id =
+            c.id
         WHERE
           cu.user_id = ?
           AND c.id = ?
-
         LIMIT 1
         `,
         [
@@ -441,10 +801,7 @@ export const getChildForUser =
         ]
       );
 
-    return (
-      rows[0] ??
-      null
-    );
+    return rows[0] ?? null;
 
   };
 
@@ -461,11 +818,9 @@ export const isUserLinkedToChild =
         SELECT
           cu.id
         FROM child_users cu
-
         WHERE
           cu.user_id = ?
           AND cu.child_id = ?
-
         LIMIT 1
         `,
         [
@@ -474,10 +829,7 @@ export const isUserLinkedToChild =
         ]
       );
 
-    return (
-      rows.length >
-      0
-    );
+    return rows.length > 0;
 
   };
 
@@ -495,40 +847,35 @@ export const getTherapistsForUserChildren =
           therapist.full_name,
           therapist.email,
           therapist.phone,
+          therapist.region,
           therapist.avatar_url,
           therapist.is_active,
-
           therapist_link.child_id,
-
           child.full_name
             AS child_name
-
         FROM child_users owner_link
-
         INNER JOIN children child
           ON child.id =
             owner_link.child_id
-
         INNER JOIN child_users therapist_link
           ON therapist_link.child_id =
             owner_link.child_id
-
+          AND therapist_link.link_type =
+            'therapist'
         INNER JOIN users therapist
           ON therapist.id =
             therapist_link.user_id
-
-        WHERE
-          owner_link.user_id = ?
           AND therapist.role =
             'therapist'
-
+        WHERE
+          owner_link.user_id = ?
+          AND owner_link.link_type =
+            'parent'
         ORDER BY
           child.full_name ASC,
           therapist.full_name ASC
         `,
-        [
-          userId,
-        ]
+        [userId]
       );
 
     return rows;
@@ -550,25 +897,23 @@ export const getUsersForChild =
           u.email,
           u.role,
           u.phone,
+          u.region,
           u.avatar_url,
           u.is_active,
+          cu.link_type,
           cu.created_at
             AS assigned_at
-
         FROM users u
-
         INNER JOIN child_users cu
-          ON cu.user_id = u.id
-
-        WHERE cu.child_id = ?
-
+          ON cu.user_id =
+            u.id
+        WHERE
+          cu.child_id = ?
         ORDER BY
-          u.role ASC,
+          cu.link_type ASC,
           u.full_name ASC
         `,
-        [
-          childId,
-        ]
+        [childId]
       );
 
     return rows;
@@ -585,37 +930,138 @@ export const getAllChildAssignments =
         SELECT
           cu.id
             AS assignment_id,
-
           cu.child_id,
-
+          child.full_name
+            AS child_name,
+          child.age
+            AS child_age,
+          child.gender
+            AS child_gender,
+          child.region
+            AS child_region,
           cu.user_id,
-
+          cu.link_type,
           cu.created_at
             AS assigned_at,
-
           u.full_name
             AS user_name,
-
           u.email
             AS user_email,
-
           u.role,
-
           u.phone,
-
+          u.region
+            AS user_region,
           u.avatar_url,
-
           u.is_active
-
         FROM child_users cu
-
         INNER JOIN users u
-          ON u.id = cu.user_id
-
+          ON u.id =
+            cu.user_id
+        INNER JOIN children child
+          ON child.id =
+            cu.child_id
         ORDER BY
-          cu.created_at DESC,
-          cu.id DESC
+          child.full_name ASC,
+          cu.link_type ASC
         `
+      );
+
+    return rows;
+
+  };
+
+
+export const deleteAllAssignmentsForUser =
+  async (
+    userId: number
+  ) => {
+
+    const [result] =
+      await db.query<ResultSetHeader>(
+        `
+        DELETE FROM child_users
+        WHERE user_id = ?
+        `,
+        [userId]
+      );
+
+    return result.affectedRows;
+
+  };
+
+
+export const deleteUserChildAssignment =
+  async (
+    userId: number,
+    childId: number
+  ) => {
+
+    const [result] =
+      await db.query<ResultSetHeader>(
+        `
+        DELETE FROM child_users
+        WHERE
+          user_id = ?
+          AND child_id = ?
+        `,
+        [
+          userId,
+          childId,
+        ]
+      );
+
+    return result.affectedRows;
+
+  };
+
+
+export const getSelectedLinkedChildren =
+  async (
+    userId: number,
+    childIds: number[]
+  ) => {
+
+    if (
+      childIds.length ===
+      0
+    ) {
+      return [];
+    }
+
+
+    const placeholders =
+      childIds
+        .map(
+          () => "?"
+        )
+        .join(", ");
+
+
+    const [rows] =
+      await db.query<RowDataPacket[]>(
+        `
+        SELECT
+          c.id,
+          c.full_name,
+          c.age,
+          c.gender,
+          c.region,
+          cu.link_type
+        FROM children c
+        INNER JOIN child_users cu
+          ON cu.child_id =
+            c.id
+        WHERE
+          cu.user_id = ?
+          AND c.id IN
+          (
+            ${placeholders}
+          )
+        `,
+        [
+          userId,
+          ...childIds,
+        ]
       );
 
     return rows;

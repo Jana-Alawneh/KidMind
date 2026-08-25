@@ -8,11 +8,15 @@ import jwt from "jsonwebtoken";
 
 import {
   createUser,
+  deleteAllAssignmentsForUser,
   deleteUser,
   getAllChildAssignments,
   getAllUsers,
+  getAvailableChildrenForRole,
   getChildForUser,
   getChildrenForUser,
+  getLinkedChildrenForUser,
+  getSelectedLinkedChildren,
   getTherapistsForUserChildren,
   getUserByEmail,
   getUserById,
@@ -22,11 +26,15 @@ import {
   updateLastLogin,
   updateUserActiveStatus,
   updateUserByAdmin,
+  type ChildLinkType,
   type UserRole,
 } from "../models/userModel";
 
 import {
+  deleteChild,
+  deleteChildAssignments,
   getChildById,
+  updateChild as updateChildInDatabase,
 } from "../models/childModel";
 
 import type {
@@ -41,6 +49,12 @@ const allowedRoles: UserRole[] = [
 ];
 
 
+const allowedLinkTypes: ChildLinkType[] = [
+  "parent",
+  "therapist",
+];
+
+
 const createToken = (
   id: number,
   role: UserRole
@@ -49,7 +63,6 @@ const createToken = (
   const secret =
     process.env.JWT_SECRET ||
     "kidmind-development-secret";
-
 
   return jwt.sign(
     {
@@ -60,6 +73,123 @@ const createToken = (
     {
       expiresIn: "7d",
     }
+  );
+
+};
+
+
+const sanitizeParentChild = (
+  child: any
+) => {
+
+  const {
+    notes,
+    ...safeChild
+  } = child;
+
+  return safeChild;
+
+};
+
+
+const parsePositiveIds = (
+  value: unknown
+) => {
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map(
+          item =>
+            Number(item)
+        )
+        .filter(
+          item =>
+            Number.isInteger(item) &&
+            item > 0
+        )
+    )
+  );
+
+};
+
+
+const clearLegacyParentName = async (
+  childId: number
+) => {
+
+  const child =
+    await getChildById(
+      childId
+    );
+
+  if (!child) {
+    return;
+  }
+
+  await updateChildInDatabase(
+    childId,
+    String(
+      child.full_name ||
+      ""
+    ).trim(),
+    Number(
+      child.age
+    ),
+    String(
+      child.gender ||
+      ""
+    ).trim(),
+    "",
+    child.region
+      ? String(
+          child.region
+        ).trim()
+      : null,
+    child.notes ?? null
+  );
+
+};
+
+
+const syncLegacyParentName = async (
+  childId: number,
+  parentName: string
+) => {
+
+  const child =
+    await getChildById(
+      childId
+    );
+
+  if (!child) {
+    return;
+  }
+
+  await updateChildInDatabase(
+    childId,
+    String(
+      child.full_name ||
+      ""
+    ).trim(),
+    Number(
+      child.age
+    ),
+    String(
+      child.gender ||
+      ""
+    ).trim(),
+    parentName.trim(),
+    child.region
+      ? String(
+          child.region
+        ).trim()
+      : null,
+    child.notes ?? null
   );
 
 };
@@ -78,6 +208,7 @@ export const registerUser = async (
       password,
       role,
       phone,
+      region,
     } = req.body;
 
 
@@ -109,6 +240,22 @@ export const registerUser = async (
         .toLowerCase() as UserRole;
 
 
+    const normalizedPhone =
+      phone
+        ? String(
+            phone
+          ).trim()
+        : null;
+
+
+    const normalizedRegion =
+      region
+        ? String(
+            region
+          ).trim()
+        : null;
+
+
     if (
       !normalizedName ||
       !normalizedEmail ||
@@ -121,6 +268,20 @@ export const registerUser = async (
       return res.status(400).json({
         message:
           "Please provide valid user information",
+      });
+
+    }
+
+
+    if (
+      normalizedRole ===
+        "parent" &&
+      !normalizedRegion
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Region is required for parents",
       });
 
     }
@@ -167,12 +328,9 @@ export const registerUser = async (
         normalizedEmail,
         passwordHash,
         normalizedRole,
-        phone
-          ? String(
-              phone
-            ).trim()
-          : null,
-        null
+        normalizedPhone,
+        null,
+        normalizedRegion
       );
 
 
@@ -195,26 +353,21 @@ export const registerUser = async (
     return res.status(201).json({
       message:
         "User registered successfully",
-
       user: {
         id:
           user.id,
-
         full_name:
           user.full_name,
-
         email:
           user.email,
-
         role:
           user.role,
-
         phone:
           user.phone,
-
+        region:
+          user.region,
         avatar_url:
           user.avatar_url,
-
         is_active:
           user.is_active,
       },
@@ -330,28 +483,22 @@ export const loginUser = async (
     return res.json({
       message:
         "Login successful",
-
       token,
-
       user: {
         id:
           user.id,
-
         full_name:
           user.full_name,
-
         email:
           user.email,
-
         role:
           user.role,
-
         phone:
           user.phone,
-
+        region:
+          user.region,
         avatar_url:
           user.avatar_url,
-
         is_active:
           user.is_active,
       },
@@ -422,28 +569,22 @@ export const fetchCurrentUser = async (
       user: {
         id:
           user.id,
-
         full_name:
           user.full_name,
-
         email:
           user.email,
-
         role:
           user.role,
-
         phone:
           user.phone,
-
+        region:
+          user.region,
         avatar_url:
           user.avatar_url,
-
         is_active:
           user.is_active,
-
         last_login_at:
           user.last_login_at,
-
         created_at:
           user.created_at,
       },
@@ -532,7 +673,9 @@ export const fetchParentChildren = async (
 
 
     return res.json(
-      children
+      children.map(
+        sanitizeParentChild
+      )
     );
 
   } catch (error) {
@@ -604,6 +747,34 @@ export const fetchParentChild = async (
     }
 
 
+    const parent =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!parent) {
+
+      return res.status(404).json({
+        message:
+          "Parent account not found",
+      });
+
+    }
+
+
+    if (
+      !parent.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
     const child =
       await getChildForUser(
         req.auth.id,
@@ -622,7 +793,9 @@ export const fetchParentChild = async (
 
 
     return res.json(
-      child
+      sanitizeParentChild(
+        child
+      )
     );
 
   } catch (error) {
@@ -668,6 +841,34 @@ export const fetchParentTherapists = async (
       return res.status(403).json({
         message:
           "Parent access required",
+      });
+
+    }
+
+
+    const parent =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!parent) {
+
+      return res.status(404).json({
+        message:
+          "Parent account not found",
+      });
+
+    }
+
+
+    if (
+      !parent.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
       });
 
     }
@@ -720,6 +921,137 @@ export const fetchUsers = async (
 
     console.error(
       "Fetch users error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
+export const fetchAvailableChildren = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const linkType =
+      String(
+        req.query.link_type ||
+        ""
+      )
+        .trim()
+        .toLowerCase() as ChildLinkType;
+
+
+    if (
+      !allowedLinkTypes.includes(
+        linkType
+      )
+    ) {
+
+      return res.status(400).json({
+        message:
+          "link_type must be parent or therapist",
+      });
+
+    }
+
+
+    let currentUserId:
+      number | null =
+        null;
+
+
+    if (
+      req.query.user_id !==
+        undefined &&
+      req.query.user_id !==
+        null &&
+      String(
+        req.query.user_id
+      ).trim() !==
+        ""
+    ) {
+
+      const parsedUserId =
+        Number(
+          req.query.user_id
+        );
+
+
+      if (
+        !Number.isInteger(
+          parsedUserId
+        ) ||
+        parsedUserId <= 0
+      ) {
+
+        return res.status(400).json({
+          message:
+            "Invalid user ID",
+        });
+
+      }
+
+
+      const user =
+        await getUserById(
+          parsedUserId
+        );
+
+
+      if (!user) {
+
+        return res.status(404).json({
+          message:
+            "User not found",
+        });
+
+      }
+
+
+      if (
+        user.role !==
+        linkType
+      ) {
+
+        return res.status(400).json({
+          message:
+            "User role does not match link type",
+        });
+
+      }
+
+
+      currentUserId =
+        parsedUserId;
+
+    }
+
+
+    const children =
+      await getAvailableChildrenForRole(
+        linkType,
+        currentUserId
+      );
+
+
+    return res.json(
+      children
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch available children error:",
       error
     );
 
@@ -800,6 +1132,17 @@ export const updateUserAsAdmin = async (
         : null;
 
 
+    const region =
+      req.body.region ===
+        undefined
+        ? undefined
+        : req.body.region
+          ? String(
+              req.body.region
+            ).trim()
+          : null;
+
+
     if (
       !fullName ||
       !email
@@ -808,6 +1151,27 @@ export const updateUserAsAdmin = async (
       return res.status(400).json({
         message:
           "Full name and email are required",
+      });
+
+    }
+
+
+    const finalRegion =
+      region ===
+        undefined
+        ? user.region
+        : region;
+
+
+    if (
+      user.role ===
+        "parent" &&
+      !finalRegion
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Region is required for parents",
       });
 
     }
@@ -838,7 +1202,8 @@ export const updateUserAsAdmin = async (
       userId,
       fullName,
       email,
-      phone
+      phone,
+      finalRegion
     );
 
 
@@ -851,27 +1216,22 @@ export const updateUserAsAdmin = async (
     return res.json({
       message:
         "User updated successfully",
-
       user: updatedUser
         ? {
             id:
               updatedUser.id,
-
             full_name:
               updatedUser.full_name,
-
             email:
               updatedUser.email,
-
             role:
               updatedUser.role,
-
             phone:
               updatedUser.phone,
-
+            region:
+              updatedUser.region,
             avatar_url:
               updatedUser.avatar_url,
-
             is_active:
               updatedUser.is_active,
           }
@@ -988,6 +1348,92 @@ export const changeUserStatus = async (
 };
 
 
+export const fetchUserDeleteInfo = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    const userId =
+      Number(
+        req.params.userId
+      );
+
+
+    if (
+      !Number.isInteger(
+        userId
+      ) ||
+      userId <= 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Invalid user ID",
+      });
+
+    }
+
+
+    const user =
+      await getUserById(
+        userId
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    const children =
+      await getLinkedChildrenForUser(
+        userId
+      );
+
+
+    return res.json({
+      user: {
+        id:
+          user.id,
+        full_name:
+          user.full_name,
+        email:
+          user.email,
+        role:
+          user.role,
+        region:
+          user.region,
+      },
+      children,
+      child_count:
+        children.length,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Fetch user delete info error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
 export const removeUser = async (
   req: AuthenticatedRequest,
   res: Response
@@ -1047,6 +1493,203 @@ export const removeUser = async (
     }
 
 
+    const deleteMode =
+      String(
+        req.body?.delete_mode ||
+        "none"
+      )
+        .trim()
+        .toLowerCase();
+
+
+    if (
+      ![
+        "none",
+        "selected",
+        "all",
+      ].includes(
+        deleteMode
+      )
+    ) {
+
+      return res.status(400).json({
+        message:
+          "delete_mode must be none, selected, or all",
+      });
+
+    }
+
+
+    if (
+      user.role !==
+        "parent" &&
+      deleteMode !==
+        "none"
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Children can only be deleted with a parent account",
+      });
+
+    }
+
+
+    const linkedChildren =
+      await getLinkedChildrenForUser(
+        userId
+      );
+
+
+    let childrenToDelete:
+      any[] = [];
+
+
+    if (
+      deleteMode ===
+        "all"
+    ) {
+
+      childrenToDelete =
+        linkedChildren;
+
+    }
+
+
+    if (
+      deleteMode ===
+        "selected"
+    ) {
+
+      const childIds =
+        parsePositiveIds(
+          req.body?.child_ids
+        );
+
+
+      if (
+        childIds.length ===
+        0
+      ) {
+
+        return res.status(400).json({
+          message:
+            "Please select at least one child",
+        });
+
+      }
+
+
+      const selectedChildren =
+        await getSelectedLinkedChildren(
+          userId,
+          childIds
+        );
+
+
+      if (
+        selectedChildren.length !==
+        childIds.length
+      ) {
+
+        return res.status(400).json({
+          message:
+            "One or more selected children are not linked to this parent",
+        });
+
+      }
+
+
+      childrenToDelete =
+        selectedChildren;
+
+    }
+
+
+    const deletedChildIds:
+      number[] = [];
+
+
+    for (
+      const child of
+      childrenToDelete
+    ) {
+
+      const childId =
+        Number(
+          child.id
+        );
+
+
+      await deleteChildAssignments(
+        childId
+      );
+
+
+      const result =
+        await deleteChild(
+          childId
+        );
+
+
+      if (
+        result.affectedRows >
+        0
+      ) {
+
+        deletedChildIds.push(
+          childId
+        );
+
+      }
+
+    }
+
+
+    if (
+      user.role ===
+        "parent"
+    ) {
+
+      const deletedIds =
+        new Set(
+          deletedChildIds
+        );
+
+
+      for (
+        const child of
+        linkedChildren
+      ) {
+
+        const childId =
+          Number(
+            child.id
+          );
+
+
+        if (
+          !deletedIds.has(
+            childId
+          )
+        ) {
+
+          await clearLegacyParentName(
+            childId
+          );
+
+        }
+
+      }
+
+    }
+
+
+    await deleteAllAssignmentsForUser(
+      userId
+    );
+
+
     const affectedRows =
       await deleteUser(
         userId
@@ -1054,7 +1697,8 @@ export const removeUser = async (
 
 
     if (
-      affectedRows === 0
+      affectedRows ===
+      0
     ) {
 
       return res.status(404).json({
@@ -1068,6 +1712,12 @@ export const removeUser = async (
     return res.json({
       message:
         "User deleted successfully",
+      deleted_user_id:
+        userId,
+      deleted_children:
+        deletedChildIds,
+      deleted_children_count:
+        deletedChildIds.length,
     });
 
   } catch (error) {
@@ -1300,20 +1950,29 @@ export const assignUserToChild = async (
 
 
     if (
-      result.affectedRows === 0
+      user.role ===
+        "parent"
     ) {
 
-      return res.json({
-        message:
-          "User is already assigned to this child",
-      });
+      await syncLegacyParentName(
+        childId,
+        user.full_name
+      );
 
     }
 
 
-    return res.status(201).json({
+    return res.status(
+      result.alreadyLinked
+        ? 200
+        : 201
+    ).json({
       message:
-        "User assigned to child successfully",
+        result.alreadyLinked
+          ? "User is already assigned to this child"
+          : "User assigned to child successfully",
+      assignment_id:
+        result.assignmentId,
     });
 
   } catch (error) {
@@ -1322,6 +1981,40 @@ export const assignUserToChild = async (
       "Assign user to child error:",
       error
     );
+
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Server Error";
+
+
+    if (
+      message ===
+        "This child already has a parent" ||
+      message ===
+        "This child already has a therapist"
+    ) {
+
+      return res.status(409).json({
+        message,
+      });
+
+    }
+
+
+    if (
+      message ===
+        "User not found" ||
+      message ===
+        "Only parents and therapists can be linked to children"
+    ) {
+
+      return res.status(400).json({
+        message,
+      });
+
+    }
 
 
     return res.status(500).json({
@@ -1372,6 +2065,22 @@ export const removeUserFromChild = async (
     }
 
 
+    const user =
+      await getUserById(
+        userId
+      );
+
+
+    if (!user) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
     const affectedRows =
       await unlinkUserFromChild(
         userId,
@@ -1380,13 +2089,26 @@ export const removeUserFromChild = async (
 
 
     if (
-      affectedRows === 0
+      affectedRows ===
+      0
     ) {
 
       return res.status(404).json({
         message:
           "Assignment not found",
       });
+
+    }
+
+
+    if (
+      user.role ===
+        "parent"
+    ) {
+
+      await clearLegacyParentName(
+        childId
+      );
 
     }
 

@@ -115,6 +115,71 @@ export default function AdminTherapists() {
   ] = useState("");
 
 
+  const [
+    availableChildOptions,
+    setAvailableChildOptions,
+  ] = useState([]);
+
+
+  const [
+    loadingAvailableChildren,
+    setLoadingAvailableChildren,
+  ] = useState(false);
+
+
+  const loadAvailableChildren =
+    async () => {
+
+      try {
+
+        setLoadingAvailableChildren(
+          true
+        );
+
+        const response =
+          await api.get(
+            "/users/available-children?link_type=therapist"
+          );
+
+        setAvailableChildOptions(
+          Array.isArray(
+            response.data
+          )
+            ? response.data
+            : []
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setAvailableChildOptions(
+          []
+        );
+
+        setError(
+          requestError
+            ?.response
+            ?.data
+            ?.message ||
+          "Unable to load available children."
+        );
+
+      } finally {
+
+        setLoadingAvailableChildren(
+          false
+        );
+
+      }
+
+    };
+
+
   const loadData =
     async (
       manual = false
@@ -243,8 +308,10 @@ export default function AdminTherapists() {
         assignments
           .filter(
             assignment =>
+              assignment.link_type ===
+                "therapist" ||
               assignment.role ===
-              "therapist"
+                "therapist"
           )
           .forEach(
             assignment => {
@@ -390,8 +457,10 @@ export default function AdminTherapists() {
   const therapistLinks =
     assignments.filter(
       assignment =>
+        assignment.link_type ===
+          "therapist" ||
         assignment.role ===
-        "therapist"
+          "therapist"
     ).length;
 
 
@@ -455,7 +524,7 @@ export default function AdminTherapists() {
 
 
   const openChildren =
-    therapist => {
+    async therapist => {
 
       setModalMode(
         "children"
@@ -469,8 +538,14 @@ export default function AdminTherapists() {
         ""
       );
 
+      setAvailableChildOptions(
+        []
+      );
+
       setError("");
       setSuccess("");
+
+      await loadAvailableChildren();
 
     };
 
@@ -493,6 +568,10 @@ export default function AdminTherapists() {
 
       setSelectedChildId(
         ""
+      );
+
+      setAvailableChildOptions(
+        []
       );
 
       setForm(
@@ -940,6 +1019,8 @@ export default function AdminTherapists() {
           true
         );
 
+        await loadAvailableChildren();
+
       } catch (
         requestError
       ) {
@@ -1011,6 +1092,8 @@ export default function AdminTherapists() {
           true
         );
 
+        await loadAvailableChildren();
+
       } catch (
         requestError
       ) {
@@ -1048,7 +1131,7 @@ export default function AdminTherapists() {
 
 
   const availableChildren =
-    children.filter(
+    availableChildOptions.filter(
       child =>
         !selectedLinks.some(
           link =>
@@ -2023,14 +2106,24 @@ export default function AdminTherapists() {
                             </div>
 
                           )
-                          : availableChildren.length ===
-                            0
+                          : loadingAvailableChildren
                             ? (
 
                               <div className="therapist-no-children">
 
-                                All available children
-                                are already assigned.
+                                Loading available children...
+
+                              </div>
+
+                            )
+                            : availableChildren.length ===
+                              0
+                            ? (
+
+                              <div className="therapist-no-children">
+
+                                No unassigned children
+                                are available.
 
                               </div>
 

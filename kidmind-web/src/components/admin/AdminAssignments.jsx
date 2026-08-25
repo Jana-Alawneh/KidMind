@@ -58,6 +58,22 @@ const statusConfig = {
 };
 
 
+const isParentAssignment =
+  assignment =>
+    assignment.link_type ===
+      "parent" ||
+    assignment.role ===
+      "parent";
+
+
+const isTherapistAssignment =
+  assignment =>
+    assignment.link_type ===
+      "therapist" ||
+    assignment.role ===
+      "therapist";
+
+
 export default function AdminAssignments() {
 
   const [
@@ -367,17 +383,13 @@ export default function AdminAssignments() {
 
       const parents =
         childAssignments.filter(
-          item =>
-            item.role ===
-            "parent"
+          isParentAssignment
         );
 
 
       const therapistLinks =
         childAssignments.filter(
-          item =>
-            item.role ===
-            "therapist"
+          isTherapistAssignment
         );
 
 
@@ -519,8 +531,9 @@ export default function AdminAssignments() {
                   assignments
                     .filter(
                       assignment =>
-                        assignment.role ===
-                          "therapist" &&
+                        isTherapistAssignment(
+                          assignment
+                        ) &&
                         Number(
                           assignment.user_id
                         ) ===
@@ -731,12 +744,18 @@ export default function AdminAssignments() {
 
 
   const visibleIds =
-    filteredRows.map(
-      row =>
-        Number(
-          row.child.id
-        )
-    );
+    filteredRows
+      .filter(
+        row =>
+          row.therapists.length ===
+            0
+      )
+      .map(
+        row =>
+          Number(
+            row.child.id
+          )
+      );
 
 
   const allVisibleSelected =
@@ -757,6 +776,31 @@ export default function AdminAssignments() {
         Number(
           childId
         );
+
+
+      const coordination =
+        coordinationRows.find(
+          row =>
+            Number(
+              row.child.id
+            ) ===
+            numericId
+        );
+
+
+      if (
+        coordination &&
+        coordination.therapists.length >
+          0
+      ) {
+
+        setError(
+          "This child already has a therapist. Use Transfer Caseload to move the child."
+        );
+
+        return;
+
+      }
 
 
       setSelectedChildIds(
@@ -850,26 +894,18 @@ export default function AdminAssignments() {
           selectedChildIds
         ) {
 
-          const alreadyLinked =
+          const alreadyHasTherapist =
             (
               assignmentsByChild[
                 childId
               ] || []
             ).some(
-              assignment =>
-                assignment.role ===
-                  "therapist" &&
-                Number(
-                  assignment.user_id
-                ) ===
-                  Number(
-                    bulkTherapistId
-                  )
+              isTherapistAssignment
             );
 
 
           if (
-            alreadyLinked
+            alreadyHasTherapist
           ) {
 
             skipped += 1;
@@ -900,7 +936,7 @@ export default function AdminAssignments() {
         setSuccess(
           `Bulk assignment complete: ${created} linked${
             skipped > 0
-              ? `, ${skipped} already assigned`
+              ? `, ${skipped} skipped because they already have a therapist`
               : ""
           }.`
         );
@@ -949,8 +985,9 @@ export default function AdminAssignments() {
     fromTherapistId
       ? assignments.filter(
           assignment =>
-            assignment.role ===
-              "therapist" &&
+            isTherapistAssignment(
+              assignment
+            ) &&
             Number(
               assignment.user_id
             ) ===
@@ -1127,27 +1164,12 @@ export default function AdminAssignments() {
           selectedTransferChildIds
         ) {
 
-          const targetAlreadyLinked =
-            (
-              assignmentsByChild[
-                childId
-              ] || []
-            ).some(
-              assignment =>
-                assignment.role ===
-                  "therapist" &&
-                Number(
-                  assignment.user_id
-                ) ===
-                  Number(
-                    toTherapistId
-                  )
-            );
+          await api.delete(
+            `/users/assignments/${childId}/${fromTherapistId}`
+          );
 
 
-          if (
-            !targetAlreadyLinked
-          ) {
+          try {
 
             await api.post(
               "/users/assignments",
@@ -1162,15 +1184,42 @@ export default function AdminAssignments() {
               }
             );
 
+
+            transferred += 1;
+
+          } catch (
+            transferError
+          ) {
+
+            try {
+
+              await api.post(
+                "/users/assignments",
+                {
+                  child_id:
+                    childId,
+
+                  user_id:
+                    Number(
+                      fromTherapistId
+                    ),
+                }
+              );
+
+            } catch (
+              rollbackError
+            ) {
+
+              console.error(
+                rollbackError
+              );
+
+            }
+
+
+            throw transferError;
+
           }
-
-
-          await api.delete(
-            `/users/assignments/${childId}/${fromTherapistId}`
-          );
-
-
-          transferred += 1;
 
         }
 
@@ -1643,6 +1692,16 @@ export default function AdminAssignments() {
                                   checked={
                                     selected
                                   }
+                                  disabled={
+                                    row.therapists.length >
+                                    0
+                                  }
+                                  title={
+                                    row.therapists.length >
+                                    0
+                                      ? "This child already has a therapist. Use Transfer Caseload."
+                                      : "Select child for therapist assignment"
+                                  }
                                   onChange={() =>
                                     toggleChild(
                                       row.child.id
@@ -1865,8 +1924,8 @@ export default function AdminAssignments() {
 
               <p>
                 Assign one therapist
-                to multiple selected
-                children at once.
+                to selected children
+                who do not have a therapist yet.
               </p>
 
             </div>
@@ -1988,8 +2047,8 @@ export default function AdminAssignments() {
 
           <div className="action-note">
 
-            Existing links to the same
-            therapist are skipped automatically.
+            Children who already have a therapist cannot be selected here.
+            Use Transfer Caseload when changing a child's therapist.
 
           </div>
 
@@ -2254,9 +2313,8 @@ export default function AdminAssignments() {
 
           <div className="action-note">
 
-            The destination therapist
-            must be active. Existing
-            duplicate links are not recreated.
+            The destination therapist must be active.
+            The current therapist link is removed before the new therapist is assigned.
 
           </div>
 
@@ -2793,6 +2851,11 @@ export default function AdminAssignments() {
           height: 15px;
           accent-color: #7868E6;
           cursor: pointer;
+        }
+
+        .care-check input:disabled {
+          cursor: not-allowed;
+          opacity: .35;
         }
 
         .coverage-child {

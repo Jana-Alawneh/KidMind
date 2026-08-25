@@ -1,3 +1,6 @@
+
+
+
 import {
   ActivityIndicator,
   Image,
@@ -85,8 +88,39 @@ type ChildItem = {
   parent_name?:
     | string
     | null;
+  current_cognitive_score?:
+    | number
+    | string
+    | null;
+  assessment_count?:
+    | number
+    | string
+    | null;
   created_at?:
     | string
+    | null;
+};
+
+
+type AssignmentItem = {
+  child_id: number;
+  user_id: number;
+  role?:
+    | UserRole
+    | null;
+  link_type?:
+    | "parent"
+    | "therapist"
+    | null;
+  user_name?:
+    | string
+    | null;
+  user_email?:
+    | string
+    | null;
+  is_active?:
+    | number
+    | boolean
     | null;
 };
 
@@ -277,6 +311,15 @@ export default function AdminDashboard() {
 
 
   const [
+    assignments,
+    setAssignments,
+  ] =
+    useState<AssignmentItem[]>(
+      []
+    );
+
+
+  const [
     loading,
     setLoading,
   ] =
@@ -290,169 +333,235 @@ export default function AdminDashboard() {
     useState("");
 
 
+  const loadDashboard =
+    async () => {
+
+      try {
+
+        setLoading(
+          true
+        );
+
+        setError(
+          ""
+        );
+
+
+        const user =
+          await fetchCurrentUser();
+
+
+        if (
+          user.role !==
+          "admin"
+        ) {
+
+          clearAuthSession();
+
+          router.replace(
+            "/login"
+          );
+
+          return;
+
+        }
+
+
+        setCurrentUser(
+          user
+        );
+
+
+        const results =
+          await Promise.allSettled([
+
+            authRequest<
+              UserItem[]
+            >(
+              "/users"
+            ),
+
+            authRequest<
+              ChildItem[]
+            >(
+              "/children"
+            ),
+
+            authRequest<
+              SessionItem[]
+            >(
+              "/sessions"
+            ),
+
+            authRequest<
+              AssignmentItem[]
+            >(
+              "/users/assignments"
+            ),
+
+          ]);
+
+
+        const [
+          usersResult,
+          childrenResult,
+          sessionsResult,
+          assignmentsResult,
+        ] =
+          results;
+
+
+        if (
+          usersResult.status ===
+          "fulfilled"
+        ) {
+
+          setUsers(
+            Array.isArray(
+              usersResult.value
+            )
+              ? usersResult.value
+              : []
+          );
+
+        } else {
+
+          setUsers(
+            []
+          );
+
+        }
+
+
+        if (
+          childrenResult.status ===
+          "fulfilled"
+        ) {
+
+          setChildren(
+            Array.isArray(
+              childrenResult.value
+            )
+              ? childrenResult.value
+              : []
+          );
+
+        } else {
+
+          setChildren(
+            []
+          );
+
+        }
+
+
+        if (
+          sessionsResult.status ===
+          "fulfilled"
+        ) {
+
+          setSessions(
+            Array.isArray(
+              sessionsResult.value
+            )
+              ? sessionsResult.value
+              : []
+          );
+
+        } else {
+
+          setSessions(
+            []
+          );
+
+        }
+
+
+        if (
+          assignmentsResult.status ===
+          "fulfilled"
+        ) {
+
+          setAssignments(
+            Array.isArray(
+              assignmentsResult.value
+            )
+              ? assignmentsResult.value
+              : []
+          );
+
+        } else {
+
+          setAssignments(
+            []
+          );
+
+        }
+
+
+        if (
+          results.some(
+            result =>
+              result.status ===
+              "rejected"
+          )
+        ) {
+
+          setError(
+            "Some admin dashboard data could not be loaded."
+          );
+
+        }
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          "Unable to load admin dashboard data."
+        );
+
+      } finally {
+
+        setLoading(
+          false
+        );
+
+      }
+
+    };
+
+
   useEffect(
     () => {
 
-      let active =
-        true;
-
-
-      const loadDashboard =
-        async () => {
-
-          try {
-
-            setLoading(
-              true
-            );
-
-            setError(
-              ""
-            );
-
-
-            const user =
-              await fetchCurrentUser();
-
-
-            if (
-              user.role !==
-              "admin"
-            ) {
-
-              clearAuthSession();
-
-              router.replace(
-                "/login"
-              );
-
-              return;
-
-            }
-
-
-            if (
-              active
-            ) {
-
-              setCurrentUser(
-                user
-              );
-
-            }
-
-
-            const [
-              usersData,
-              childrenData,
-              sessionsData,
-            ] =
-              await Promise.all([
-
-                authRequest<
-                  UserItem[]
-                >(
-                  "/users"
-                ),
-
-                authRequest<
-                  ChildItem[]
-                >(
-                  "/children"
-                ),
-
-                authRequest<
-                  SessionItem[]
-                >(
-                  "/sessions"
-                ),
-
-              ]);
-
-
-            if (
-              !active
-            ) {
-
-              return;
-
-            }
-
-
-            setUsers(
-              Array.isArray(
-                usersData
-              )
-                ? usersData
-                : []
-            );
-
-
-            setChildren(
-              Array.isArray(
-                childrenData
-              )
-                ? childrenData
-                : []
-            );
-
-
-            setSessions(
-              Array.isArray(
-                sessionsData
-              )
-                ? sessionsData
-                : []
-            );
-
-          } catch (
-            requestError
-          ) {
-
-            console.error(
-              requestError
-            );
-
-
-            if (
-              active
-            ) {
-
-              setError(
-                "Unable to load admin dashboard data."
-              );
-
-            }
-
-          } finally {
-
-            if (
-              active
-            ) {
-
-              setLoading(
-                false
-              );
-
-            }
-
-          }
-
-        };
-
-
       loadDashboard();
-
-
-      return () => {
-
-        active =
-          false;
-
-      };
 
     },
     []
+  );
+
+
+  useEffect(
+    () => {
+
+      if (
+        activeSection ===
+        "overview"
+      ) {
+
+        loadDashboard();
+
+      }
+
+    },
+    [
+      activeSection,
+    ]
   );
 
 
@@ -508,6 +617,64 @@ export default function AdminDashboard() {
         ).length,
       [
         sessions,
+      ]
+    );
+
+
+  const parentByChild =
+    useMemo(
+      () => {
+
+        const map:
+          Record<
+            number,
+            AssignmentItem
+          > = {};
+
+
+        assignments.forEach(
+          assignment => {
+
+            const isParent =
+              assignment.link_type ===
+                "parent" ||
+              assignment.role ===
+                "parent";
+
+
+            if (!isParent) {
+              return;
+            }
+
+
+            const childId =
+              Number(
+                assignment.child_id
+              );
+
+
+            if (
+              !map[
+                childId
+              ]
+            ) {
+
+              map[
+                childId
+              ] =
+                assignment;
+
+            }
+
+          }
+        );
+
+
+        return map;
+
+      },
+      [
+        assignments,
       ]
     );
 
@@ -1082,6 +1249,8 @@ export default function AdminDashboard() {
                             style={[
                               styles.statusDot,
 
+                              user.is_active ===
+                                true ||
                               Number(
                                 user.is_active
                               ) === 1
@@ -1155,114 +1324,159 @@ export default function AdminDashboard() {
                   : (
 
                     recentChildren.map(
-                      child => (
+                      child => {
 
-                        <View
-                          key={
-                            child.id
-                          }
-                          style={
-                            styles.childRow
-                          }
-                        >
+                        const parent =
+                          parentByChild[
+                            Number(
+                              child.id
+                            )
+                          ];
+
+
+                        const scoreValue =
+                          child.current_cognitive_score ===
+                            null ||
+                          child.current_cognitive_score ===
+                            undefined ||
+                          child.current_cognitive_score ===
+                            ""
+                            ? null
+                            : Number(
+                                child.current_cognitive_score
+                              );
+
+
+                        const score =
+                          scoreValue !==
+                            null &&
+                          Number.isFinite(
+                            scoreValue
+                          )
+                            ? Math.round(
+                                scoreValue
+                              )
+                            : null;
+
+
+                        return (
 
                           <View
+                            key={
+                              child.id
+                            }
                             style={
-                              styles.childAvatar
+                              styles.childRow
                             }
                           >
 
-                            <Text
+                            <View
                               style={
-                                styles.childAvatarText
+                                styles.childAvatar
                               }
                             >
-                              {
-                                String(
-                                  child.full_name ||
-                                  "C"
-                                )
-                                  .charAt(
-                                    0
+
+                              <Text
+                                style={
+                                  styles.childAvatarText
+                                }
+                              >
+                                {
+                                  String(
+                                    child.full_name ||
+                                    "C"
                                   )
-                                  .toUpperCase()
+                                    .charAt(
+                                      0
+                                    )
+                                    .toUpperCase()
+                                }
+                              </Text>
+
+                            </View>
+
+
+                            <View
+                              style={
+                                styles.childMain
                               }
-                            </Text>
+                            >
+
+                              <Text
+                                numberOfLines={
+                                  1
+                                }
+                                style={
+                                  styles.rowName
+                                }
+                              >
+                                {
+                                  child.full_name
+                                }
+                              </Text>
+
+
+                              <Text
+                                numberOfLines={
+                                  1
+                                }
+                                style={
+                                  styles.rowSecondary
+                                }
+                              >
+                                {
+                                  child.region ||
+                                  "No region"
+                                }
+
+                                {
+                                  score !==
+                                  null
+                                    ? ` • ${score}%`
+                                    : ""
+                                }
+                              </Text>
+
+                            </View>
+
+
+                            <View
+                              style={
+                                styles.childMeta
+                              }
+                            >
+
+                              <Text
+                                style={
+                                  styles.childMetaLabel
+                                }
+                              >
+                                Parent
+                              </Text>
+
+
+                              <Text
+                                numberOfLines={
+                                  1
+                                }
+                                style={
+                                  styles.childMetaValue
+                                }
+                              >
+                                {
+                                  parent
+                                    ?.user_name ||
+                                  "—"
+                                }
+                              </Text>
+
+                            </View>
 
                           </View>
 
+                        );
 
-                          <View
-                            style={
-                              styles.childMain
-                            }
-                          >
-
-                            <Text
-                              numberOfLines={
-                                1
-                              }
-                              style={
-                                styles.rowName
-                              }
-                            >
-                              {
-                                child.full_name
-                              }
-                            </Text>
-
-
-                            <Text
-                              numberOfLines={
-                                1
-                              }
-                              style={
-                                styles.rowSecondary
-                              }
-                            >
-                              {
-                                child.region ||
-                                "No region"
-                              }
-                            </Text>
-
-                          </View>
-
-
-                          <View
-                            style={
-                              styles.childMeta
-                            }
-                          >
-
-                            <Text
-                              style={
-                                styles.childMetaLabel
-                              }
-                            >
-                              Parent
-                            </Text>
-
-
-                            <Text
-                              numberOfLines={
-                                1
-                              }
-                              style={
-                                styles.childMetaValue
-                              }
-                            >
-                              {
-                                child.parent_name ||
-                                "—"
-                              }
-                            </Text>
-
-                          </View>
-
-                        </View>
-
-                      )
+                      }
                     )
 
                   )

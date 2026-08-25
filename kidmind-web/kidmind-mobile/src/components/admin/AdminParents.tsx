@@ -31,6 +31,7 @@ import {
   Edit3,
   Link2,
   Mail,
+  MapPin,
   Phone,
   Plus,
   Power,
@@ -52,6 +53,7 @@ type ParentItem = {
   full_name: string;
   email: string;
   phone?: string | null;
+  region?: string | null;
   role:
     | "parent"
     | "therapist"
@@ -74,9 +76,13 @@ type AssignmentItem = {
   user_id: number;
   user_name?: string;
   user_email?: string;
-  role:
+  role?:
     | "parent"
     | "therapist";
+  link_type?:
+    | "parent"
+    | "therapist"
+    | null;
   child?: ChildItem;
 };
 
@@ -85,7 +91,27 @@ type ParentForm = {
   full_name: string;
   email: string;
   phone: string;
+  region: string;
   password: string;
+};
+
+
+type DeleteChildItem = {
+  child_id?: number;
+  id?: number;
+  full_name?: string | null;
+  region?: string | null;
+};
+
+
+type DeleteInfo = {
+  user?: {
+    id: number;
+    full_name?: string | null;
+    email?: string | null;
+  };
+  children?: DeleteChildItem[];
+  child_count?: number;
 };
 
 
@@ -101,8 +127,22 @@ const emptyForm:
     full_name: "",
     email: "",
     phone: "",
+    region: "",
     password: "",
   };
+
+
+const isActiveParent =
+  (
+    parent:
+      ParentItem
+  ) =>
+    parent.is_active ===
+      true ||
+    Number(
+      parent.is_active
+    ) ===
+      1;
 
 
 export default function AdminParents() {
@@ -201,6 +241,69 @@ export default function AdminParents() {
   const [
     childPickerVisible,
     setChildPickerVisible,
+  ] =
+    useState(false);
+
+
+  const [
+    availableChildOptions,
+    setAvailableChildOptions,
+  ] =
+    useState<ChildItem[]>(
+      []
+    );
+
+  const [
+    loadingAvailableChildren,
+    setLoadingAvailableChildren,
+  ] =
+    useState(false);
+
+  const [
+    deleteTarget,
+    setDeleteTarget,
+  ] =
+    useState<ParentItem | null>(
+      null
+    );
+
+  const [
+    deleteInfo,
+    setDeleteInfo,
+  ] =
+    useState<DeleteInfo | null>(
+      null
+    );
+
+  const [
+    deleteMode,
+    setDeleteMode,
+  ] =
+    useState<
+      "none" |
+      "selected" |
+      "all"
+    >(
+      "none"
+    );
+
+  const [
+    selectedDeleteChildIds,
+    setSelectedDeleteChildIds,
+  ] =
+    useState<number[]>(
+      []
+    );
+
+  const [
+    deleteLoading,
+    setDeleteLoading,
+  ] =
+    useState(false);
+
+  const [
+    deleteSaving,
+    setDeleteSaving,
   ] =
     useState(false);
 
@@ -306,6 +409,67 @@ export default function AdminParents() {
     };
 
 
+  const loadAvailableChildren =
+    async (
+      parentId?:
+        number
+    ) => {
+
+      try {
+
+        setLoadingAvailableChildren(
+          true
+        );
+
+        const suffix =
+          parentId
+            ? `&user_id=${parentId}`
+            : "";
+
+        const data =
+          await authRequest<
+            ChildItem[]
+          >(
+            `/users/available-children?link_type=parent${suffix}`
+          );
+
+        setAvailableChildOptions(
+          Array.isArray(
+            data
+          )
+            ? data
+            : []
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setAvailableChildOptions(
+          []
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load available children."
+        );
+
+      } finally {
+
+        setLoadingAvailableChildren(
+          false
+        );
+
+      }
+
+    };
+
+
   useEffect(
     () => {
       loadData();
@@ -340,8 +504,10 @@ export default function AdminParents() {
         assignments
           .filter(
             assignment =>
+              assignment.link_type ===
+                "parent" ||
               assignment.role ===
-              "parent"
+                "parent"
           )
           .forEach(
             assignment => {
@@ -429,6 +595,7 @@ export default function AdminParents() {
                 parent.full_name,
                 parent.email,
                 parent.phone,
+                parent.region,
                 parent.id,
                 childrenText,
               ]
@@ -461,10 +628,9 @@ export default function AdminParents() {
   const activeParents =
     parents.filter(
       parent =>
-        Number(
-          parent.is_active
-        ) ===
-        1
+        isActiveParent(
+          parent
+        )
     ).length;
 
 
@@ -476,8 +642,10 @@ export default function AdminParents() {
   const parentLinksCount =
     assignments.filter(
       item =>
+        item.link_type ===
+          "parent" ||
         item.role ===
-        "parent"
+          "parent"
     ).length;
 
 
@@ -548,6 +716,10 @@ export default function AdminParents() {
           parent.phone ||
           "",
 
+        region:
+          parent.region ||
+          "",
+
         password:
           "",
       });
@@ -563,7 +735,7 @@ export default function AdminParents() {
 
 
   const openChildren =
-    (
+    async (
       parent:
         ParentItem
     ) => {
@@ -579,12 +751,20 @@ export default function AdminParents() {
         null
       );
 
+      setAvailableChildOptions(
+        []
+      );
+
       setError(
         ""
       );
 
       setSuccess(
         ""
+      );
+
+      await loadAvailableChildren(
+        parent.id
       );
     };
 
@@ -620,6 +800,10 @@ export default function AdminParents() {
       setChildPickerVisible(
         false
       );
+
+      setAvailableChildOptions(
+        []
+      );
     };
 
 
@@ -650,16 +834,20 @@ export default function AdminParents() {
           .trim()
           .toLowerCase();
 
+      const region =
+        form.region.trim();
+
       const password =
         form.password;
 
       if (
         !fullName ||
         !email ||
+        !region ||
         !password
       ) {
         setError(
-          "Name, email and password are required."
+          "Name, email, region and password are required."
         );
 
         return;
@@ -710,6 +898,8 @@ export default function AdminParents() {
                 phone:
                   form.phone.trim() ||
                   null,
+
+                region,
               }),
           }
         );
@@ -776,12 +966,16 @@ export default function AdminParents() {
           .trim()
           .toLowerCase();
 
+      const region =
+        form.region.trim();
+
       if (
         !fullName ||
-        !email
+        !email ||
+        !region
       ) {
         setError(
-          "Name and email are required."
+          "Name, email and region are required."
         );
 
         return;
@@ -816,6 +1010,8 @@ export default function AdminParents() {
                 phone:
                   form.phone.trim() ||
                   null,
+
+                region,
               }),
           }
         );
@@ -872,10 +1068,9 @@ export default function AdminParents() {
         ParentItem
     ) => {
       const currentlyActive =
-        Number(
-          parent.is_active
-        ) ===
-        1;
+        isActiveParent(
+          parent
+        );
 
       try {
         setError(
@@ -932,10 +1127,9 @@ export default function AdminParents() {
         ParentItem
     ) => {
       const currentlyActive =
-        Number(
-          parent.is_active
-        ) ===
-        1;
+        isActiveParent(
+          parent
+        );
 
       Alert.alert(
         currentlyActive
@@ -972,12 +1166,34 @@ export default function AdminParents() {
     };
 
 
-  const performDeleteParent =
+  const openDeleteParent =
     async (
       parent:
         ParentItem
     ) => {
+
       try {
+
+        setDeleteTarget(
+          parent
+        );
+
+        setDeleteInfo(
+          null
+        );
+
+        setDeleteMode(
+          "none"
+        );
+
+        setSelectedDeleteChildIds(
+          []
+        );
+
+        setDeleteLoading(
+          true
+        );
+
         setError(
           ""
         );
@@ -986,17 +1202,193 @@ export default function AdminParents() {
           ""
         );
 
-        await authRequest(
-          `/users/${parent.id}`,
-          {
-            method:
-              "DELETE",
-          }
+
+        const data =
+          await authRequest<
+            DeleteInfo
+          >(
+            `/users/${parent.id}/delete-info`
+          );
+
+
+        setDeleteInfo(
+          data || null
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setDeleteTarget(
+          null
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load parent deletion information."
+        );
+
+      } finally {
+
+        setDeleteLoading(
+          false
+        );
+
+      }
+
+    };
+
+
+  const closeDeleteModal =
+    () => {
+
+      if (
+        deleteSaving
+      ) {
+
+        return;
+
+      }
+
+
+      setDeleteTarget(
+        null
+      );
+
+      setDeleteInfo(
+        null
+      );
+
+      setDeleteMode(
+        "none"
+      );
+
+      setSelectedDeleteChildIds(
+        []
+      );
+
+    };
+
+
+  const getDeleteChildId =
+    (
+      child:
+        DeleteChildItem
+    ) =>
+      Number(
+        child.child_id ??
+        child.id ??
+        0
+      );
+
+
+  const toggleDeleteChild =
+    (
+      childId:
+        number
+    ) => {
+
+      setSelectedDeleteChildIds(
+        previous =>
+          previous.includes(
+            childId
+          )
+            ? previous.filter(
+                id =>
+                  id !==
+                  childId
+              )
+            : [
+                ...previous,
+                childId,
+              ]
+      );
+
+    };
+
+
+  const confirmDeleteParent =
+    async () => {
+
+      if (
+        !deleteTarget
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        deleteMode ===
+          "selected" &&
+        selectedDeleteChildIds.length ===
+          0
+      ) {
+
+        setError(
+          "Select at least one child to delete."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setDeleteSaving(
+          true
+        );
+
+        setError(
+          ""
         );
 
         setSuccess(
-          "Parent account deleted."
+          ""
         );
+
+
+        await authRequest(
+          `/users/${deleteTarget.id}`,
+          {
+            method:
+              "DELETE",
+
+            body:
+              JSON.stringify({
+                delete_mode:
+                  deleteMode,
+
+                child_ids:
+                  deleteMode ===
+                    "selected"
+                    ? selectedDeleteChildIds
+                    : [],
+              }),
+          }
+        );
+
+
+        setSuccess(
+          deleteMode ===
+            "none"
+            ? "Parent account deleted. Children were kept."
+            : deleteMode ===
+                "all"
+              ? "Parent account and all linked children were deleted."
+              : "Parent account and selected children were deleted."
+        );
+
+
+        closeDeleteModal();
+
 
         await loadData(
           true
@@ -1005,6 +1397,7 @@ export default function AdminParents() {
       } catch (
         requestError
       ) {
+
         console.error(
           requestError
         );
@@ -1014,41 +1407,15 @@ export default function AdminParents() {
             ? requestError.message
             : "Unable to delete parent."
         );
+
+      } finally {
+
+        setDeleteSaving(
+          false
+        );
+
       }
-    };
 
-
-  const deleteParent =
-    (
-      parent:
-        ParentItem
-    ) => {
-      Alert.alert(
-        "Delete Parent",
-        `Delete ${parent.full_name} permanently?\n\nTheir child links will also be removed.`,
-        [
-          {
-            text:
-              "Cancel",
-            style:
-              "cancel",
-          },
-
-          {
-            text:
-              "Delete",
-            style:
-              "destructive",
-
-            onPress:
-              () => {
-                void performDeleteParent(
-                  parent
-                );
-              },
-          },
-        ]
-      );
     };
 
 
@@ -1105,6 +1472,10 @@ export default function AdminParents() {
 
         await loadData(
           true
+        );
+
+        await loadAvailableChildren(
+          selectedParent.id
         );
 
       } catch (
@@ -1166,6 +1537,10 @@ export default function AdminParents() {
 
         await loadData(
           true
+        );
+
+        await loadAvailableChildren(
+          selectedParent.id
         );
 
       } catch (
@@ -1242,7 +1617,7 @@ export default function AdminParents() {
 
 
   const availableChildren =
-    children.filter(
+    availableChildOptions.filter(
       child =>
         !selectedLinks.some(
           link =>
@@ -1266,6 +1641,14 @@ export default function AdminParents() {
           selectedChildId
         )
     );
+
+
+  const deleteChildren =
+    Array.isArray(
+      deleteInfo?.children
+    )
+      ? deleteInfo?.children || []
+      : [];
 
 
   return (
@@ -1455,7 +1838,7 @@ export default function AdminParents() {
             onChangeText={
               setSearch
             }
-            placeholder="Search parent, email, phone or child..."
+            placeholder="Search parent, email, phone, region or child..."
             placeholderTextColor="#A0A2B2"
             style={
               styles.searchInput
@@ -1760,6 +2143,32 @@ export default function AdminParents() {
                                 }
                               </Text>
                             </View>
+
+
+                            <View
+                              style={
+                                styles.contactRow
+                              }
+                            >
+                              <MapPin
+                                size={14}
+                                color="#85889B"
+                              />
+
+                              <Text
+                                numberOfLines={
+                                  1
+                                }
+                                style={
+                                  styles.contactText
+                                }
+                              >
+                                {
+                                  parent.region ||
+                                  "No region"
+                                }
+                              </Text>
+                            </View>
                           </View>
 
 
@@ -1947,7 +2356,7 @@ export default function AdminParents() {
                                 styles.deleteButton
                               }
                               onPress={() =>
-                                deleteParent(
+                                void openDeleteParent(
                                   parent
                                 )
                               }
@@ -2200,6 +2609,25 @@ export default function AdminParents() {
                         }
                       />
 
+
+                      <FormField
+                        label="Region"
+                        value={
+                          form.region
+                        }
+                        placeholder="Parent region"
+                        editable={
+                          !saving
+                        }
+                        onChangeText={
+                          value =>
+                            updateField(
+                              "region",
+                              value
+                            )
+                        }
+                      />
+
                       <FormField
                         label="Temporary Password"
                         value={
@@ -2330,6 +2758,25 @@ export default function AdminParents() {
                           value =>
                             updateField(
                               "phone",
+                              value
+                            )
+                        }
+                      />
+
+
+                      <FormField
+                        label="Region"
+                        value={
+                          form.region
+                        }
+                        placeholder="Parent region"
+                        editable={
+                          !saving
+                        }
+                        onChangeText={
+                          value =>
+                            updateField(
+                              "region",
                               value
                             )
                         }
@@ -2534,10 +2981,9 @@ export default function AdminParents() {
                         </Text>
 
                         {
-                          Number(
-                            selectedParent.is_active
-                          ) !==
-                          1
+                          !isActiveParent(
+                            selectedParent
+                          )
                             ? (
                               <View
                                 style={
@@ -2554,9 +3000,30 @@ export default function AdminParents() {
                                 </Text>
                               </View>
                             )
-                            : availableChildren.length ===
-                              0
+                            : loadingAvailableChildren
                               ? (
+                                <View
+                                  style={
+                                    styles.emptyLinked
+                                  }
+                                >
+                                  <ActivityIndicator
+                                    size="small"
+                                    color="#7868E6"
+                                  />
+
+                                  <Text
+                                    style={
+                                      styles.emptyLinkedText
+                                    }
+                                  >
+                                    Loading available children...
+                                  </Text>
+                                </View>
+                              )
+                              : availableChildren.length ===
+                                0
+                                ? (
                                 <View
                                   style={
                                     styles.emptyLinked
@@ -2567,8 +3034,8 @@ export default function AdminParents() {
                                       styles.emptyLinkedText
                                     }
                                   >
-                                    All available children
-                                    are already linked.
+                                    No unassigned children
+                                    are available.
                                   </Text>
                                 </View>
                               )
@@ -2651,6 +3118,542 @@ export default function AdminParents() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+
+
+      <Modal
+        visible={
+          Boolean(
+            deleteTarget
+          )
+        }
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        hardwareAccelerated
+        presentationStyle="overFullScreen"
+        onRequestClose={
+          closeDeleteModal
+        }
+      >
+        <View
+          style={
+            styles.modalOverlay
+          }
+        >
+          <Pressable
+            style={
+              styles.modalBackdrop
+            }
+            onPress={
+              closeDeleteModal
+            }
+          />
+
+          <View
+            style={
+              styles.deleteModalCard
+            }
+          >
+            <View
+              style={
+                styles.modalHeader
+              }
+            >
+              <View
+                style={
+                  styles.modalHeaderText
+                }
+              >
+                <Text
+                  style={
+                    styles.modalEyebrow
+                  }
+                >
+                  DELETE PARENT
+                </Text>
+
+                <Text
+                  style={
+                    styles.modalTitle
+                  }
+                >
+                  {
+                    deleteTarget
+                      ?.full_name ||
+                    "Parent"
+                  }
+                </Text>
+              </View>
+
+              <Pressable
+                disabled={
+                  deleteSaving
+                }
+                style={
+                  styles.closeButton
+                }
+                onPress={
+                  closeDeleteModal
+                }
+              >
+                <X
+                  size={20}
+                  color="#818497"
+                />
+              </Pressable>
+            </View>
+
+            {
+              deleteLoading
+                ? (
+                  <View
+                    style={
+                      styles.deleteLoading
+                    }
+                  >
+                    <ActivityIndicator
+                      size="small"
+                      color="#7868E6"
+                    />
+
+                    <Text
+                      style={
+                        styles.emptyLinkedText
+                      }
+                    >
+                      Loading deletion options...
+                    </Text>
+                  </View>
+                )
+                : (
+                  <ScrollView
+                    showsVerticalScrollIndicator={
+                      false
+                    }
+                    contentContainerStyle={
+                      styles.deleteContent
+                    }
+                  >
+                    {
+                      Boolean(
+                        error
+                      ) && (
+                        <AlertBox
+                          type="error"
+                          text={
+                            error
+                          }
+                        />
+                      )
+                    }
+
+                    <View
+                      style={
+                        styles.deleteWarning
+                      }
+                    >
+                      <Trash2
+                        size={18}
+                        color="#C85669"
+                      />
+
+                      <View
+                        style={
+                          styles.deleteWarningText
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.deleteWarningTitle
+                          }
+                        >
+                          Choose what should be deleted
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.deleteWarningBody
+                          }
+                        >
+                          The parent account will always be deleted. You can keep the linked children, delete selected children, or delete all linked children.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      style={[
+                        styles.deleteOption,
+                        deleteMode ===
+                          "none" &&
+                          styles.deleteOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setDeleteMode(
+                          "none"
+                        );
+
+                        setSelectedDeleteChildIds(
+                          []
+                        );
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.deleteRadio,
+                          deleteMode ===
+                            "none" &&
+                            styles.deleteRadioSelected,
+                        ]}
+                      >
+                        {
+                          deleteMode ===
+                          "none" && (
+                            <Check
+                              size={13}
+                              color="#FFFFFF"
+                            />
+                          )
+                        }
+                      </View>
+
+                      <View
+                        style={
+                          styles.deleteOptionText
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.deleteOptionTitle
+                          }
+                        >
+                          Delete Parent Only
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.deleteOptionSubtitle
+                          }
+                        >
+                          Keep all linked children in KidMind.
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    {
+                      deleteChildren.length >
+                      0 && (
+                        <>
+                          <Pressable
+                            style={[
+                              styles.deleteOption,
+                              deleteMode ===
+                                "selected" &&
+                                styles.deleteOptionSelected,
+                            ]}
+                            onPress={() =>
+                              setDeleteMode(
+                                "selected"
+                              )
+                            }
+                          >
+                            <View
+                              style={[
+                                styles.deleteRadio,
+                                deleteMode ===
+                                  "selected" &&
+                                  styles.deleteRadioSelected,
+                              ]}
+                            >
+                              {
+                                deleteMode ===
+                                "selected" && (
+                                  <Check
+                                    size={13}
+                                    color="#FFFFFF"
+                                  />
+                                )
+                              }
+                            </View>
+
+                            <View
+                              style={
+                                styles.deleteOptionText
+                              }
+                            >
+                              <Text
+                                style={
+                                  styles.deleteOptionTitle
+                                }
+                              >
+                                Delete Selected Children
+                              </Text>
+
+                              <Text
+                                style={
+                                  styles.deleteOptionSubtitle
+                                }
+                              >
+                                Choose which linked children should be deleted with the parent.
+                              </Text>
+                            </View>
+                          </Pressable>
+
+                          {
+                            deleteMode ===
+                            "selected" && (
+                              <View
+                                style={
+                                  styles.deleteChildrenList
+                                }
+                              >
+                                {
+                                  deleteChildren.map(
+                                    child => {
+
+                                      const childId =
+                                        getDeleteChildId(
+                                          child
+                                        );
+
+                                      const selected =
+                                        selectedDeleteChildIds.includes(
+                                          childId
+                                        );
+
+                                      return (
+                                        <Pressable
+                                          key={
+                                            childId
+                                          }
+                                          style={[
+                                            styles.deleteChildRow,
+                                            selected &&
+                                              styles.deleteChildRowSelected,
+                                          ]}
+                                          onPress={() =>
+                                            toggleDeleteChild(
+                                              childId
+                                            )
+                                          }
+                                        >
+                                          <View
+                                            style={[
+                                              styles.deleteCheckbox,
+                                              selected &&
+                                                styles.deleteCheckboxSelected,
+                                            ]}
+                                          >
+                                            {
+                                              selected && (
+                                                <Check
+                                                  size={12}
+                                                  color="#FFFFFF"
+                                                />
+                                              )
+                                            }
+                                          </View>
+
+                                          <View
+                                            style={
+                                              styles.deleteChildText
+                                            }
+                                          >
+                                            <Text
+                                              style={
+                                                styles.deleteChildName
+                                              }
+                                            >
+                                              {
+                                                child.full_name ||
+                                                `Child #${childId}`
+                                              }
+                                            </Text>
+
+                                            <Text
+                                              style={
+                                                styles.deleteChildMeta
+                                              }
+                                            >
+                                              ID #{childId}
+                                              {
+                                                child.region
+                                                  ? ` • ${child.region}`
+                                                  : ""
+                                              }
+                                            </Text>
+                                          </View>
+                                        </Pressable>
+                                      );
+
+                                    }
+                                  )
+                                }
+                              </View>
+                            )
+                          }
+
+                          <Pressable
+                            style={[
+                              styles.deleteOption,
+                              deleteMode ===
+                                "all" &&
+                                styles.deleteOptionSelected,
+                            ]}
+                            onPress={() => {
+                              setDeleteMode(
+                                "all"
+                              );
+
+                              setSelectedDeleteChildIds(
+                                []
+                              );
+                            }}
+                          >
+                            <View
+                              style={[
+                                styles.deleteRadio,
+                                deleteMode ===
+                                  "all" &&
+                                  styles.deleteRadioSelected,
+                              ]}
+                            >
+                              {
+                                deleteMode ===
+                                "all" && (
+                                  <Check
+                                    size={13}
+                                    color="#FFFFFF"
+                                  />
+                                )
+                              }
+                            </View>
+
+                            <View
+                              style={
+                                styles.deleteOptionText
+                              }
+                            >
+                              <Text
+                                style={
+                                  styles.deleteOptionTitle
+                                }
+                              >
+                                Delete All Linked Children
+                              </Text>
+
+                              <Text
+                                style={
+                                  styles.deleteOptionSubtitle
+                                }
+                              >
+                                Delete all {deleteChildren.length} linked child
+                                {
+                                  deleteChildren.length ===
+                                  1
+                                    ? ""
+                                    : "ren"
+                                } with this parent.
+                              </Text>
+                            </View>
+                          </Pressable>
+                        </>
+                      )
+                    }
+
+                    <View
+                      style={
+                        styles.deleteActions
+                      }
+                    >
+                      <Pressable
+                        disabled={
+                          deleteSaving
+                        }
+                        style={
+                          styles.cancelDeleteButton
+                        }
+                        onPress={
+                          closeDeleteModal
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.cancelDeleteText
+                          }
+                        >
+                          Cancel
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        disabled={
+                          deleteSaving ||
+                          (
+                            deleteMode ===
+                              "selected" &&
+                            selectedDeleteChildIds.length ===
+                              0
+                          )
+                        }
+                        style={[
+                          styles.confirmDeleteButton,
+                          (
+                            deleteSaving ||
+                            (
+                              deleteMode ===
+                                "selected" &&
+                              selectedDeleteChildIds.length ===
+                                0
+                            )
+                          ) &&
+                            styles.disabled,
+                        ]}
+                        onPress={
+                          confirmDeleteParent
+                        }
+                      >
+                        {
+                          deleteSaving
+                            ? (
+                              <ActivityIndicator
+                                size="small"
+                                color="#FFFFFF"
+                              />
+                            )
+                            : (
+                              <Trash2
+                                size={15}
+                                color="#FFFFFF"
+                              />
+                            )
+                        }
+
+                        <Text
+                          style={
+                            styles.confirmDeleteText
+                          }
+                        >
+                          {
+                            deleteSaving
+                              ? "Deleting..."
+                              : deleteMode ===
+                                  "none"
+                                ? "Delete Parent"
+                                : deleteMode ===
+                                    "all"
+                                  ? "Delete Parent & All"
+                                  : "Delete Parent & Selected"
+                          }
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </ScrollView>
+                )
+            }
+          </View>
+        </View>
       </Modal>
 
 
@@ -4079,6 +5082,315 @@ const styles =
       fontWeight:
         "700",
     },
+
+
+    deleteModalCard: {
+      width:
+        "100%",
+      maxWidth:
+        560,
+      maxHeight:
+        "88%",
+      padding:
+        20,
+      borderRadius:
+        22,
+      backgroundColor:
+        "#FFFFFF",
+      elevation:
+        15,
+    },
+
+    deleteLoading: {
+      minHeight:
+        180,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap:
+        9,
+    },
+
+    deleteContent: {
+      paddingTop:
+        16,
+      paddingBottom:
+        4,
+      gap:
+        10,
+    },
+
+    deleteWarning: {
+      padding:
+        13,
+      borderRadius:
+        13,
+      backgroundColor:
+        "#FFF3F5",
+      flexDirection:
+        "row",
+      alignItems:
+        "flex-start",
+      gap:
+        10,
+    },
+
+    deleteWarningText: {
+      flex:
+        1,
+    },
+
+    deleteWarningTitle: {
+      color:
+        "#94495A",
+      fontSize:
+        11,
+      fontWeight:
+        "800",
+    },
+
+    deleteWarningBody: {
+      marginTop:
+        4,
+      color:
+        "#A47780",
+      fontSize:
+        9.5,
+      lineHeight:
+        15,
+    },
+
+    deleteOption: {
+      minHeight:
+        66,
+      padding:
+        12,
+      borderWidth:
+        1,
+      borderColor:
+        "#ECECF4",
+      borderRadius:
+        13,
+      backgroundColor:
+        "#FFFFFF",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap:
+        10,
+    },
+
+    deleteOptionSelected: {
+      borderColor:
+        "#D8D0FF",
+      backgroundColor:
+        "#F9F7FF",
+    },
+
+    deleteRadio: {
+      width:
+        22,
+      height:
+        22,
+      borderWidth:
+        1,
+      borderColor:
+        "#D6D6E2",
+      borderRadius:
+        11,
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+    deleteRadioSelected: {
+      borderColor:
+        "#7868E6",
+      backgroundColor:
+        "#7868E6",
+    },
+
+    deleteOptionText: {
+      flex:
+        1,
+    },
+
+    deleteOptionTitle: {
+      color:
+        "#53556D",
+      fontSize:
+        10.5,
+      fontWeight:
+        "800",
+    },
+
+    deleteOptionSubtitle: {
+      marginTop:
+        3,
+      color:
+        "#999CAC",
+      fontSize:
+        9,
+      lineHeight:
+        14,
+    },
+
+    deleteChildrenList: {
+      gap:
+        7,
+      paddingLeft:
+        6,
+    },
+
+    deleteChildRow: {
+      minHeight:
+        54,
+      padding:
+        10,
+      borderWidth:
+        1,
+      borderColor:
+        "#EEEEF4",
+      borderRadius:
+        12,
+      backgroundColor:
+        "#FAFAFC",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap:
+        9,
+    },
+
+    deleteChildRowSelected: {
+      borderColor:
+        "#E2DDFB",
+      backgroundColor:
+        "#F8F6FF",
+    },
+
+    deleteCheckbox: {
+      width:
+        20,
+      height:
+        20,
+      borderWidth:
+        1,
+      borderColor:
+        "#D5D6E0",
+      borderRadius:
+        6,
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+    deleteCheckboxSelected: {
+      borderColor:
+        "#7868E6",
+      backgroundColor:
+        "#7868E6",
+    },
+
+    deleteChildText: {
+      flex:
+        1,
+      minWidth:
+        0,
+    },
+
+    deleteChildName: {
+      color:
+        "#55576D",
+      fontSize:
+        10,
+      fontWeight:
+        "700",
+    },
+
+    deleteChildMeta: {
+      marginTop:
+        3,
+      color:
+        "#A0A2B2",
+      fontSize:
+        8.5,
+    },
+
+    deleteActions: {
+      marginTop:
+        8,
+      flexDirection:
+        "row",
+      gap:
+        8,
+    },
+
+    cancelDeleteButton: {
+      flex:
+        1,
+      height:
+        43,
+      borderWidth:
+        1,
+      borderColor:
+        "#E3E3EC",
+      borderRadius:
+        11,
+      backgroundColor:
+        "#FFFFFF",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+    cancelDeleteText: {
+      color:
+        "#777A8D",
+      fontSize:
+        10,
+      fontWeight:
+        "700",
+    },
+
+    confirmDeleteButton: {
+      flex:
+        1.5,
+      height:
+        43,
+      borderRadius:
+        11,
+      backgroundColor:
+        "#D65B70",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap:
+        6,
+    },
+
+    confirmDeleteText: {
+      color:
+        "#FFFFFF",
+      fontSize:
+        9.5,
+      fontWeight:
+        "800",
+    },
+
 
     pickerOverlay: {
       flex:

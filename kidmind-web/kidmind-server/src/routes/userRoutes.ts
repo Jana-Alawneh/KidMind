@@ -6,11 +6,13 @@ import {
   assignUserToChild,
   changeUserStatus,
   fetchAssignments,
+  fetchAvailableChildren,
   fetchChildUsers,
   fetchCurrentUser,
   fetchParentChild,
   fetchParentChildren,
   fetchParentTherapists,
+  fetchUserDeleteInfo,
   fetchUsers,
   loginUser,
   registerUser,
@@ -93,6 +95,16 @@ router.post(
 
 
 router.get(
+  "/available-children",
+  authenticate,
+  authorizeRoles(
+    "admin"
+  ),
+  fetchAvailableChildren
+);
+
+
+router.get(
   "/assignments",
   authenticate,
   authorizeRoles(
@@ -129,6 +141,16 @@ router.delete(
     "admin"
   ),
   removeUserFromChild
+);
+
+
+router.get(
+  "/:userId/delete-info",
+  authenticate,
+  authorizeRoles(
+    "admin"
+  ),
+  fetchUserDeleteInfo
 );
 
 

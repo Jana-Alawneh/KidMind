@@ -87,35 +87,15 @@ const roleLabel = {
 };
 
 
-const formatDate = (
-  value
+const isActiveUser = (
+  user
 ) => {
 
-  if (!value) {
-    return "—";
-  }
-
-
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "—";
-  }
-
-
-  return date.toLocaleDateString(
-    "en-US",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }
+  return (
+    user?.is_active === true ||
+    Number(
+      user?.is_active
+    ) === 1
   );
 
 };
@@ -130,7 +110,9 @@ export default function AdminDashboard() {
   const [
     activeSection,
     setActiveSection,
-  ] = useState("overview");
+  ] = useState(
+    "overview"
+  );
 
 
   const [
@@ -148,6 +130,12 @@ export default function AdminDashboard() {
   const [
     sessions,
     setSessions,
+  ] = useState([]);
+
+
+  const [
+    assignments,
+    setAssignments,
   ] = useState([]);
 
 
@@ -186,110 +174,182 @@ export default function AdminDashboard() {
     );
 
 
+  const loadDashboard =
+    async () => {
+
+      try {
+
+        setLoading(true);
+        setError("");
+
+
+        const results =
+          await Promise.allSettled([
+            api.get(
+              "/users"
+            ),
+            api.get(
+              "/children"
+            ),
+            api.get(
+              "/sessions"
+            ),
+            api.get(
+              "/users/assignments"
+            ),
+          ]);
+
+
+        const [
+          usersResult,
+          childrenResult,
+          sessionsResult,
+          assignmentsResult,
+        ] =
+          results;
+
+
+        if (
+          usersResult.status ===
+          "fulfilled"
+        ) {
+
+          setUsers(
+            Array.isArray(
+              usersResult.value.data
+            )
+              ? usersResult.value.data
+              : []
+          );
+
+        } else {
+
+          setUsers([]);
+
+        }
+
+
+        if (
+          childrenResult.status ===
+          "fulfilled"
+        ) {
+
+          setChildren(
+            Array.isArray(
+              childrenResult.value.data
+            )
+              ? childrenResult.value.data
+              : []
+          );
+
+        } else {
+
+          setChildren([]);
+
+        }
+
+
+        if (
+          sessionsResult.status ===
+          "fulfilled"
+        ) {
+
+          setSessions(
+            Array.isArray(
+              sessionsResult.value.data
+            )
+              ? sessionsResult.value.data
+              : []
+          );
+
+        } else {
+
+          setSessions([]);
+
+        }
+
+
+        if (
+          assignmentsResult.status ===
+          "fulfilled"
+        ) {
+
+          setAssignments(
+            Array.isArray(
+              assignmentsResult.value.data
+            )
+              ? assignmentsResult.value.data
+              : []
+          );
+
+        } else {
+
+          setAssignments([]);
+
+        }
+
+
+        if (
+          results.some(
+            result =>
+              result.status ===
+              "rejected"
+          )
+        ) {
+
+          setError(
+            "Some admin dashboard data could not be loaded."
+          );
+
+        }
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          "Unable to load admin dashboard data."
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
+
+
   useEffect(
     () => {
 
-      let active = true;
-
-
-      const loadDashboard =
-        async () => {
-
-          try {
-
-            setLoading(true);
-
-            setError("");
-
-
-            const [
-              usersResponse,
-              childrenResponse,
-              sessionsResponse,
-            ] =
-              await Promise.all([
-                api.get(
-                  "/users"
-                ),
-                api.get(
-                  "/children"
-                ),
-                api.get(
-                  "/sessions"
-                ),
-              ]);
-
-
-            if (!active) {
-              return;
-            }
-
-
-            setUsers(
-              Array.isArray(
-                usersResponse.data
-              )
-                ? usersResponse.data
-                : []
-            );
-
-
-            setChildren(
-              Array.isArray(
-                childrenResponse.data
-              )
-                ? childrenResponse.data
-                : []
-            );
-
-
-            setSessions(
-              Array.isArray(
-                sessionsResponse.data
-              )
-                ? sessionsResponse.data
-                : []
-            );
-
-          } catch (requestError) {
-
-            console.error(
-              requestError
-            );
-
-
-            if (active) {
-
-              setError(
-                "Unable to load admin dashboard data."
-              );
-
-            }
-
-          } finally {
-
-            if (active) {
-
-              setLoading(false);
-
-            }
-
-          }
-
-        };
-
-
       loadDashboard();
-
-
-      return () => {
-
-        active = false;
-
-      };
 
     },
     []
+  );
+
+
+  useEffect(
+    () => {
+
+      if (
+        activeSection ===
+        "overview"
+      ) {
+
+        loadDashboard();
+
+      }
+
+    },
+    [
+      activeSection,
+    ]
   );
 
 
@@ -331,7 +391,9 @@ export default function AdminDashboard() {
               String(
                 session.status ||
                 ""
-              ).toLowerCase();
+              )
+                .trim()
+                .toLowerCase();
 
 
             return (
@@ -345,6 +407,60 @@ export default function AdminDashboard() {
         ).length,
       [
         sessions,
+      ]
+    );
+
+
+  const parentByChild =
+    useMemo(
+      () => {
+
+        const map = {};
+
+
+        assignments.forEach(
+          assignment => {
+
+            const isParent =
+              assignment.link_type ===
+                "parent" ||
+              assignment.role ===
+                "parent";
+
+
+            if (!isParent) {
+              return;
+            }
+
+
+            const childId =
+              Number(
+                assignment.child_id
+              );
+
+
+            if (
+              !map[
+                childId
+              ]
+            ) {
+
+              map[
+                childId
+              ] =
+                assignment;
+
+            }
+
+          }
+        );
+
+
+        return map;
+
+      },
+      [
+        assignments,
       ]
     );
 
@@ -447,25 +563,26 @@ export default function AdminDashboard() {
     );
 
 
-  const handleLogout = () => {
+  const handleLogout =
+    () => {
 
-    sessionStorage.removeItem(
-      "kidmind_token"
-    );
+      sessionStorage.removeItem(
+        "kidmind_token"
+      );
 
-    sessionStorage.removeItem(
-      "kidmind_user"
-    );
+      sessionStorage.removeItem(
+        "kidmind_user"
+      );
 
 
-    navigate(
-      "/login",
-      {
-        replace: true,
-      }
-    );
+      navigate(
+        "/login",
+        {
+          replace: true,
+        }
+      );
 
-  };
+    };
 
 
   const stats = [
@@ -538,8 +655,10 @@ export default function AdminDashboard() {
               <h1>
                 Welcome back,
                 {" "}
-                {currentUser.full_name ||
-                  "Admin"}
+                {
+                  currentUser.full_name ||
+                  "Admin"
+                }
               </h1>
 
               <p>
@@ -609,7 +728,9 @@ export default function AdminDashboard() {
                       <div>
 
                         <span className="stat-label">
-                          {item.title}
+                          {
+                            item.title
+                          }
                         </span>
 
                         <strong>
@@ -621,7 +742,9 @@ export default function AdminDashboard() {
                         </strong>
 
                         <small>
-                          {item.subtitle}
+                          {
+                            item.subtitle
+                          }
                         </small>
 
                       </div>
@@ -743,12 +866,16 @@ export default function AdminDashboard() {
 
                                 <span
                                   className={
-                                    user.is_active
+                                    isActiveUser(
+                                      user
+                                    )
                                       ? "status-dot active"
                                       : "status-dot inactive"
                                   }
                                   title={
-                                    user.is_active
+                                    isActiveUser(
+                                      user
+                                    )
                                       ? "Active"
                                       : "Inactive"
                                   }
@@ -812,69 +939,114 @@ export default function AdminDashboard() {
 
                         {
                           recentChildren.map(
-                            child => (
+                            child => {
 
-                              <div
-                                key={
-                                  child.id
-                                }
-                                className="admin-child-row"
-                              >
+                              const parent =
+                                parentByChild[
+                                  Number(
+                                    child.id
+                                  )
+                                ];
 
-                                <div className="child-avatar">
 
-                                  {
-                                    String(
-                                      child.full_name ||
-                                      "C"
+                              const scoreValue =
+                                child.current_cognitive_score ===
+                                  null ||
+                                child.current_cognitive_score ===
+                                  undefined ||
+                                child.current_cognitive_score ===
+                                  ""
+                                  ? null
+                                  : Number(
+                                      child.current_cognitive_score
+                                    );
+
+
+                              const score =
+                                scoreValue !==
+                                  null &&
+                                Number.isFinite(
+                                  scoreValue
+                                )
+                                  ? Math.round(
+                                      scoreValue
                                     )
-                                      .charAt(
-                                        0
-                                      )
-                                      .toUpperCase()
+                                  : null;
+
+
+                              return (
+
+                                <div
+                                  key={
+                                    child.id
                                   }
+                                  className="admin-child-row"
+                                >
+
+                                  <div className="child-avatar">
+
+                                    {
+                                      String(
+                                        child.full_name ||
+                                        "C"
+                                      )
+                                        .charAt(
+                                          0
+                                        )
+                                        .toUpperCase()
+                                    }
+
+                                  </div>
+
+
+                                  <div className="child-main">
+
+                                    <strong>
+                                      {
+                                        child.full_name
+                                      }
+                                    </strong>
+
+                                    <span>
+
+                                      {
+                                        child.region ||
+                                        "No region"
+                                      }
+
+                                      {
+                                        score !==
+                                        null
+                                          ? ` • ${score}%`
+                                          : ""
+                                      }
+
+                                    </span>
+
+                                  </div>
+
+
+                                  <div className="child-meta">
+
+                                    <span>
+                                      Parent
+                                    </span>
+
+                                    <strong>
+                                      {
+                                        parent
+                                          ?.user_name ||
+                                        "—"
+                                      }
+                                    </strong>
+
+                                  </div>
 
                                 </div>
 
+                              );
 
-                                <div className="child-main">
-
-                                  <strong>
-                                    {
-                                      child.full_name
-                                    }
-                                  </strong>
-
-                                  <span>
-
-                                    {
-                                      child.region ||
-                                      "No region"
-                                    }
-
-                                  </span>
-
-                                </div>
-
-
-                                <div className="child-meta">
-
-                                  <span>
-                                    Parent
-                                  </span>
-
-                                  <strong>
-                                    {
-                                      child.parent_name ||
-                                      "—"
-                                    }
-                                  </strong>
-
-                                </div>
-
-                              </div>
-
-                            )
+                            }
                           )
                         }
 
@@ -1083,7 +1255,6 @@ export default function AdminDashboard() {
 
     <div className="admin-page">
 
-
       <aside className="admin-sidebar">
 
         <div className="admin-logo">
@@ -1159,7 +1330,9 @@ export default function AdminDashboard() {
                     />
 
                     <span>
-                      {item.title}
+                      {
+                        item.title
+                      }
                     </span>
 
                   </button>
@@ -1225,20 +1398,26 @@ export default function AdminDashboard() {
         <div className="admin-content">
 
           {
-  activeSection === "overview"
-    ? renderOverview()
-    : activeSection === "children"
-      ? <AdminChildren />
-      : activeSection === "parents"
-        ? <AdminParents />
-        : activeSection === "therapists"
-          ? <AdminTherapists />
-          : activeSection === "assignments"
-            ? <AdminAssignments />
-            : activeSection === "reports"
-              ? <AdminReports />
-              : renderPlaceholder()
-}
+            activeSection ===
+              "overview"
+              ? renderOverview()
+              : activeSection ===
+                "children"
+                ? <AdminChildren />
+                : activeSection ===
+                  "parents"
+                  ? <AdminParents />
+                  : activeSection ===
+                    "therapists"
+                    ? <AdminTherapists />
+                    : activeSection ===
+                      "assignments"
+                      ? <AdminAssignments />
+                      : activeSection ===
+                        "reports"
+                        ? <AdminReports />
+                        : renderPlaceholder()
+          }
 
         </div>
 
@@ -1667,7 +1846,7 @@ export default function AdminDashboard() {
 
         .user-main span,
         .child-main span {
-          max-width: 185px;
+          max-width: 200px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -1724,7 +1903,7 @@ export default function AdminDashboard() {
         }
 
         .child-meta strong {
-          max-width: 110px;
+          max-width: 120px;
           margin-top: 2px;
           overflow: hidden;
           text-overflow: ellipsis;
