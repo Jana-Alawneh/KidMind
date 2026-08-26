@@ -1,5 +1,4 @@
 import type {
-  Request,
   Response,
 } from "express";
 
@@ -35,12 +34,26 @@ import {
 } from "../models/childModel";
 
 import {
+  getChildForUser,
   getUserById,
 } from "../models/userModel";
+
+import {
+  getGameBuilderAssignments,
+  getGameBuilderGameById,
+} from "../models/gameBuilderModel";
 
 import type {
   AuthenticatedRequest,
 } from "../middleware/authMiddleware";
+
+
+type SessionGameWithCustomId =
+  SessionGameInput & {
+    custom_game_id?:
+      | number
+      | null;
+  };
 
 
 const getSessionDetails = async (
@@ -69,7 +82,7 @@ const getSessionDetails = async (
 };
 
 
-const getParentSessionDetails =
+const getUserSessionDetails =
   async (
     userId: number,
     sessionId: number
@@ -103,6 +116,44 @@ const getParentSessionDetails =
   };
 
 
+const getAccessibleSession =
+  async (
+    req: AuthenticatedRequest,
+    sessionId: number
+  ) => {
+
+    if (!req.auth) {
+      return null;
+    }
+
+    if (
+      req.auth.role ===
+      "admin"
+    ) {
+
+      return getSessionById(
+        sessionId
+      );
+
+    }
+
+    if (
+      req.auth.role ===
+      "therapist"
+    ) {
+
+      return getSessionForUser(
+        req.auth.id,
+        sessionId
+      );
+
+    }
+
+    return null;
+
+  };
+
+
 const isFinishedStatus = (
   status: string
 ) => {
@@ -130,14 +181,51 @@ const isFinishedGameStatus = (
 
 
 export const fetchAllSessions = async (
-  _req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
 
-    const sessionRows =
-      await getAllSessions();
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    let sessionRows;
+
+
+    if (
+      req.auth.role ===
+      "admin"
+    ) {
+
+      sessionRows =
+        await getAllSessions();
+
+    } else if (
+      req.auth.role ===
+      "therapist"
+    ) {
+
+      sessionRows =
+        await getSessionsForUser(
+          req.auth.id
+        );
+
+    } else {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
+      });
+
+    }
 
 
     const sessions =
@@ -380,7 +468,7 @@ export const fetchParentSessionById =
 
 
       const session =
-        await getParentSessionDetails(
+        await getUserSessionDetails(
           req.auth.id,
           sessionId
         );
@@ -419,11 +507,21 @@ export const fetchParentSessionById =
 
 
 export const createSession = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const childId =
       Number(
@@ -446,17 +544,48 @@ export const createSession = async (
     }
 
 
-    const child =
-      await getChildById(
-        childId
-      );
+    let child;
+
+
+    if (
+      req.auth.role ===
+      "admin"
+    ) {
+
+      child =
+        await getChildById(
+          childId
+        );
+
+    } else if (
+      req.auth.role ===
+      "therapist"
+    ) {
+
+      child =
+        await getChildForUser(
+          req.auth.id,
+          childId
+        );
+
+    } else {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
+      });
+
+    }
 
 
     if (!child) {
 
       return res.status(404).json({
         message:
-          "Child not found",
+          req.auth.role ===
+            "admin"
+            ? "Child not found"
+            : "Child not found or not linked to this therapist",
       });
 
     }
@@ -475,39 +604,173 @@ export const createSession = async (
 
               difficulty:
                 req.body.difficulty,
+
+              custom_game_id:
+                req.body.custom_game_id,
             },
           ];
 
 
     const games:
-      SessionGameInput[] =
-        rawGames.map(
-          (
-            game: {
-              game_name?: unknown;
-              difficulty?: unknown;
-            }
-          ) => {
+      SessionGameWithCustomId[] =
+        [];
 
-            return {
 
-              game_name:
-                typeof game.game_name ===
-                "string"
-                  ? game.game_name.trim()
-                  : "",
+    for (
+      const rawGame of
+      rawGames
+    ) {
 
-              difficulty:
-                typeof game.difficulty ===
-                  "string" &&
-                game.difficulty.trim()
-                  ? game.difficulty.trim()
-                  : null,
+      const customGameId =
+        rawGame
+          ?.custom_game_id ===
+          undefined ||
+        rawGame
+          ?.custom_game_id ===
+          null ||
+        rawGame
+          ?.custom_game_id ===
+          ""
+          ? null
+          : Number(
+              rawGame
+                .custom_game_id
+            );
 
-            };
 
-          }
-        );
+      if (
+        customGameId !== null
+      ) {
+
+        if (
+          !Number.isInteger(
+            customGameId
+          ) ||
+          customGameId <= 0
+        ) {
+
+          return res.status(400).json({
+            message:
+              "Invalid custom game ID",
+          });
+
+        }
+
+
+        if (
+          req.auth.role !==
+          "therapist"
+        ) {
+
+          return res.status(403).json({
+            message:
+              "Only therapists can start custom assigned games",
+          });
+
+        }
+
+
+        const customGame =
+          await getGameBuilderGameById(
+            customGameId,
+            req.auth.id
+          );
+
+
+        if (!customGame) {
+
+          return res.status(404).json({
+            message:
+              "Custom game not found",
+          });
+
+        }
+
+
+        const assignments =
+          await getGameBuilderAssignments(
+            customGameId,
+            req.auth.id
+          );
+
+
+        const assignedToChild =
+          assignments.some(
+            (assignment) =>
+              assignment
+                .assignment_type ===
+                "child" &&
+              Number(
+                assignment.child_id
+              ) ===
+                childId
+          );
+
+
+        if (
+          !assignedToChild
+        ) {
+
+          return res.status(403).json({
+            message:
+              "This game is not assigned to this child",
+          });
+
+        }
+
+
+        games.push({
+          game_name:
+            customGame.title,
+
+          difficulty:
+            customGame.difficulty ||
+            null,
+
+          custom_game_id:
+            customGameId,
+        });
+
+
+        continue;
+
+      }
+
+
+      const gameName =
+        typeof rawGame
+          ?.game_name ===
+          "string"
+          ? rawGame
+              .game_name
+              .trim()
+          : "";
+
+
+      const difficulty =
+        typeof rawGame
+          ?.difficulty ===
+          "string" &&
+        rawGame
+          .difficulty
+          .trim()
+          ? rawGame
+              .difficulty
+              .trim()
+          : null;
+
+
+      games.push({
+        game_name:
+          gameName,
+
+        difficulty,
+
+        custom_game_id:
+          null,
+      });
+
+    }
 
 
     const invalidGame =
@@ -575,11 +838,21 @@ export const createSession = async (
 
 
 export const fetchSessionById = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -602,25 +875,36 @@ export const fetchSessionById = async (
     }
 
 
-    const session =
-      await getSessionDetails(
+    const sessionRow =
+      await getAccessibleSession(
+        req,
         id
       );
 
 
-    if (!session) {
+    if (!sessionRow) {
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }
 
 
-    return res.json(
-      session
-    );
+    const games =
+      await getSessionGames(
+        id
+      );
+
+
+    return res.json({
+      ...sessionRow,
+      games,
+    });
 
   } catch (error) {
 
@@ -641,11 +925,21 @@ export const fetchSessionById = async (
 
 
 export const pauseSession = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -690,7 +984,8 @@ export const pauseSession = async (
 
 
     const currentSession =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         id
       );
 
@@ -699,7 +994,10 @@ export const pauseSession = async (
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }
@@ -762,11 +1060,21 @@ export const pauseSession = async (
 
 
 export const resumeSession = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -811,7 +1119,8 @@ export const resumeSession = async (
 
 
     const currentSession =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         id
       );
 
@@ -820,7 +1129,10 @@ export const resumeSession = async (
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }
@@ -883,11 +1195,21 @@ export const resumeSession = async (
 
 
 export const completeSession = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -954,7 +1276,8 @@ export const completeSession = async (
 
 
     const currentSession =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         id
       );
 
@@ -963,7 +1286,10 @@ export const completeSession = async (
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }
@@ -1022,11 +1348,21 @@ export const completeSession = async (
 
 
 export const endSession = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -1071,7 +1407,8 @@ export const endSession = async (
 
 
     const currentSession =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         id
       );
 
@@ -1080,7 +1417,10 @@ export const endSession = async (
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }
@@ -1157,11 +1497,21 @@ export const endSession = async (
 
 
 export const cancelSession = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -1191,7 +1541,8 @@ export const cancelSession = async (
 
 
     const currentSession =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         id
       );
 
@@ -1200,7 +1551,10 @@ export const cancelSession = async (
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }
@@ -1263,11 +1617,21 @@ export const cancelSession = async (
 
 
 export const startSessionGame = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const sessionId =
       Number(
@@ -1301,9 +1665,23 @@ export const startSessionGame = async (
 
 
     const session =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         sessionId
       );
+
+
+    if (!session) {
+
+      return res.status(404).json({
+        message:
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
+      });
+
+    }
 
 
     const game =
@@ -1313,10 +1691,7 @@ export const startSessionGame = async (
       );
 
 
-    if (
-      !session ||
-      !game
-    ) {
+    if (!game) {
 
       return res.status(404).json({
         message:
@@ -1405,11 +1780,21 @@ export const startSessionGame = async (
 
 
 export const completeSessionGame = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const sessionId =
       Number(
@@ -1493,7 +1878,8 @@ export const completeSessionGame = async (
 
 
     const session =
-      await getSessionById(
+      await getAccessibleSession(
+        req,
         sessionId
       );
 
@@ -1502,7 +1888,10 @@ export const completeSessionGame = async (
 
       return res.status(404).json({
         message:
-          "Session not found",
+          req.auth.role ===
+            "therapist"
+            ? "Session not found or not linked to this therapist"
+            : "Session not found",
       });
 
     }

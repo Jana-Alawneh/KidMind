@@ -2834,11 +2834,27 @@ export default function ParentDashboard() {
                         ? "active"
                         : ""
                     }
-                    onClick={() =>
+                    onClick={() => {
+
+                      if (
+                        item.key ===
+                        "messages"
+                      ) {
+
+                        navigate(
+                          "/chat"
+                        );
+
+                        return;
+
+                      }
+
+
                       setActiveSection(
                         item.key
-                      )
-                    }
+                      );
+
+                    }}
                   >
                     <Icon
                       size={19}

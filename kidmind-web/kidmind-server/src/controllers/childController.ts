@@ -55,20 +55,65 @@ const parseOptionalId = (
 
 
 export const fetchUsers = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
 
-    const users =
-      await getAllUsers();
+    if (!req.auth) {
 
-    return res.json(users);
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    if (
+      req.auth.role ===
+        "therapist"
+    ) {
+
+      const children =
+        await getLinkedChildrenForUser(
+          req.auth.id
+        );
+
+      return res.json(
+        children
+      );
+
+    }
+
+
+    if (
+      req.auth.role ===
+        "admin"
+    ) {
+
+      const children =
+        await getAllUsers();
+
+      return res.json(
+        children
+      );
+
+    }
+
+
+    return res.status(403).json({
+      message:
+        "Access denied",
+    });
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Fetch children error:",
+      error
+    );
 
     return res.status(500).json({
       message:
@@ -81,11 +126,21 @@ export const fetchUsers = async (
 
 
 export const fetchChildById = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const id =
       Number(
@@ -106,17 +161,50 @@ export const fetchChildById = async (
     }
 
 
-    const child =
-      await getChildById(
-        id
-      );
+    let child;
+
+
+    if (
+      req.auth.role ===
+        "admin"
+    ) {
+
+      child =
+        await getChildById(
+          id
+        );
+
+    } else if (
+      req.auth.role ===
+        "therapist" ||
+      req.auth.role ===
+        "parent"
+    ) {
+
+      child =
+        await getChildForUser(
+          req.auth.id,
+          id
+        );
+
+    } else {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
+      });
+
+    }
 
 
     if (!child) {
 
       return res.status(404).json({
         message:
-          "Child not found",
+          req.auth.role ===
+            "admin"
+            ? "Child not found"
+            : "Child not found or not linked to this user",
       });
 
     }
@@ -135,7 +223,10 @@ export const fetchChildById = async (
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Fetch child error:",
+      error
+    );
 
     return res.status(500).json({
       message:

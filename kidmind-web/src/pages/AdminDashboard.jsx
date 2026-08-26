@@ -1320,11 +1320,27 @@ export default function AdminDashboard() {
                         ? "active"
                         : ""
                     }
-                    onClick={() =>
+                    onClick={() => {
+
+                      if (
+                        item.key ===
+                        "messages"
+                      ) {
+
+                        navigate(
+                          "/chat"
+                        );
+
+                        return;
+
+                      }
+
+
                       setActiveSection(
                         item.key
-                      )
-                    }
+                      );
+
+                    }}
                   >
 
                     <Icon

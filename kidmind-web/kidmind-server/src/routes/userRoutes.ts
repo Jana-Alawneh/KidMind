@@ -7,6 +7,7 @@ import {
   changeCurrentUserPassword,
   changeUserStatus,
   fetchAssignments,
+  fetchAssignableParents,
   fetchAvailableChildren,
   fetchChildUsers,
   fetchCurrentUser,
@@ -107,6 +108,17 @@ router.get(
 
 
 router.get(
+  "/assignable-parents",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
+  fetchAssignableParents
+);
+
+
+router.get(
   "/",
   authenticate,
   authorizeRoles(
@@ -150,7 +162,8 @@ router.get(
   "/children/:childId/users",
   authenticate,
   authorizeRoles(
-    "admin"
+    "admin",
+    "therapist"
   ),
   fetchChildUsers
 );
@@ -160,7 +173,8 @@ router.post(
   "/assignments",
   authenticate,
   authorizeRoles(
-    "admin"
+    "admin",
+    "therapist"
   ),
   assignUserToChild
 );
@@ -170,7 +184,8 @@ router.delete(
   "/assignments/:childId/:userId",
   authenticate,
   authorizeRoles(
-    "admin"
+    "admin",
+    "therapist"
   ),
   removeUserFromChild
 );

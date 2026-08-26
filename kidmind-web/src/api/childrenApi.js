@@ -1,4 +1,4 @@
-import axios from "axios";
+/*import axios from "axios";
 
 const API_URL = "http://localhost:5000";
 
@@ -100,4 +100,67 @@ export const deleteChild = async (id) => {
   }
 
   return data;
+};
+*/
+import api from "../services/api";
+
+
+export const getChildren = async () => {
+  const response =
+    await api.get(
+      "/children"
+    );
+
+  return response.data;
+};
+
+
+export const getChildById = async (
+  id
+) => {
+  const response =
+    await api.get(
+      `/children/${id}`
+    );
+
+  return response.data;
+};
+
+
+export const addChild = async (
+  child
+) => {
+  const response =
+    await api.post(
+      "/children",
+      child
+    );
+
+  return response.data;
+};
+
+
+export const updateChild = async (
+  id,
+  child
+) => {
+  const response =
+    await api.put(
+      `/children/${id}`,
+      child
+    );
+
+  return response.data;
+};
+
+
+export const deleteChild = async (
+  id
+) => {
+  const response =
+    await api.delete(
+      `/children/${id}`
+    );
+
+  return response.data;
 };

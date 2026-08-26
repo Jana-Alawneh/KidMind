@@ -17,16 +17,18 @@ import {
   authorizeRoles,
 } from "../middleware/authMiddleware";
 
-
 const router =
   Router();
 
-
 router.get(
   "/",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   fetchUsers
 );
-
 
 router.put(
   "/parent/:id",
@@ -37,7 +39,6 @@ router.put(
   editParentChild
 );
 
-
 router.get(
   "/:id/delete-info",
   authenticate,
@@ -47,29 +48,30 @@ router.get(
   fetchChildDeleteInfo
 );
 
-
 router.get(
   "/:id",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist",
+    "parent"
+  ),
   fetchChildById
 );
-
 
 router.post(
   "/",
   createChild
 );
 
-
 router.put(
   "/:id",
   editChild
 );
 
-
 router.delete(
   "/:id",
   removeChild
 );
-
 
 export default router;

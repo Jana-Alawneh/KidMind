@@ -1,58 +1,30 @@
-const API_URL =
-  "http://localhost:5000";
-
-
-const handleResponse = async (
-  response
-) => {
-
-  const data = await response
-    .json()
-    .catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(
-      data?.message ||
-      "Request failed"
-    );
-  }
-
-  return data;
-
-};
+import api from "../services/api";
 
 
 export const createSession = async (
   sessionData
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify(
-        sessionData
-      ),
-    }
-  );
+  const response =
+    await api.post(
+      "/sessions",
+      sessionData
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };
 
 
 export const getSessions = async () => {
 
-  const response = await fetch(
-    `${API_URL}/sessions`
-  );
+  const response =
+    await api.get(
+      "/sessions"
+    );
 
   const data =
-    await handleResponse(response);
+    response.data;
 
   return Array.isArray(
     data?.sessions
@@ -67,11 +39,12 @@ export const getSessionById = async (
   id
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions/${id}`
-  );
+  const response =
+    await api.get(
+      `/sessions/${id}`
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };
 
@@ -81,22 +54,16 @@ export const pauseSession = async (
   durationSeconds
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions/${id}/pause`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
+  const response =
+    await api.patch(
+      `/sessions/${id}/pause`,
+      {
         duration_seconds:
           durationSeconds,
-      }),
-    }
-  );
+      }
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };
 
@@ -106,22 +73,16 @@ export const resumeSession = async (
   durationSeconds
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions/${id}/resume`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
+  const response =
+    await api.patch(
+      `/sessions/${id}/resume`,
+      {
         duration_seconds:
           durationSeconds,
-      }),
-    }
-  );
+      }
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };
 
@@ -131,22 +92,16 @@ export const endSession = async (
   durationSeconds
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions/${id}/end`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
+  const response =
+    await api.patch(
+      `/sessions/${id}/end`,
+      {
         duration_seconds:
           durationSeconds,
-      }),
-    }
-  );
+      }
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };
 
@@ -156,18 +111,12 @@ export const startSessionGame = async (
   gameId
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions/${sessionId}/games/${gameId}/start`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-    }
-  );
+  const response =
+    await api.patch(
+      `/sessions/${sessionId}/games/${gameId}/start`
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };
 
@@ -178,18 +127,12 @@ export const completeSessionGame = async (
   result
 ) => {
 
-  const response = await fetch(
-    `${API_URL}/sessions/${sessionId}/games/${gameId}/complete`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify(result),
-    }
-  );
+  const response =
+    await api.patch(
+      `/sessions/${sessionId}/games/${gameId}/complete`,
+      result
+    );
 
-  return handleResponse(response);
+  return response.data;
 
 };

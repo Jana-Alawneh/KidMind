@@ -21,12 +21,15 @@ import AIAssistant from "./pages/AIAssistant";
 import Settings from "./pages/Settings";
 import SessionPlayer from "./pages/SessionPlayer";
 import GameDetails from "./pages/GameDetails";
+import GameBuilder from "./pages/GameBuilder";
+import CustomGamePlayer from "./pages/CustomGamePlayer";
 import MemoryMatch from "./pages/MemoryMatch";
 import FocusFinder from "./pages/FocusFinder";
 import AssessmentReport from "./pages/AssessmentReport";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
+import Chat from "./pages/Chat";
 
 
 const getHomeByRole = (
@@ -248,6 +251,12 @@ function App() {
     "therapist",
   ];
 
+  const chatRoles = [
+    "therapist",
+    "parent",
+    "admin",
+  ];
+
 
   return (
 
@@ -303,6 +312,22 @@ function App() {
           >
 
             <ParentDashboard />
+
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute
+            allowedRoles={
+              chatRoles
+            }
+          >
+
+            <Chat />
 
           </ProtectedRoute>
         }
@@ -390,7 +415,7 @@ function App() {
 
 
       <Route
-        path="/games/:id"
+        path="/games/builder"
         element={
           <ProtectedRoute
             allowedRoles={
@@ -398,7 +423,23 @@ function App() {
             }
           >
 
-            <GameDetails />
+            <GameBuilder />
+
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/games/custom/:id"
+        element={
+          <ProtectedRoute
+            allowedRoles={
+              therapistOnly
+            }
+          >
+
+            <CustomGamePlayer />
 
           </ProtectedRoute>
         }
@@ -431,6 +472,22 @@ function App() {
           >
 
             <FocusFinder />
+
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/games/:id"
+        element={
+          <ProtectedRoute
+            allowedRoles={
+              therapistOnly
+            }
+          >
+
+            <GameDetails />
 
           </ProtectedRoute>
         }

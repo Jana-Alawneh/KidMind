@@ -9,6 +9,7 @@ import type {
 export type SessionGameInput = {
   game_name: string;
   difficulty: string | null;
+  custom_game_id?: number | null;
 };
 
 
@@ -63,11 +64,22 @@ export const addSessionGames = async (
         ? "In Progress"
         : "Pending";
 
+    const customGameId =
+      game.custom_game_id ===
+        undefined ||
+      game.custom_game_id ===
+        null
+        ? null
+        : Number(
+            game.custom_game_id
+          );
+
     await db.query(
       `
       INSERT INTO session_games
       (
         session_id,
+        custom_game_id,
         game_name,
         difficulty,
         status,
@@ -75,6 +87,7 @@ export const addSessionGames = async (
       )
       VALUES
       (
+        ?,
         ?,
         ?,
         ?,
@@ -88,6 +101,7 @@ export const addSessionGames = async (
       `,
       [
         sessionId,
+        customGameId,
         game.game_name,
         game.difficulty,
         status,
@@ -272,6 +286,7 @@ export const getSessionGames = async (
       SELECT
         id,
         session_id,
+        custom_game_id,
         game_name,
         difficulty,
         status,
@@ -739,6 +754,31 @@ export const endUnfinishedGamesBySessionId =
       `
       UPDATE session_games
       SET
+        duration_seconds =
+          CASE
+            WHEN status IN (
+              'In Progress',
+              'Paused'
+            )
+            THEN COALESCE(
+              duration_seconds,
+              GREATEST(
+                0,
+                TIMESTAMPDIFF(
+                  SECOND,
+                  COALESCE(
+                    started_at,
+                    NOW()
+                  ),
+                  NOW()
+                )
+              )
+            )
+            ELSE COALESCE(
+              duration_seconds,
+              0
+            )
+          END,
         status = 'Ended',
         ended_at = NOW()
       WHERE

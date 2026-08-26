@@ -49,60 +49,110 @@ router.get(
 
 router.post(
   "/",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   createSession
 );
 
 
 router.get(
   "/",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   fetchAllSessions
 );
 
 
 router.get(
   "/:id",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   fetchSessionById
 );
 
 
 router.patch(
   "/:id/pause",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   pauseSession
 );
 
 
 router.patch(
   "/:id/resume",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   resumeSession
 );
 
 
 router.patch(
   "/:id/complete",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   completeSession
 );
 
 
 router.patch(
   "/:id/end",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   endSession
 );
 
 
 router.patch(
   "/:id/cancel",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   cancelSession
 );
 
 
 router.patch(
   "/:sessionId/games/:gameId/start",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   startSessionGame
 );
 
 
 router.patch(
   "/:sessionId/games/:gameId/complete",
+  authenticate,
+  authorizeRoles(
+    "admin",
+    "therapist"
+  ),
   completeSessionGame
 );
 

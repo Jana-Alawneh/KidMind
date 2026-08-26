@@ -15,6 +15,8 @@ import {
     ChevronRight,
     Clock3,
     RefreshCw,
+    Search,
+    SlidersHorizontal,
     Target,
 } from "lucide-react";
 
@@ -50,12 +52,12 @@ const formatDuration = (
 };
 
 
-const formatDate = (
+const parseDate = (
     value
 ) => {
 
     if (!value) {
-        return "No date";
+        return null;
     }
 
     const date =
@@ -71,6 +73,24 @@ const formatDate = (
             date.getTime()
         )
     ) {
+        return null;
+    }
+
+    return date;
+
+};
+
+
+const formatDate = (
+    value
+) => {
+
+    const date =
+        parseDate(
+            value
+        );
+
+    if (!date) {
         return "No date";
     }
 
@@ -83,6 +103,156 @@ const formatDate = (
             hour: "numeric",
             minute: "2-digit",
         }
+    );
+
+};
+
+
+const isSameDay = (
+    first,
+    second
+) => {
+
+    return (
+        first.getFullYear() ===
+            second.getFullYear() &&
+        first.getMonth() ===
+            second.getMonth() &&
+        first.getDate() ===
+            second.getDate()
+    );
+
+};
+
+
+const matchesDateFilter = (
+    date,
+    filter
+) => {
+
+    if (
+        filter ===
+        "all"
+    ) {
+        return true;
+    }
+
+    if (!date) {
+        return false;
+    }
+
+    const now =
+        new Date();
+
+    if (
+        filter ===
+        "today"
+    ) {
+
+        return isSameDay(
+            date,
+            now
+        );
+
+    }
+
+    if (
+        filter ===
+        "yesterday"
+    ) {
+
+        const yesterday =
+            new Date(
+                now
+            );
+
+        yesterday.setDate(
+            now.getDate() - 1
+        );
+
+        return isSameDay(
+            date,
+            yesterday
+        );
+
+    }
+
+    if (
+        filter ===
+        "last7"
+    ) {
+
+        const start =
+            new Date(
+                now
+            );
+
+        start.setHours(
+            0,
+            0,
+            0,
+            0
+        );
+
+        start.setDate(
+            start.getDate() - 6
+        );
+
+        return (
+            date >= start &&
+            date <= now
+        );
+
+    }
+
+    if (
+        filter ===
+        "thisMonth"
+    ) {
+
+        return (
+            date.getFullYear() ===
+                now.getFullYear() &&
+            date.getMonth() ===
+                now.getMonth()
+        );
+
+    }
+
+    if (
+        filter ===
+        "lastMonth"
+    ) {
+
+        const previousMonth =
+            new Date(
+                now.getFullYear(),
+                now.getMonth() - 1,
+                1
+            );
+
+        return (
+            date.getFullYear() ===
+                previousMonth.getFullYear() &&
+            date.getMonth() ===
+                previousMonth.getMonth()
+        );
+
+    }
+
+    return true;
+
+};
+
+
+const getSessionDate = (
+    session
+) => {
+
+    return parseDate(
+        session.started_at ||
+        session.scheduled_at ||
+        session.created_at
     );
 
 };
@@ -216,6 +386,26 @@ const Sessions = () => {
         setError,
     ] = useState("");
 
+    const [
+        search,
+        setSearch,
+    ] = useState("");
+
+    const [
+        childFilter,
+        setChildFilter,
+    ] = useState("");
+
+    const [
+        statusFilter,
+        setStatusFilter,
+    ] = useState("all");
+
+    const [
+        dateFilter,
+        setDateFilter,
+    ] = useState("all");
+
 
     const loadSessions = async (
         refresh = false
@@ -300,6 +490,161 @@ const Sessions = () => {
         }, [sessions]);
 
 
+    const children =
+        useMemo(() => {
+
+            const map =
+                new Map();
+
+            sessions.forEach(
+                (session) => {
+
+                    const id =
+                        Number(
+                            session.child_id
+                        );
+
+                    if (
+                        !Number.isInteger(id) ||
+                        id <= 0
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        !map.has(id)
+                    ) {
+
+                        map.set(
+                            id,
+                            {
+                                id,
+                                full_name:
+                                    session.child_name ||
+                                    `Child #${id}`,
+                            }
+                        );
+
+                    }
+
+                }
+            );
+
+            return Array.from(
+                map.values()
+            ).sort(
+                (
+                    first,
+                    second
+                ) =>
+                    first.full_name.localeCompare(
+                        second.full_name
+                    )
+            );
+
+        }, [sessions]);
+
+
+    const statuses =
+        useMemo(() => {
+
+            return Array.from(
+                new Set(
+                    sessions
+                        .map(
+                            (session) =>
+                                session.status
+                        )
+                        .filter(Boolean)
+                )
+            ).sort();
+
+        }, [sessions]);
+
+
+    const filteredSessions =
+        useMemo(() => {
+
+            const query =
+                search
+                    .trim()
+                    .toLowerCase();
+
+            return sessions.filter(
+                (session) => {
+
+                    if (
+                        childFilter &&
+                        Number(
+                            session.child_id
+                        ) !==
+                        Number(
+                            childFilter
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        statusFilter !==
+                            "all" &&
+                        session.status !==
+                            statusFilter
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        !matchesDateFilter(
+                            getSessionDate(
+                                session
+                            ),
+                            dateFilter
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    if (!query) {
+                        return true;
+                    }
+
+                    const searchable =
+                        [
+                            session.child_name,
+                            session.child_region,
+                            session.id,
+                            session.status,
+                            getGamesText(
+                                session.games
+                            ),
+                        ]
+                            .filter(
+                                (value) =>
+                                    value !==
+                                        null &&
+                                    value !==
+                                        undefined
+                            )
+                            .join(" ")
+                            .toLowerCase();
+
+                    return searchable.includes(
+                        query
+                    );
+
+                }
+            );
+
+        }, [
+            sessions,
+            search,
+            childFilter,
+            statusFilter,
+            dateFilter,
+        ]);
+
+
     return (
 
         <div className="flex bg-[#F7F8FC] min-h-screen">
@@ -339,7 +684,7 @@ const Sessions = () => {
                                 mt-1
                             "
                         >
-                            View and manage all child assessment sessions
+                            View and manage child assessment sessions
                         </p>
 
                     </div>
@@ -425,12 +770,7 @@ const Sessions = () => {
 
                         <div>
 
-                            <p
-                                className="
-                                    text-sm
-                                    text-[#8B8E9E]
-                                "
-                            >
+                            <p className="text-sm text-[#8B8E9E]">
                                 Total Sessions
                             </p>
 
@@ -480,12 +820,7 @@ const Sessions = () => {
 
                         <div>
 
-                            <p
-                                className="
-                                    text-sm
-                                    text-[#8B8E9E]
-                                "
-                            >
+                            <p className="text-sm text-[#8B8E9E]">
                                 Active
                             </p>
 
@@ -537,12 +872,7 @@ const Sessions = () => {
 
                         <div>
 
-                            <p
-                                className="
-                                    text-sm
-                                    text-[#8B8E9E]
-                                "
-                            >
+                            <p className="text-sm text-[#8B8E9E]">
                                 Completed
                             </p>
 
@@ -562,6 +892,168 @@ const Sessions = () => {
                     </div>
 
                 </div>
+
+
+                <section className="sessions-filter-panel">
+
+                    <div className="sessions-filter-heading">
+
+                        <div>
+
+                            <h2>
+                                Assessment History
+                            </h2>
+
+                            <p>
+                                Search and review assessment sessions.
+                            </p>
+
+                        </div>
+
+                        <SlidersHorizontal
+                            size={21}
+                        />
+
+                    </div>
+
+
+                    <div className="sessions-toolbar">
+
+                        <div className="sessions-search">
+
+                            <Search
+                                size={17}
+                            />
+
+                            <input
+                                value={
+                                    search
+                                }
+                                onChange={
+                                    (event) =>
+                                        setSearch(
+                                            event.target.value
+                                        )
+                                }
+                                placeholder="Search child, region, session or game..."
+                            />
+
+                        </div>
+
+
+                        <select
+                            value={
+                                childFilter
+                            }
+                            onChange={
+                                (event) =>
+                                    setChildFilter(
+                                        event.target.value
+                                    )
+                            }
+                        >
+
+                            <option value="">
+                                All Children
+                            </option>
+
+                            {children.map(
+                                (child) => (
+
+                                    <option
+                                        key={
+                                            child.id
+                                        }
+                                        value={
+                                            child.id
+                                        }
+                                    >
+                                        {child.full_name}
+                                    </option>
+
+                                )
+                            )}
+
+                        </select>
+
+
+                        <select
+                            value={
+                                statusFilter
+                            }
+                            onChange={
+                                (event) =>
+                                    setStatusFilter(
+                                        event.target.value
+                                    )
+                            }
+                        >
+
+                            <option value="all">
+                                All Statuses
+                            </option>
+
+                            {statuses.map(
+                                (status) => (
+
+                                    <option
+                                        key={
+                                            status
+                                        }
+                                        value={
+                                            status
+                                        }
+                                    >
+                                        {status}
+                                    </option>
+
+                                )
+                            )}
+
+                        </select>
+
+
+                        <select
+                            value={
+                                dateFilter
+                            }
+                            onChange={
+                                (event) =>
+                                    setDateFilter(
+                                        event.target.value
+                                    )
+                            }
+                        >
+
+                            <option value="all">
+                                All Time
+                            </option>
+
+                            <option value="today">
+                                Today
+                            </option>
+
+                            <option value="yesterday">
+                                Yesterday
+                            </option>
+
+                            <option value="last7">
+                                Last 7 Days
+                            </option>
+
+                            <option value="thisMonth">
+                                This Month
+                            </option>
+
+                            <option value="lastMonth">
+                                Last Month
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </section>
 
 
                 <div className="mt-8">
@@ -596,12 +1088,7 @@ const Sessions = () => {
                                     "
                                 />
 
-                                <p
-                                    className="
-                                        text-[#8A8DA0]
-                                        mt-4
-                                    "
-                                >
+                                <p className="text-[#8A8DA0] mt-4">
                                     Loading sessions...
                                 </p>
 
@@ -708,12 +1195,7 @@ const Sessions = () => {
                                         No sessions yet
                                     </h2>
 
-                                    <p
-                                        className="
-                                            text-[#8A8DA0]
-                                            mt-2
-                                        "
-                                    >
+                                    <p className="text-[#8A8DA0] mt-2">
                                         Assessment sessions will appear here once they are created.
                                     </p>
 
@@ -726,7 +1208,59 @@ const Sessions = () => {
 
                     {!loading &&
                         !error &&
-                        sessions.length > 0 && (
+                        sessions.length > 0 &&
+                        filteredSessions.length === 0 && (
+
+                            <div
+                                className="
+                                    bg-white
+                                    border
+                                    border-[#ECECF3]
+                                    rounded-2xl
+                                    min-h-[280px]
+                                    flex
+                                    items-center
+                                    justify-center
+                                    text-center
+                                    p-8
+                                "
+                            >
+
+                                <div>
+
+                                    <Search
+                                        size={40}
+                                        className="
+                                            text-[#B7B1EC]
+                                            mx-auto
+                                        "
+                                    />
+
+                                    <h2
+                                        className="
+                                            text-xl
+                                            font-bold
+                                            text-[#25263A]
+                                            mt-4
+                                        "
+                                    >
+                                        No sessions found
+                                    </h2>
+
+                                    <p className="text-[#8A8DA0] mt-2">
+                                        Try changing the search or filters.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+
+                    {!loading &&
+                        !error &&
+                        filteredSessions.length > 0 && (
 
                             <div
                                 className="
@@ -737,7 +1271,7 @@ const Sessions = () => {
                                 "
                             >
 
-                                {sessions.map(
+                                {filteredSessions.map(
                                     (session) => {
 
                                         const statusStyle =
@@ -1066,6 +1600,111 @@ const Sessions = () => {
                         )}
 
                 </div>
+
+
+                <style>{`
+                    .sessions-filter-panel {
+                        margin-top: 18px;
+                        padding: 19px;
+                        border: 1px solid #ECECF4;
+                        border-radius: 20px;
+                        background: white;
+                        box-shadow:
+                            0 7px 22px
+                            rgba(52, 53, 85, .025);
+                    }
+
+                    .sessions-filter-heading {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 14px;
+                        color: #7869E6;
+                    }
+
+                    .sessions-filter-heading h2 {
+                        margin: 0;
+                        color: #3D3F5C;
+                        font-size: 15px;
+                        font-weight: 600;
+                    }
+
+                    .sessions-filter-heading p {
+                        margin: 4px 0 0;
+                        color: #A0A3B3;
+                        font-size: 10.5px;
+                    }
+
+                    .sessions-toolbar {
+                        display: grid;
+                        grid-template-columns:
+                            minmax(0, 1fr)
+                            175px
+                            150px
+                            160px;
+                        gap: 10px;
+                        margin-top: 16px;
+                    }
+
+                    .sessions-search {
+                        height: 42px;
+                        padding: 0 13px;
+                        border: 1px solid #E7E7EF;
+                        border-radius: 12px;
+                        background: #FAFAFC;
+                        color: #A0A2B2;
+                        display: flex;
+                        align-items: center;
+                        gap: 9px;
+                    }
+
+                    .sessions-search input {
+                        width: 100%;
+                        height: 100%;
+                        border: 0;
+                        outline: 0;
+                        background: transparent;
+                        color: #42445E;
+                        font-size: 11px;
+                    }
+
+                    .sessions-toolbar select {
+                        width: 100%;
+                        height: 42px;
+                        padding: 0 10px;
+                        border: 1px solid #E1E1EA;
+                        border-radius: 11px;
+                        outline: 0;
+                        background: #FBFBFD;
+                        color: #57596E;
+                        font-size: 10px;
+                    }
+
+                    @media (max-width: 1050px) {
+                        .sessions-toolbar {
+                            grid-template-columns:
+                                minmax(0, 1fr)
+                                155px
+                                140px
+                                145px;
+                        }
+                    }
+
+                    @media (max-width: 850px) {
+                        .sessions-toolbar {
+                            grid-template-columns:
+                                1fr
+                                1fr;
+                        }
+                    }
+
+                    @media (max-width: 560px) {
+                        .sessions-toolbar {
+                            grid-template-columns:
+                                1fr;
+                        }
+                    }
+                `}</style>
 
             </main>
 

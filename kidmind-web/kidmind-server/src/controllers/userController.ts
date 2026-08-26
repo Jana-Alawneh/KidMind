@@ -1773,6 +1773,126 @@ export const fetchUsers = async (
 };
 
 
+export const fetchAssignableParents = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
+
+    const currentUser =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!currentUser) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (
+      !currentUser.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    if (
+      currentUser.role !==
+        "admin" &&
+      currentUser.role !==
+        "therapist"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
+      });
+
+    }
+
+
+    const users =
+      await getAllUsers();
+
+
+    const parents =
+      users
+        .filter(
+          user =>
+            user.role ===
+              "parent" &&
+            Number(
+              user.is_active
+            ) === 1
+        )
+        .map(
+          user => ({
+            id:
+              user.id,
+            full_name:
+              user.full_name,
+            email:
+              user.email,
+            role:
+              user.role,
+            phone:
+              user.phone,
+            region:
+              user.region,
+            avatar_url:
+              user.avatar_url,
+            is_active:
+              Boolean(
+                user.is_active
+              ),
+          })
+        );
+
+
+    return res.json(
+      parents
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Fetch assignable parents error:",
+      error
+    );
+
+
+    return res.status(500).json({
+      message:
+        "Server Error",
+    });
+
+  }
+
+};
+
+
 export const fetchAvailableChildren = async (
   req: Request,
   res: Response
@@ -2610,11 +2730,21 @@ export const fetchAssignments = async (
 
 
 export const fetchChildUsers = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const childId =
       Number(
@@ -2632,6 +2762,86 @@ export const fetchChildUsers = async (
       return res.status(400).json({
         message:
           "Invalid child ID",
+      });
+
+    }
+
+
+    const currentUser =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!currentUser) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (
+      !currentUser.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    if (
+      currentUser.role ===
+      "therapist"
+    ) {
+
+      const managedChild =
+        await getChildForUser(
+          currentUser.id,
+          childId
+        );
+
+
+      if (!managedChild) {
+
+        return res.status(404).json({
+          message:
+            "Child not found or not assigned to this therapist",
+        });
+
+      }
+
+
+      const users =
+        await getUsersForChild(
+          childId
+        );
+
+
+      return res.json(
+        users.filter(
+          user =>
+            user.role ===
+            "parent"
+        )
+      );
+
+    }
+
+
+    if (
+      currentUser.role !==
+      "admin"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
       });
 
     }
@@ -2680,13 +2890,22 @@ export const fetchChildUsers = async (
 
 };
 
-
 export const assignUserToChild = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const childId =
       Number(
@@ -2719,17 +2938,80 @@ export const assignUserToChild = async (
     }
 
 
-    const child =
-      await getChildById(
-        childId
+    const currentUser =
+      await getUserById(
+        req.auth.id
       );
 
 
-    if (!child) {
+    if (!currentUser) {
 
       return res.status(404).json({
         message:
-          "Child not found",
+          "User not found",
+      });
+
+    }
+
+
+    if (
+      !currentUser.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    if (
+      currentUser.role ===
+      "therapist"
+    ) {
+
+      const managedChild =
+        await getChildForUser(
+          currentUser.id,
+          childId
+        );
+
+
+      if (!managedChild) {
+
+        return res.status(404).json({
+          message:
+            "Child not found or not assigned to this therapist",
+        });
+
+      }
+
+    } else if (
+      currentUser.role ===
+      "admin"
+    ) {
+
+      const child =
+        await getChildById(
+          childId
+        );
+
+
+      if (!child) {
+
+        return res.status(404).json({
+          message:
+            "Child not found",
+        });
+
+      }
+
+    } else {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
       });
 
     }
@@ -2752,6 +3034,23 @@ export const assignUserToChild = async (
 
 
     if (
+      currentUser.role ===
+        "therapist" &&
+      user.role !==
+        "parent"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Therapists can only assign parents to their children",
+      });
+
+    }
+
+
+    if (
+      currentUser.role ===
+        "admin" &&
       user.role !==
         "parent" &&
       user.role !==
@@ -2789,7 +3088,7 @@ export const assignUserToChild = async (
 
     if (
       user.role ===
-        "parent"
+      "parent"
     ) {
 
       await syncLegacyParentName(
@@ -2864,13 +3163,22 @@ export const assignUserToChild = async (
 
 };
 
-
 export const removeUserFromChild = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
 
   try {
+
+    if (!req.auth) {
+
+      return res.status(401).json({
+        message:
+          "Authentication required",
+      });
+
+    }
+
 
     const childId =
       Number(
@@ -2903,6 +3211,68 @@ export const removeUserFromChild = async (
     }
 
 
+    const currentUser =
+      await getUserById(
+        req.auth.id
+      );
+
+
+    if (!currentUser) {
+
+      return res.status(404).json({
+        message:
+          "User not found",
+      });
+
+    }
+
+
+    if (
+      !currentUser.is_active
+    ) {
+
+      return res.status(403).json({
+        message:
+          "This account is inactive",
+      });
+
+    }
+
+
+    if (
+      currentUser.role ===
+      "therapist"
+    ) {
+
+      const managedChild =
+        await getChildForUser(
+          currentUser.id,
+          childId
+        );
+
+
+      if (!managedChild) {
+
+        return res.status(404).json({
+          message:
+            "Child not found or not assigned to this therapist",
+        });
+
+      }
+
+    } else if (
+      currentUser.role !==
+      "admin"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Access denied",
+      });
+
+    }
+
+
     const user =
       await getUserById(
         userId
@@ -2914,6 +3284,21 @@ export const removeUserFromChild = async (
       return res.status(404).json({
         message:
           "User not found",
+      });
+
+    }
+
+
+    if (
+      currentUser.role ===
+        "therapist" &&
+      user.role !==
+        "parent"
+    ) {
+
+      return res.status(403).json({
+        message:
+          "Therapists can only remove parent assignments",
       });
 
     }
@@ -2941,7 +3326,7 @@ export const removeUserFromChild = async (
 
     if (
       user.role ===
-        "parent"
+      "parent"
     ) {
 
       await clearLegacyParentName(
@@ -2972,3 +3357,4 @@ export const removeUserFromChild = async (
   }
 
 };
+
