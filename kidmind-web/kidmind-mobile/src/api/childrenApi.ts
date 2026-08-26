@@ -1,3 +1,8 @@
+import {
+  authRequest,
+} from "@/api/authApi";
+
+
 export type Child = {
   id: number;
   full_name: string;
@@ -23,129 +28,84 @@ export type ChildPayload = {
 };
 
 
-const API_URL = (
-  process.env.EXPO_PUBLIC_API_URL ||
-  "http://10.0.2.2:5000"
-).replace(/\/$/, "");
-
-
-const handleResponse = async (
-  response: Response
-) => {
-
-  const data = await response
-    .json()
-    .catch(() => null);
-
-  if (!response.ok) {
-
-    throw new Error(
-      data?.message ||
-      "Request failed"
-    );
-
-  }
-
-  return data;
-
-};
-
-
 export const getChildren =
   async (): Promise<Child[]> => {
 
-    const response = await fetch(
-      `${API_URL}/children`
-    );
+    const data =
+      await authRequest<Child[]>(
+        "/children"
+      );
 
-    return handleResponse(
-      response
+    return Array.isArray(
+      data
+    )
+      ? data
+      : [];
+
+  };
+
+
+export const getChildById =
+  async (
+    id: number
+  ): Promise<Child> => {
+
+    return authRequest<Child>(
+      `/children/${id}`
     );
 
   };
 
 
-export const getChildById = async (
-  id: number
-): Promise<Child> => {
+export const addChild =
+  async (
+    child: ChildPayload
+  ) => {
 
-  const response = await fetch(
-    `${API_URL}/children/${id}`
-  );
+    return authRequest(
+      "/children",
+      {
+        method: "POST",
+        body:
+          JSON.stringify(
+            child
+          ),
+      }
+    );
 
-  return handleResponse(
-    response
-  );
-
-};
-
-
-export const addChild = async (
-  child: ChildPayload
-) => {
-
-  const response = await fetch(
-    `${API_URL}/children`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body:
-        JSON.stringify(
-          child
-        ),
-    }
-  );
-
-  return handleResponse(
-    response
-  );
-
-};
+  };
 
 
-export const updateChild = async (
-  id: number,
-  child: ChildPayload
-) => {
+export const updateChild =
+  async (
+    id: number,
+    child: ChildPayload
+  ) => {
 
-  const response = await fetch(
-    `${API_URL}/children/${id}`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body:
-        JSON.stringify(
-          child
-        ),
-    }
-  );
+    return authRequest(
+      `/children/${id}`,
+      {
+        method: "PUT",
+        body:
+          JSON.stringify(
+            child
+          ),
+      }
+    );
 
-  return handleResponse(
-    response
-  );
-
-};
+  };
 
 
-export const deleteChild = async (
-  id: number
-) => {
+export const deleteChild =
+  async (
+    id: number
+  ) => {
 
-  const response = await fetch(
-    `${API_URL}/children/${id}`,
-    {
-      method: "DELETE",
-    }
-  );
+    return authRequest(
+      `/children/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
 
-  return handleResponse(
-    response
-  );
-
-};
+  };

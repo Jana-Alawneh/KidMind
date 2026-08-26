@@ -52,6 +52,7 @@ import {
 } from "../api/authApi";
 
 import MobileSettings from "@/components/settings/MobileSettings";
+import MobileChat from "@/components/chat/MobileChat";
 
 import {
   calculateCognitiveScore,
@@ -1226,7 +1227,7 @@ export default function Parent() {
       case "progress":
         return renderProgress();
       case "messages":
-        return renderMessages();
+        return <MobileChat />;
       case "notifications":
         return renderNotifications();
       case "settings":
@@ -1283,26 +1284,32 @@ export default function Parent() {
           </View>
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => loadData(false)}
-              tintColor="#7867D9"
-            />
-          }
-        >
-          {!!error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
+        {activeSection === "messages" ? (
+          <View style={styles.chatContent}>
+            {renderContent()}
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => loadData(false)}
+                tintColor="#7867D9"
+              />
+            }
+          >
+            {!!error && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
-          {renderContent()}
-        </ScrollView>
+            {renderContent()}
+          </ScrollView>
+        )}
       </View>
 
       <Modal
@@ -1928,6 +1935,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F7F8FC" },
   container: { flex: 1, backgroundColor: "#F7F8FC" },
   scroll: { flex: 1 },
+  chatContent: { flex: 1 },
   content: {
     paddingHorizontal: 16,
     paddingTop: 20,

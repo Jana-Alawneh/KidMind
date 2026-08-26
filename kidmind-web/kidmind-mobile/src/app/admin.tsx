@@ -58,6 +58,7 @@ import AdminTherapists from "@/components/admin/AdminTherapists";
 import AdminAssignments from "@/components/admin/AdminAssignments";
 import AdminReports from "@/components/admin/AdminReports";
 import MobileSettings from "@/components/settings/MobileSettings";
+import MobileChat from "@/components/chat/MobileChat";
 
 
 type UserRole =
@@ -1773,6 +1774,16 @@ export default function AdminDashboard() {
 
       if (
         activeSection ===
+        "messages"
+      ) {
+        return (
+          <MobileChat />
+        );
+      }
+
+
+      if (
+        activeSection ===
         "settings"
       ) {
         return (
@@ -1885,21 +1896,36 @@ export default function AdminDashboard() {
         </View>
 
 
-        <ScrollView
-          showsVerticalScrollIndicator={
-            false
-          }
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={
-            styles.content
-          }
-        >
+        {
+          activeSection ===
+          "messages"
+            ? (
+              <View
+                style={
+                  styles.chatContent
+                }
+              >
+                <MobileChat />
+              </View>
+            )
+            : (
+              <ScrollView
+                showsVerticalScrollIndicator={
+                  false
+                }
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={
+                  styles.content
+                }
+              >
 
-          {
-            renderSection()
-          }
+                {
+                  renderSection()
+                }
 
-        </ScrollView>
+              </ScrollView>
+            )
+        }
 
 
         {
@@ -2340,6 +2366,12 @@ const styles =
         18,
       paddingBottom:
         45,
+    },
+
+
+    chatContent: {
+      flex:
+        1,
     },
 
 

@@ -11,6 +11,8 @@ import ReadingAdventure from "@/components/games/reading/ReadingAdventure";
 import QuickMatch from "@/components/games/quickMatch/QuickMatch";
 import { completeSessionGame, endSession, getSessionById, pauseSession, resumeSession, startSessionGame, } from "@/api/sessionsApi";
 import type { CompleteGamePayload, Session, SessionGameStatus, } from "@/api/sessionsApi";
+import CustomGamePlayer from "@/components/games/custom/CustomGamePlayer";
+
 type GameResult = Omit<CompleteGamePayload, "session_duration_seconds">;
 type PendingGameResult = {
     gameId: number;
@@ -837,6 +839,32 @@ export default function SessionPage() {
             "Level 1";
         const gamePaused = !running ||
             actionLoading;
+
+        
+        if (
+  currentGame.custom_game_id
+) {
+
+  return (
+    <CustomGamePlayer
+      key={
+        currentGame.id
+      }
+      customGameId={
+        Number(
+          currentGame.custom_game_id
+        )
+      }
+      paused={
+        gamePaused
+      }
+      onComplete={
+        handleGameComplete
+      }
+    />
+  );
+
+}
         if (gameName ===
             "memory match") {
             return (<MemoryMatch key={currentGame.id} embedded difficulty={gameDifficulty} paused={gamePaused} onComplete={handleGameComplete}/>);
