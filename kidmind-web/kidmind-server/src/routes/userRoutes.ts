@@ -27,6 +27,11 @@ import {
 } from "../controllers/userController";
 
 import {
+  heartbeatUserPresence,
+  markUserOffline,
+} from "../controllers/presenceController";
+
+import {
   authenticate,
   authorizeRoles,
 } from "../middleware/authMiddleware";
@@ -46,6 +51,20 @@ router.get(
   "/me",
   authenticate,
   fetchCurrentUser
+);
+
+
+router.post(
+  "/presence/heartbeat",
+  authenticate,
+  heartbeatUserPresence
+);
+
+
+router.post(
+  "/presence/offline",
+  authenticate,
+  markUserOffline
 );
 
 

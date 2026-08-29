@@ -429,6 +429,45 @@ export const isUserInConversation =
 
   };
 
+export const isConversationMutedForUser =
+  async (
+    userId: number,
+    conversationId: number
+  ) => {
+
+    const [rows] =
+      await db.query<
+        RowDataPacket[]
+      >(
+        `
+        SELECT muted
+        FROM chat_conversation_members
+        WHERE
+          user_id = ?
+          AND conversation_id = ?
+        LIMIT 1
+        `,
+        [
+          userId,
+          conversationId,
+        ]
+      );
+
+
+    if (!rows[0]) {
+      return false;
+    }
+
+
+    return (
+      Number(
+        rows[0].muted
+      ) === 1
+    );
+
+  };
+
+
 export const getConversationForUser =
   async (
     userId: number,
@@ -467,7 +506,20 @@ export const getConversationForUser =
           other_user.avatar_url
             AS other_user_avatar_url,
           other_user.is_active
-            AS other_user_is_active
+            AS other_user_is_active,
+          other_user.last_seen_at
+            AS other_user_last_seen_at,
+          CASE
+            WHEN
+              other_user.last_seen_at IS NOT NULL
+              AND other_user.last_seen_at >=
+                DATE_SUB(
+                  CURRENT_TIMESTAMP,
+                  INTERVAL 90 SECOND
+                )
+            THEN 1
+            ELSE 0
+          END AS other_user_is_online
         FROM chat_conversations c
         INNER JOIN chat_conversation_members member
           ON member.conversation_id = c.id
@@ -530,6 +582,19 @@ export const getUserConversations =
             AS other_user_avatar_url,
           other_user.is_active
             AS other_user_is_active,
+          other_user.last_seen_at
+            AS other_user_last_seen_at,
+          CASE
+            WHEN
+              other_user.last_seen_at IS NOT NULL
+              AND other_user.last_seen_at >=
+                DATE_SUB(
+                  CURRENT_TIMESTAMP,
+                  INTERVAL 90 SECOND
+                )
+            THEN 1
+            ELSE 0
+          END AS other_user_is_online,
 
           child.full_name
             AS child_name,

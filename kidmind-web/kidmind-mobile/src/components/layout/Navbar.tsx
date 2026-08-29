@@ -14,452 +14,625 @@ import {
   Search,
 } from "lucide-react-native";
 
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
-import { useState } from "react";
+import {
+  router,
+  useFocusEffect,
+} from "expo-router";
 
+import {
+  getUnreadNotificationCount,
+} from "@/api/notificationsApi";
 
-import Notifications from "./Notifications";
 import ProfileMenu from "./ProfileMenu";
 
 
-
 type Props = {
-  onMenuPress:()=>void;
+  onMenuPress: () => void;
 };
-
 
 
 export default function Navbar({
   onMenuPress,
-}:Props){
+}: Props) {
+
+  const [
+    showProfile,
+    setShowProfile,
+  ] =
+    useState(false);
+
+  const [
+    unreadCount,
+    setUnreadCount,
+  ] =
+    useState(0);
 
 
-const [showNotifications,setShowNotifications]=useState(false);
+  const loadUnreadCount =
+    useCallback(
+      async () => {
 
-const [showProfile,setShowProfile]=useState(false);
+        try {
+
+          const count =
+            await getUnreadNotificationCount();
+
+          setUnreadCount(
+            count
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Failed to load notification count:",
+            error
+          );
+
+        }
+
+      },
+      []
+    );
 
 
+  useFocusEffect(
+    useCallback(
+      () => {
 
-const today = new Date().toLocaleDateString(
-  "en-US",
-  {
-    weekday:"long",
-    month:"long",
-    day:"numeric",
-    year:"numeric",
-  }
+        loadUnreadCount();
+
+        return undefined;
+
+      },
+      [
+        loadUnreadCount,
+      ]
+    )
+  );
+
+
+  useEffect(
+    () => {
+
+      const timer =
+        setInterval(
+          () => {
+            loadUnreadCount();
+          },
+          30000
+        );
+
+      return () => {
+        clearInterval(
+          timer
+        );
+      };
+
+    },
+    [
+      loadUnreadCount,
+    ]
+  );
+
+
+  const today =
+    new Date()
+      .toLocaleDateString(
+        "en-US",
+        {
+          weekday:
+            "long",
+          month:
+            "long",
+          day:
+            "numeric",
+          year:
+            "numeric",
+        }
+      );
+
+
+  return (
+
+    <View
+      style={
+        styles.container
+      }
+    >
+
+      <View
+        style={
+          styles.top
+        }
+      >
+
+        <TouchableOpacity
+          onPress={
+            onMenuPress
+          }
+          style={
+            styles.menuButton
+          }
+        >
+          <Menu
+            size={24}
+          />
+        </TouchableOpacity>
+
+
+        <View
+          style={
+            styles.titleContainer
+          }
+        >
+
+          <Text
+            style={
+              styles.date
+            }
+          >
+            {today}
+          </Text>
+
+          <Text
+            style={
+              styles.heading
+            }
+          >
+            Welcome Back
+          </Text>
+
+        </View>
+
+
+        <TouchableOpacity
+          style={
+            styles.iconButton
+          }
+          onPress={() => {
+
+            setShowProfile(
+              false
+            );
+
+            router.push(
+  "/notifications" as never
 );
 
+          }}
+        >
+
+          <Bell
+            size={20}
+          />
+
+          {unreadCount >
+            0 && (
+            <View
+              style={
+                styles.badge
+              }
+            >
+              <Text
+                style={
+                  styles.badgeText
+                }
+              >
+                {unreadCount >
+                99
+                  ? "99+"
+                  : unreadCount}
+              </Text>
+            </View>
+          )}
+
+        </TouchableOpacity>
+
+      </View>
+
+
+      <View
+        style={
+          styles.searchBox
+        }
+      >
+
+        <Search
+          size={18}
+          color="#94A3B8"
+        />
+
+        <TextInput
+          placeholder="Search..."
+          style={
+            styles.input
+          }
+        />
+
+      </View>
+
+
+      <TouchableOpacity
+        style={
+          styles.profileButton
+        }
+        onPress={() => {
+
+          setShowProfile(
+            !showProfile
+          );
+
+        }}
+      >
+
+        <Image
+          source={{
+            uri:
+              "https://i.pravatar.cc/100",
+          }}
+          style={
+            styles.avatar
+          }
+        />
+
+        <View>
+
+          <Text
+            style={
+              styles.name
+            }
+          >
+            Dr. Ahmad
+          </Text>
+
+          <Text
+            style={
+              styles.role
+            }
+          >
+            Therapist
+          </Text>
+
+        </View>
+
+        <ChevronDown
+          size={18}
+        />
+
+      </TouchableOpacity>
 
 
-return (
+      <Text
+        style={
+          styles.description
+        }
+      >
+        Monitor your children's cognitive assessments in one place.
+      </Text>
 
-<View style={styles.container}>
 
+      {showProfile &&
+        <ProfileMenu />
+      }
 
-<View style={styles.top}>
+    </View>
 
+  );
 
-<TouchableOpacity
-onPress={onMenuPress}
-style={styles.menuButton}
->
-
-<Menu
-size={24}
-/>
-
-</TouchableOpacity>
-
-
-
-<View style={styles.titleContainer}>
-
-
-<Text style={styles.date}>
-{today}
-</Text>
-
-
-<Text style={styles.heading}>
-Welcome Back
-</Text>
-
-
-</View>
-
-
-
-
-
-<TouchableOpacity
-
-style={styles.iconButton}
-
-onPress={()=>{
-
-setShowNotifications(
-!showNotifications
-);
-
-setShowProfile(false);
-
-}}
-
->
-
-<Bell
-size={20}
-/>
-
-
-<View style={styles.dot}/>
-
-
-</TouchableOpacity>
-
-
-</View>
-
-
-
-
-
-
-
-<View style={styles.searchBox}>
-
-
-<Search
-size={18}
-color="#94A3B8"
-/>
-
-
-<TextInput
-
-placeholder="Search..."
-
-style={styles.input}
-
-/>
-
-
-</View>
-
-
-
-
-
-
-
-<TouchableOpacity
-
-style={styles.profileButton}
-
-onPress={()=>{
-
-setShowProfile(!showProfile);
-
-setShowNotifications(false);
-
-}}
-
->
-
-
-<Image
-
-source={{
-uri:"https://i.pravatar.cc/100"
-}}
-
-style={styles.avatar}
-
-/>
-
-
-
-<View>
-
-<Text style={styles.name}>
-Dr. Ahmad
-</Text>
-
-<Text style={styles.role}>
-Therapist
-</Text>
-
-</View>
-
-
-
-<ChevronDown size={18}/>
-
-
-</TouchableOpacity>
-
-
-
-
-
-<Text style={styles.description}>
-
-Monitor your children's cognitive assessments in one place.
-
-</Text>
-
-
-
-
-
-{
-showNotifications &&
-<Notifications/>
 }
 
 
+const styles =
+  StyleSheet.create({
 
-{
-showProfile &&
-<ProfileMenu/>
-}
+    container: {
 
+      backgroundColor:
+        "#F7F8FC",
 
+      marginBottom:
+        20,
 
-</View>
+    },
 
-);
 
-}
+    top: {
 
+      flexDirection:
+        "row",
 
+      alignItems:
+        "center",
 
+      justifyContent:
+        "space-between",
 
-const styles=StyleSheet.create({
+      marginBottom:
+        15,
 
+    },
 
-container:{
 
-backgroundColor:"#F7F8FC",
+    menuButton: {
 
-marginBottom:20,
+      width:
+        45,
 
-},
+      height:
+        45,
 
+      backgroundColor:
+        "#FFFFFF",
 
+      borderRadius:
+        16,
 
-top:{
+      justifyContent:
+        "center",
 
-flexDirection:"row",
+      alignItems:
+        "center",
 
-alignItems:"center",
+      borderWidth:
+        1,
 
-justifyContent:"space-between",
+      borderColor:
+        "#ECECF5",
 
-marginBottom:15,
+    },
 
-},
 
+    titleContainer: {
 
+      flex:
+        1,
 
-menuButton:{
+      marginLeft:
+        15,
 
-width:45,
+    },
 
-height:45,
 
-backgroundColor:"#FFFFFF",
+    date: {
 
-borderRadius:16,
+      fontSize:
+        12,
 
-justifyContent:"center",
+      color:
+        "#94A3B8",
 
-alignItems:"center",
+    },
 
-borderWidth:1,
 
-borderColor:"#ECECF5",
+    heading: {
 
-},
+      fontSize:
+        32,
 
+      fontWeight:
+        "700",
 
+      marginTop:
+        3,
 
-titleContainer:{
+      color:
+        "#1F2937",
 
-flex:1,
+    },
 
-marginLeft:15,
 
-},
+    description: {
 
+      color:
+        "#64748B",
 
+      marginTop:
+        15,
 
-date:{
+      marginBottom:
+        10,
 
-fontSize:12,
+      fontSize:
+        14,
 
-color:"#94A3B8",
+    },
 
-},
 
+    iconButton: {
 
+      width:
+        45,
 
-heading:{
+      height:
+        45,
 
-fontSize:32,
+      borderRadius:
+        16,
 
-fontWeight:"700",
+      backgroundColor:
+        "#FFFFFF",
 
-marginTop:3,
+      justifyContent:
+        "center",
 
-color:"#1F2937",
+      alignItems:
+        "center",
 
-},
+      borderWidth:
+        1,
 
+      borderColor:
+        "#ECECF5",
 
+    },
 
-description:{
 
-color:"#64748B",
+    badge: {
 
-marginTop:15,
+      position:
+        "absolute",
 
-marginBottom:10,
+      top:
+        -5,
 
-fontSize:14,
+      right:
+        -5,
 
-},
+      minWidth:
+        20,
 
+      height:
+        20,
 
+      paddingHorizontal:
+        5,
 
+      borderRadius:
+        10,
 
-iconButton:{
+      backgroundColor:
+        "#EF4444",
 
-width:45,
+      alignItems:
+        "center",
 
-height:45,
+      justifyContent:
+        "center",
 
-borderRadius:16,
+      borderWidth:
+        2,
 
-backgroundColor:"#FFFFFF",
+      borderColor:
+        "#F7F8FC",
 
-justifyContent:"center",
+    },
 
-alignItems:"center",
 
-},
+    badgeText: {
 
+      color:
+        "#FFFFFF",
 
+      fontSize:
+        9,
 
-dot:{
+      fontWeight:
+        "800",
 
-position:"absolute",
+    },
 
-top:8,
 
-right:8,
+    searchBox: {
 
-width:8,
+      height:
+        48,
 
-height:8,
+      backgroundColor:
+        "#FFFFFF",
 
-borderRadius:5,
+      borderRadius:
+        16,
 
-backgroundColor:"red",
+      borderWidth:
+        1,
 
-},
+      borderColor:
+        "#ECECF5",
 
+      flexDirection:
+        "row",
 
+      alignItems:
+        "center",
 
+      paddingHorizontal:
+        15,
 
-searchBox:{
+      gap:
+        10,
 
-height:48,
+    },
 
-backgroundColor:"#FFFFFF",
 
-borderRadius:16,
+    input: {
 
-borderWidth:1,
+      flex:
+        1,
 
-borderColor:"#ECECF5",
+    },
 
-flexDirection:"row",
 
-alignItems:"center",
+    profileButton: {
 
-paddingHorizontal:15,
+      marginTop:
+        15,
 
-gap:10,
+      height:
+        60,
 
-},
+      backgroundColor:
+        "#FFFFFF",
 
+      borderRadius:
+        16,
 
+      borderWidth:
+        1,
 
-input:{
+      borderColor:
+        "#ECECF5",
 
-flex:1,
+      flexDirection:
+        "row",
 
-},
+      alignItems:
+        "center",
 
+      paddingHorizontal:
+        10,
 
+      gap:
+        12,
 
+    },
 
 
-profileButton:{
+    avatar: {
 
-marginTop:15,
+      width:
+        44,
 
-height:60,
+      height:
+        44,
 
-backgroundColor:"#FFFFFF",
+      borderRadius:
+        12,
 
-borderRadius:16,
+    },
 
-borderWidth:1,
 
-borderColor:"#ECECF5",
+    name: {
 
-flexDirection:"row",
+      fontWeight:
+        "600",
 
-alignItems:"center",
+    },
 
-paddingHorizontal:10,
 
-gap:12,
+    role: {
 
-},
+      fontSize:
+        12,
 
+      color:
+        "#64748B",
 
+    },
 
-avatar:{
-
-width:44,
-
-height:44,
-
-borderRadius:12,
-
-},
-
-
-
-name:{
-
-fontWeight:"600",
-
-},
-
-
-
-role:{
-
-fontSize:12,
-
-color:"#64748B",
-
-},
-
-
-});
+  });

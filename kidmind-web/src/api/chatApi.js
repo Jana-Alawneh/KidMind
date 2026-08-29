@@ -200,3 +200,103 @@ export const clearChatConversation =
     return response.data;
 
   };
+
+
+export const sendChatAttachment =
+  async (
+    conversationId,
+    file
+  ) => {
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "file",
+      file
+    );
+
+    const response =
+      await api.post(
+        `/chat/conversations/${conversationId}/attachments`,
+        formData,
+        {
+          headers: {
+            "Content-Type":
+              "multipart/form-data",
+          },
+        }
+      );
+
+    return response.data;
+
+  };
+
+
+export const downloadChatAttachment =
+  async (
+    messageId,
+    fileName =
+      "attachment"
+  ) => {
+
+    const response =
+      await api.get(
+        `/chat/attachments/${messageId}/download`,
+        {
+          responseType:
+            "blob",
+        }
+      );
+
+    const blobUrl =
+      window.URL
+        .createObjectURL(
+          response.data
+        );
+
+    const anchor =
+      document.createElement(
+        "a"
+      );
+
+    anchor.href =
+      blobUrl;
+
+    anchor.download =
+      fileName ||
+      "attachment";
+
+    document.body.appendChild(
+      anchor
+    );
+
+    anchor.click();
+    anchor.remove();
+
+    window.setTimeout(
+      () => {
+        window.URL
+          .revokeObjectURL(
+            blobUrl
+          );
+      },
+      1000
+    );
+
+  };
+
+
+export const getChatUserProfile =
+  async (
+    userId
+  ) => {
+
+    const response =
+      await api.get(
+        `/chat/users/${userId}/profile`
+      );
+
+    return response.data;
+
+  };

@@ -19,6 +19,7 @@ import {
   getChildForUser,
   getLinkedChildrenForUser,
   getUserById,
+  getUsersForChild,
 } from "../models/userModel";
 
 import {
@@ -30,6 +31,9 @@ import type {
   AuthenticatedRequest,
 } from "../middleware/authMiddleware";
 
+import {
+  createNotification,
+} from "../models/notificationModel";
 
 const difficulties:
   GameBuilderDifficulty[] = [
@@ -622,7 +626,7 @@ export const createGameBuilderGameController =
         });
 
       }
-
+      
 
       return res.status(201).json({
         message:
@@ -1687,7 +1691,80 @@ export const assignGameBuilderGameController =
 
       }
 
+      if (
+  assignmentType ===
+  "child"
+) {
 
+  try {
+
+    const childUsers =
+      await getUsersForChild(
+        childId
+      );
+
+
+    const parents =
+      childUsers.filter(
+        user =>
+          user.role ===
+            "parent" &&
+          Boolean(
+            user.is_active
+          )
+      );
+
+
+    for (
+      const parent of
+        parents
+    ) {
+
+      await createNotification({
+        userId:
+          Number(
+            parent.id
+          ),
+
+        type:
+          "assigned_game",
+
+        title:
+          "New Assigned Game",
+
+        body:
+          `${therapist.full_name} assigned "${game.title}" to ${child.full_name}.`,
+
+        actorUserId:
+          therapist.id,
+
+        childId:
+          childId,
+
+        entityType:
+          "custom_game",
+
+        entityId:
+          gameId,
+
+        actionPath:
+          "/parent",
+      });
+
+    }
+
+  } catch (
+    notificationError
+  ) {
+
+    console.error(
+      "Failed to create assigned game notification:",
+      notificationError
+    );
+
+  }
+
+}
       return res.status(201).json({
         message:
           assignmentType ===

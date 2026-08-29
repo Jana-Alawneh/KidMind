@@ -60,6 +60,10 @@ export interface UserRow
     | string
     | Date
     | null;
+  last_seen_at:
+    | string
+    | Date
+    | null;
   created_at:
     | string
     | Date;
@@ -86,6 +90,18 @@ export const getAllUsers =
           avatar_url,
           is_active,
           last_login_at,
+          last_seen_at,
+          CASE
+            WHEN
+              last_seen_at IS NOT NULL
+              AND last_seen_at >=
+                DATE_SUB(
+                  CURRENT_TIMESTAMP,
+                  INTERVAL 90 SECOND
+                )
+            THEN 1
+            ELSE 0
+          END AS is_online,
           created_at,
           updated_at
         FROM users
@@ -214,7 +230,54 @@ export const updateLastLogin =
         UPDATE users
         SET
           last_login_at =
+            CURRENT_TIMESTAMP,
+          last_seen_at =
             CURRENT_TIMESTAMP
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+    return result.affectedRows;
+
+  };
+
+
+export const touchUserPresence =
+  async (
+    id: number
+  ) => {
+
+    const [result] =
+      await db.query<ResultSetHeader>(
+        `
+        UPDATE users
+        SET
+          last_seen_at =
+            CURRENT_TIMESTAMP
+        WHERE
+          id = ?
+          AND is_active = 1
+        `,
+        [id]
+      );
+
+    return result.affectedRows;
+
+  };
+
+
+export const clearUserPresence =
+  async (
+    id: number
+  ) => {
+
+    const [result] =
+      await db.query<ResultSetHeader>(
+        `
+        UPDATE users
+        SET
+          last_seen_at = NULL
         WHERE id = ?
         `,
         [id]
@@ -1112,6 +1175,18 @@ export const getTherapistsForUserChildren =
           therapist.region,
           therapist.avatar_url,
           therapist.is_active,
+          therapist.last_seen_at,
+          CASE
+            WHEN
+              therapist.last_seen_at IS NOT NULL
+              AND therapist.last_seen_at >=
+                DATE_SUB(
+                  CURRENT_TIMESTAMP,
+                  INTERVAL 90 SECOND
+                )
+            THEN 1
+            ELSE 0
+          END AS is_online,
           therapist_link.child_id,
           child.full_name
             AS child_name
@@ -1162,6 +1237,18 @@ export const getUsersForChild =
           u.region,
           u.avatar_url,
           u.is_active,
+          u.last_seen_at,
+          CASE
+            WHEN
+              u.last_seen_at IS NOT NULL
+              AND u.last_seen_at >=
+                DATE_SUB(
+                  CURRENT_TIMESTAMP,
+                  INTERVAL 90 SECOND
+                )
+            THEN 1
+            ELSE 0
+          END AS is_online,
           cu.link_type,
           cu.created_at
             AS assigned_at
@@ -1329,4 +1416,3 @@ export const getSelectedLinkedChildren =
     return rows;
 
   };
-

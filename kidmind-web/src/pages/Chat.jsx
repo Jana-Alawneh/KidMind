@@ -3,9 +3,15 @@ import {
   Bell,
   BellOff,
   Check,
+  Download,
+  FileText,
+  Image as ImageIcon,
+  Mail,
+  MapPin,
   MessageCircle,
   MoreVertical,
   Paperclip,
+  Phone,
   Search,
   Send,
   ShieldCheck,
@@ -26,12 +32,19 @@ import {
 } from "react";
 
 import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
   clearChatConversation,
   createChatConversation,
   getChatContacts,
   getChatConversations,
   getChatMessages,
+  getChatUserProfile,
+  downloadChatAttachment,
   markChatConversationRead,
+  sendChatAttachment,
   sendChatMessage,
   setChatConversationMuted,
 } from "../api/chatApi";
@@ -255,7 +268,7 @@ const normalizeConversation =
       Boolean(
         Number(
           conversation
-            .other_user_is_active
+            .other_user_is_online
         )
       ),
     child:
@@ -333,7 +346,12 @@ const normalizeContact =
     avatarUrl:
       contact.avatar_url ||
       null,
-    available: true,
+    available:
+      Boolean(
+        Number(
+          contact.is_online
+        )
+      ),
     child:
       contact.child_name ||
       null,
@@ -368,6 +386,20 @@ const normalizeMessage = (
       ),
   text:
     item.body || "",
+  messageType:
+    item.message_type ||
+    "text",
+  attachmentName:
+    item.attachment_name ||
+    "",
+  attachmentMime:
+    item.attachment_mime ||
+    "",
+  attachmentSize:
+    Number(
+      item.attachment_size ||
+      0
+    ),
   time:
     formatTime(
       item.created_at
@@ -377,6 +409,9 @@ const normalizeMessage = (
 
 
 const Chat = () => {
+  const navigate =
+    useNavigate();
+
   const currentUser =
     useMemo(
       () =>
@@ -444,6 +479,24 @@ const Chat = () => {
     useState(false);
 
   const [
+    profileDetails,
+    setProfileDetails,
+  ] =
+    useState(null);
+
+  const [
+    profileLoading,
+    setProfileLoading,
+  ] =
+    useState(false);
+
+  const [
+    profileError,
+    setProfileError,
+  ] =
+    useState("");
+
+  const [
     showSearch,
     setShowSearch,
   ] =
@@ -480,12 +533,21 @@ const Chat = () => {
     useState(false);
 
   const [
+    uploadingAttachment,
+    setUploadingAttachment,
+  ] =
+    useState(false);
+
+  const [
     error,
     setError,
   ] =
     useState("");
 
   const messagesEndRef =
+    useRef(null);
+
+  const fileInputRef =
     useRef(null);
 
   const menuRef =
@@ -622,6 +684,116 @@ const Chat = () => {
     },
     [
       loadPage,
+    ]
+  );
+
+
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+      if (
+        !showProfile ||
+        !selectedConversation
+          ?.userId
+      ) {
+
+        setProfileDetails(
+          null
+        );
+
+        setProfileError(
+          ""
+        );
+
+        return () => {
+          active =
+            false;
+        };
+
+      }
+
+      const loadProfile =
+        async () => {
+
+          try {
+
+            setProfileLoading(
+              true
+            );
+
+            setProfileError(
+              ""
+            );
+
+            const result =
+              await getChatUserProfile(
+                selectedConversation
+                  .userId
+              );
+
+            if (
+              active
+            ) {
+              setProfileDetails(
+                result
+              );
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              requestError
+            );
+
+            if (
+              active
+            ) {
+
+              setProfileDetails(
+                null
+              );
+
+              setProfileError(
+                requestError
+                  ?.response
+                  ?.data
+                  ?.message ||
+                "Unable to load profile details."
+              );
+
+            }
+
+          } finally {
+
+            if (
+              active
+            ) {
+              setProfileLoading(
+                false
+              );
+            }
+
+          }
+
+        };
+
+      loadProfile();
+
+      return () => {
+        active =
+          false;
+      };
+
+    },
+    [
+      showProfile,
+      selectedConversation
+        ?.userId,
     ]
   );
 
@@ -869,7 +1041,7 @@ const Chat = () => {
   const filteredMessages =
     currentMessages.filter(
       item =>
-        item.text
+        `${item.text || ""} ${item.attachmentName || ""}`
           .toLowerCase()
           .includes(
             conversationSearch
@@ -1067,6 +1239,225 @@ const Chat = () => {
       } finally {
         setSending(false);
       }
+    };
+
+
+  const formatFileSize =
+    bytes => {
+
+      const size =
+        Number(
+          bytes ||
+          0
+        );
+
+      if (
+        size < 1024
+      ) {
+        return `${size} B`;
+      }
+
+      if (
+        size <
+        1024 * 1024
+      ) {
+        return `${(
+          size /
+          1024
+        ).toFixed(1)} KB`;
+      }
+
+      return `${(
+        size /
+        (
+          1024 *
+          1024
+        )
+      ).toFixed(1)} MB`;
+
+    };
+
+
+  const handleAttachmentChange =
+    async event => {
+
+      const file =
+        event.target
+          .files?.[0];
+
+      event.target.value =
+        "";
+
+      if (
+        !file ||
+        !selectedConversation ||
+        selectedConversation
+          .isContact ||
+        uploadingAttachment
+      ) {
+        return;
+      }
+
+      if (
+        file.size >
+        10 *
+          1024 *
+          1024
+      ) {
+
+        setError(
+          "Files must be 10 MB or smaller."
+        );
+
+        return;
+      }
+
+      try {
+
+        setUploadingAttachment(
+          true
+        );
+
+        setError(
+          ""
+        );
+
+        const result =
+          await sendChatAttachment(
+            selectedConversation.id,
+            file
+          );
+
+        const sent =
+          result?.chat_message;
+
+        if (
+          sent
+        ) {
+
+          const normalized =
+            normalizeMessage(
+              sent,
+              currentUser?.id
+            );
+
+          setCurrentMessages(
+            previous => [
+              ...previous,
+              normalized,
+            ]
+          );
+
+          const previewText =
+            sent.message_type ===
+              "image"
+              ? "Image"
+              : `File: ${
+                  sent.attachment_name ||
+                  file.name
+                }`;
+
+          setConversationList(
+            previous =>
+              previous.map(
+                item =>
+                  Number(
+                    item.id
+                  ) ===
+                  Number(
+                    selectedConversation.id
+                  )
+                    ? {
+                        ...item,
+                        lastMessage:
+                          previewText,
+                        lastTime:
+                          normalized.time,
+                        unread: 0,
+                      }
+                    : item
+              )
+          );
+
+          setSelectedConversation(
+            previous => ({
+              ...previous,
+              lastMessage:
+                previewText,
+              lastTime:
+                normalized.time,
+            })
+          );
+
+        }
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          requestError
+            ?.response
+            ?.data
+            ?.message ||
+          (
+            requestError
+              ?.response
+              ?.status ===
+            413
+              ? "File is too large."
+              : "Unable to send file."
+          )
+        );
+
+      } finally {
+
+        setUploadingAttachment(
+          false
+        );
+
+      }
+
+    };
+
+
+  const handleDownloadAttachment =
+    async item => {
+
+      try {
+
+        setError(
+          ""
+        );
+
+        await downloadChatAttachment(
+          item.id,
+          item.attachmentName ||
+            "attachment"
+        );
+
+      } catch (
+        requestError
+      ) {
+
+        console.error(
+          requestError
+        );
+
+        setError(
+          requestError
+            ?.response
+            ?.data
+            ?.message ||
+          "Unable to download file."
+        );
+
+      }
+
     };
 
 
@@ -1698,7 +2089,7 @@ const Chat = () => {
                   </h2>
 
                   <p className="text-[10px] text-[#A0A2B3] mt-1">
-                    {availableItems.length} available contacts
+                    {availableItems.length} contacts
                   </p>
                 </div>
 
@@ -1813,7 +2204,7 @@ const Chat = () => {
                       <p className="text-[10px] text-[#9A9CAF] mt-1">
                         {search
                           ? "Try another search"
-                          : "No available chat contacts"}
+                          : "No chat contacts"}
                       </p>
                     </div>
                   )}
@@ -1877,9 +2268,18 @@ const Chat = () => {
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#303044] text-[14px]">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowProfile(
+                              true
+                            )
+                          }
+                          title="View profile"
+                          className="font-bold text-[#303044] text-[14px] hover:text-[#7C6CFF] transition text-left"
+                        >
                           {selectedConversation.name}
-                        </span>
+                        </button>
 
                         <span
                           className={`
@@ -1924,8 +2324,8 @@ const Chat = () => {
                           `}
                         >
                           {selectedConversation.available
-                            ? "Available"
-                            : "Unavailable"}
+                            ? "Online"
+                            : "Offline"}
                         </span>
                       </div>
                     </div>
@@ -2098,9 +2498,26 @@ const Chat = () => {
                       </div>
                     </div>
 
-                    <span className="text-[9px] font-medium text-[#8B7DF2] bg-white border border-[#ECE7FF] px-2 py-1 rounded-lg">
-                      Child Profile
-                    </span>
+                    {userRole ===
+                      "therapist" &&
+                    selectedConversation.role ===
+                      "Parent" &&
+                    Number(
+                      selectedConversation.childId ||
+                      0
+                    ) > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/children/${selectedConversation.childId}`
+                          )
+                        }
+                        className="text-[9px] font-semibold text-[#8B7DF2] bg-white border border-[#ECE7FF] px-3 py-1.5 rounded-lg hover:bg-[#F4F1FF] hover:border-[#DCD4FF] transition"
+                      >
+                        Child Profile
+                      </button>
+                    ) : null}
                   </div>
                 )}
 
@@ -2194,7 +2611,102 @@ const Chat = () => {
                                   }
                                 `}
                               >
-                                {conversationSearch ? (
+                                {item.attachmentName ? (
+                                  <div
+                                    className={`
+                                      min-w-[220px]
+                                      flex
+                                      items-center
+                                      gap-3
+                                      ${
+                                        item.isMine
+                                          ? "text-white"
+                                          : "text-[#46475B]"
+                                      }
+                                    `}
+                                  >
+                                    <div
+                                      className={`
+                                        w-10
+                                        h-10
+                                        rounded-xl
+                                        shrink-0
+                                        flex
+                                        items-center
+                                        justify-center
+                                        ${
+                                          item.isMine
+                                            ? "bg-white/15"
+                                            : "bg-[#F4F1FF] text-[#7C6CFF]"
+                                        }
+                                      `}
+                                    >
+                                      {item.messageType ===
+                                      "image" ? (
+                                        <ImageIcon
+                                          size={19}
+                                        />
+                                      ) : (
+                                        <FileText
+                                          size={19}
+                                        />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-semibold truncate text-[11px]">
+                                        {
+                                          item.attachmentName
+                                        }
+                                      </p>
+
+                                      <p
+                                        className={`
+                                          text-[9px]
+                                          mt-0.5
+                                          ${
+                                            item.isMine
+                                              ? "text-white/70"
+                                              : "text-[#9A9CAF]"
+                                          }
+                                        `}
+                                      >
+                                        {formatFileSize(
+                                          item.attachmentSize
+                                        )}
+                                      </p>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDownloadAttachment(
+                                          item
+                                        )
+                                      }
+                                      title="Download file"
+                                      className={`
+                                        w-9
+                                        h-9
+                                        rounded-xl
+                                        shrink-0
+                                        flex
+                                        items-center
+                                        justify-center
+                                        transition
+                                        ${
+                                          item.isMine
+                                            ? "bg-white/15 hover:bg-white/25 text-white"
+                                            : "bg-[#F4F1FF] hover:bg-[#ECE7FF] text-[#7C6CFF]"
+                                        }
+                                      `}
+                                    >
+                                      <Download
+                                        size={17}
+                                      />
+                                    </button>
+                                  </div>
+                                ) : conversationSearch ? (
                                   <span>
                                     {item.text
                                       .split(
@@ -2270,13 +2782,41 @@ const Chat = () => {
                 <div className="px-5 lg:px-7 pb-5 pt-2 shrink-0 bg-[#FCFCFE]">
                   <div className="max-w-[900px] mx-auto">
                     <div className="min-h-[58px] bg-white border border-[#E8E8F0] rounded-[18px] flex items-end gap-1.5 px-2.5 py-2 focus-within:border-[#D7D1FF] focus-within:ring-4 focus-within:ring-[#F3F0FF] focus-within:shadow-[0_5px_20px_rgba(124,108,255,.06)] transition-all shadow-[0_4px_16px_rgba(40,40,80,.04)]">
+                      <input
+                        ref={
+                          fileInputRef
+                        }
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.webp"
+                        onChange={
+                          handleAttachmentChange
+                        }
+                      />
+
                       <button
                         type="button"
-                        disabled
-                        title="File attachments will be added next"
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-[#C2C3CD] shrink-0 cursor-not-allowed"
+                        onClick={() =>
+                          fileInputRef
+                            .current
+                            ?.click()
+                        }
+                        disabled={
+                          uploadingAttachment ||
+                          !selectedConversation ||
+                          selectedConversation
+                            .isContact
+                        }
+                        title={
+                          uploadingAttachment
+                            ? "Uploading file..."
+                            : "Send file or report"
+                        }
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-[#8D8FA3] hover:bg-[#F5F3FF] hover:text-[#7C6CFF] disabled:opacity-35 disabled:cursor-not-allowed transition shrink-0"
                       >
-                        <Paperclip size={18} />
+                        <Paperclip
+                          size={18}
+                        />
                       </button>
 
                       <textarea
@@ -2321,9 +2861,11 @@ const Chat = () => {
 
                     <div className="flex items-center justify-between mt-2 px-1">
                       <p className="text-[9px] text-[#A6A8B8]">
-                        {selectedConversation.muted
-                          ? "Notifications are muted"
-                          : "Messages are private and secure"}
+                        {uploadingAttachment
+                          ? "Uploading file..."
+                          : selectedConversation.muted
+                            ? "Notifications are muted"
+                            : "Messages are private and secure"}
                       </p>
 
                       <p className="text-[9px] text-[#A6A8B8]">
@@ -2357,7 +2899,7 @@ const Chat = () => {
       {showProfile &&
         selectedConversation && (
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center p-5 z-[100]"
+            className="fixed inset-0 bg-[#25243A]/30 backdrop-blur-[3px] flex items-center justify-center p-5 z-[100]"
             onClick={() =>
               setShowProfile(
                 false
@@ -2365,12 +2907,12 @@ const Chat = () => {
             }
           >
             <div
-              className="w-full max-w-[380px] bg-white rounded-[24px] border border-[#ECECF4] shadow-[0_25px_70px_rgba(45,40,90,.18)] overflow-hidden"
+              className="w-full max-w-[720px] max-h-[88vh] overflow-y-auto bg-white rounded-[30px] border border-[#E9E9F2] shadow-[0_30px_90px_rgba(45,40,90,.22)]"
               onClick={event =>
                 event.stopPropagation()
               }
             >
-              <div className="h-[105px] bg-gradient-to-br from-[#F4F1FF] to-[#FAFAFF] relative">
+              <div className="relative px-8 pt-8 pb-7 bg-gradient-to-br from-[#F7F4FF] via-white to-[#F6FBFA] border-b border-[#EEEEF5]">
                 <button
                   type="button"
                   onClick={() =>
@@ -2378,122 +2920,386 @@ const Chat = () => {
                       false
                     )
                   }
-                  className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-white/80 text-[#77798E] flex items-center justify-center hover:bg-white hover:text-[#7C6CFF]"
+                  className="absolute right-6 top-6 w-10 h-10 rounded-[14px] bg-white border border-[#E8E8F0] text-[#7C7E91] flex items-center justify-center hover:text-[#7C6CFF] hover:border-[#DCD5FF] transition"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
-              </div>
 
-              <div className="px-6 pb-6">
-                <div className="w-[76px] h-[76px] rounded-[22px] bg-white border border-[#ECECF4] shadow-[0_8px_22px_rgba(60,55,110,.1)] flex items-center justify-center text-[#7C6CFF] -mt-9 relative">
-                  {getAvatar(
-                    selectedConversation
-                  )}
-
-                  {selectedConversation.available && (
-                    <span className="absolute right-1 bottom-1 w-3 h-3 rounded-full bg-[#38C991] border-2 border-white" />
-                  )}
-                </div>
-
-                <div className="mt-4">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-[18px] font-bold text-[#303044]">
-                      {selectedConversation.name}
-                    </h2>
+                <div className="flex items-start gap-5 pr-14">
+                  <div className="w-[92px] h-[92px] rounded-[28px] bg-white border border-[#E8E8F0] shadow-[0_10px_28px_rgba(70,60,130,.11)] flex items-center justify-center text-[#7C6CFF] relative shrink-0">
+                    <div className="scale-[1.35]">
+                      {getAvatar(
+                        selectedConversation
+                      )}
+                    </div>
 
                     <span
                       className={`
-                        px-2
-                        py-1
-                        rounded-md
-                        text-[9px]
-                        font-semibold
-                        ${getRoleStyle(
-                          selectedConversation.role
-                        )}
-                      `}
-                    >
-                      {selectedConversation.role}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-[#9A9CAF] mt-1">
-                    {selectedConversation.email ||
-                      "KidMind user"}
-                  </p>
-                </div>
-
-                <div className="mt-5 space-y-2">
-                  {selectedConversation.child && (
-                    <div className="px-4 py-3 rounded-[15px] bg-[#F8F7FC] border border-[#ECECF4]">
-                      <p className="text-[9px] uppercase tracking-[.1em] font-bold text-[#A0A2B3]">
-                        Child
-                      </p>
-
-                      <p className="text-[12px] font-semibold text-[#46475B] mt-1">
-                        {selectedConversation.child}
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedConversation.phone && (
-                    <div className="px-4 py-3 rounded-[15px] bg-[#F8F7FC] border border-[#ECECF4]">
-                      <p className="text-[9px] uppercase tracking-[.1em] font-bold text-[#A0A2B3]">
-                        Phone
-                      </p>
-
-                      <p className="text-[12px] font-semibold text-[#46475B] mt-1">
-                        {selectedConversation.phone}
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedConversation.region && (
-                    <div className="px-4 py-3 rounded-[15px] bg-[#F8F7FC] border border-[#ECECF4]">
-                      <p className="text-[9px] uppercase tracking-[.1em] font-bold text-[#A0A2B3]">
-                        Region
-                      </p>
-
-                      <p className="text-[12px] font-semibold text-[#46475B] mt-1">
-                        {selectedConversation.region}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="px-4 py-3 rounded-[15px] bg-[#F8F7FC] border border-[#ECECF4] flex items-center justify-between">
-                    <span className="text-[10px] text-[#8F91A4]">
-                      Notifications
-                    </span>
-
-                    <span
-                      className={`
-                        text-[10px]
-                        font-semibold
+                        absolute
+                        right-1
+                        bottom-1
+                        w-4
+                        h-4
+                        rounded-full
+                        border-[3px]
+                        border-white
                         ${
-                          selectedConversation.muted
-                            ? "text-[#D26A78]"
-                            : "text-[#4E9B7B]"
+                          selectedConversation.available
+                            ? "bg-[#35C991]"
+                            : "bg-[#C9CAD4]"
                         }
                       `}
-                    >
-                      {selectedConversation.muted
-                        ? "Muted"
-                        : "Enabled"}
-                    </span>
+                    />
+                  </div>
+
+                  <div className="min-w-0 pt-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h2 className="text-[25px] font-bold text-[#292A3A] leading-tight">
+                        {profileDetails
+                          ?.user
+                          ?.full_name ||
+                          selectedConversation.name}
+                      </h2>
+
+                      <span
+                        className={`
+                          px-3
+                          py-1.5
+                          rounded-full
+                          text-[10px]
+                          font-bold
+                          ${getRoleStyle(
+                            selectedConversation.role
+                          )}
+                        `}
+                      >
+                        {selectedConversation.role}
+                      </span>
+
+                      <span
+                        className={`
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          px-3
+                          py-1.5
+                          rounded-full
+                          text-[10px]
+                          font-bold
+                          ${
+                            selectedConversation.available
+                              ? "bg-[#EAF8F2] text-[#36956F]"
+                              : "bg-[#F1F2F6] text-[#8D8F9E]"
+                          }
+                        `}
+                      >
+                        <span
+                          className={`
+                            w-1.5
+                            h-1.5
+                            rounded-full
+                            ${
+                              selectedConversation.available
+                                ? "bg-[#35C991]"
+                                : "bg-[#B9BAC5]"
+                            }
+                          `}
+                        />
+
+                        {selectedConversation.available
+                          ? "Online"
+                          : "Offline"}
+                      </span>
+                    </div>
+
+                    <p className="text-[12px] text-[#9A9CAF] mt-2">
+                      {selectedConversation.role} ID #
+                      {profileDetails
+                        ?.user
+                        ?.id ||
+                        selectedConversation.userId}
+                    </p>
+
+                    <div className="mt-3">
+                      <span
+                        className={`
+                          inline-flex
+                          items-center
+                          px-3
+                          py-1.5
+                          rounded-[10px]
+                          text-[10px]
+                          font-semibold
+                          ${
+                            Number(
+                              profileDetails
+                                ?.user
+                                ?.is_active ??
+                              1
+                            )
+                              ? "bg-[#F0FAF6] text-[#46916F]"
+                              : "bg-[#FFF0F2] text-[#C55E70]"
+                          }
+                        `}
+                      >
+                        {Number(
+                          profileDetails
+                            ?.user
+                            ?.is_active ??
+                          1
+                        )
+                          ? "Account Active"
+                          : "Account Inactive"}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowProfile(
-                      false
-                    )
-                  }
-                  className="w-full mt-5 h-11 rounded-[14px] bg-[#7C6CFF] text-white text-[11px] font-semibold hover:bg-[#6F60F0] transition"
-                >
-                  Done
-                </button>
+              <div className="px-8 py-7">
+                {profileLoading ? (
+                  <div className="py-14 text-center">
+                    <div className="w-10 h-10 rounded-full border-[3px] border-[#E8E4FF] border-t-[#7C6CFF] animate-spin mx-auto" />
+
+                    <p className="text-[12px] text-[#9294A5] mt-4">
+                      Loading profile details...
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {profileError && (
+                      <div className="mb-5 px-4 py-3 rounded-[14px] bg-[#FFF5F6] border border-[#FFDDE2] text-[11px] text-[#C96272]">
+                        {profileError}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="min-h-[112px] rounded-[18px] bg-[#F9F9FC] border border-[#EEEEF4] px-4 py-4">
+                        <div className="w-8 h-8 rounded-[10px] bg-white text-[#7C6CFF] border border-[#ECEAF7] flex items-center justify-center mb-3">
+                          <Mail size={15} />
+                        </div>
+
+                        <p className="text-[9px] uppercase tracking-[.11em] font-bold text-[#AAABBA]">
+                          Email
+                        </p>
+
+                        <p className="text-[12px] font-semibold text-[#4A4B5C] mt-1 break-all">
+                          {profileDetails
+                            ?.user
+                            ?.email ||
+                            selectedConversation.email ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div className="min-h-[112px] rounded-[18px] bg-[#F9F9FC] border border-[#EEEEF4] px-4 py-4">
+                        <div className="w-8 h-8 rounded-[10px] bg-white text-[#6E9D8A] border border-[#E8F1ED] flex items-center justify-center mb-3">
+                          <Phone size={15} />
+                        </div>
+
+                        <p className="text-[9px] uppercase tracking-[.11em] font-bold text-[#AAABBA]">
+                          Phone
+                        </p>
+
+                        <p className="text-[12px] font-semibold text-[#4A4B5C] mt-1">
+                          {profileDetails
+                            ?.user
+                            ?.phone ||
+                            selectedConversation.phone ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div className="min-h-[112px] rounded-[18px] bg-[#F9F9FC] border border-[#EEEEF4] px-4 py-4">
+                        <div className="w-8 h-8 rounded-[10px] bg-white text-[#D08C71] border border-[#F5ECE8] flex items-center justify-center mb-3">
+                          <MapPin size={15} />
+                        </div>
+
+                        <p className="text-[9px] uppercase tracking-[.11em] font-bold text-[#AAABBA]">
+                          Region
+                        </p>
+
+                        <p className="text-[12px] font-semibold text-[#4A4B5C] mt-1">
+                          {profileDetails
+                            ?.user
+                            ?.region ||
+                            selectedConversation.region ||
+                            "No region"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedConversation.role !==
+                      "Admin" && (
+                      <div className="mt-6 rounded-[22px] border border-[#ECECF4] overflow-hidden">
+                        <div className="px-5 py-4 bg-[#FAFAFD] border-b border-[#ECECF4] flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-[13px] font-bold text-[#3F4052]">
+                              Linked Children
+                            </h3>
+
+                            <p className="text-[10px] text-[#9B9DAC] mt-1">
+                              Children connected to this profile that you are allowed to view.
+                            </p>
+                          </div>
+
+                          <span className="min-w-8 h-8 px-2 rounded-[11px] bg-[#F0ECFF] text-[#7C6CFF] text-[11px] font-bold flex items-center justify-center">
+                            {
+                              (
+                                profileDetails
+                                  ?.linked_children ||
+                                (
+                                  selectedConversation.childId
+                                    ? [
+                                        {
+                                          id:
+                                            selectedConversation.childId,
+                                          full_name:
+                                            selectedConversation.child,
+                                        },
+                                      ]
+                                    : []
+                                )
+                              ).length
+                            }
+                          </span>
+                        </div>
+
+                        <div className="p-5">
+                          {(
+                            profileDetails
+                              ?.linked_children ||
+                            (
+                              selectedConversation.childId
+                                ? [
+                                    {
+                                      id:
+                                        selectedConversation.childId,
+                                      full_name:
+                                        selectedConversation.child,
+                                    },
+                                  ]
+                                : []
+                            )
+                          ).length ? (
+                            <div className="flex flex-wrap gap-2.5">
+                              {(
+                                profileDetails
+                                  ?.linked_children ||
+                                [
+                                  {
+                                    id:
+                                      selectedConversation.childId,
+                                    full_name:
+                                      selectedConversation.child,
+                                  },
+                                ]
+                              ).map(
+                                child => (
+                                  <button
+                                    key={
+                                      child.id
+                                    }
+                                    type="button"
+                                    disabled={
+                                      userRole !==
+                                      "therapist"
+                                    }
+                                    onClick={() => {
+                                      if (
+                                        userRole ===
+                                        "therapist"
+                                      ) {
+                                        setShowProfile(
+                                          false
+                                        );
+
+                                        navigate(
+                                          `/children/${child.id}`
+                                        );
+                                      }
+                                    }}
+                                    className={`
+                                      px-4
+                                      py-2.5
+                                      rounded-[13px]
+                                      bg-[#F2F7FF]
+                                      text-[#5D83B3]
+                                      text-[11px]
+                                      font-semibold
+                                      border
+                                      border-[#E3EDF9]
+                                      ${
+                                        userRole ===
+                                        "therapist"
+                                          ? "hover:bg-[#EAF3FF] cursor-pointer"
+                                          : "cursor-default"
+                                      }
+                                      transition
+                                    `}
+                                  >
+                                    {child.full_name ||
+                                      selectedConversation.child ||
+                                      `Child #${child.id}`}
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-[#9A9CAF]">
+                              No linked children are available for this profile.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-6 flex items-center justify-between gap-4 rounded-[18px] bg-[#F8F7FC] border border-[#ECECF4] px-5 py-4">
+                      <div>
+                        <p className="text-[11px] font-semibold text-[#55566A]">
+                          Chat Notifications
+                        </p>
+
+                        <p className="text-[9px] text-[#9A9CAF] mt-1">
+                          Notification setting for this conversation.
+                        </p>
+                      </div>
+
+                      <span
+                        className={`
+                          px-3
+                          py-1.5
+                          rounded-[10px]
+                          text-[10px]
+                          font-bold
+                          ${
+                            selectedConversation.muted
+                              ? "bg-[#FFF0F2] text-[#C55F70]"
+                              : "bg-[#EAF8F2] text-[#3D956F]"
+                          }
+                        `}
+                      >
+                        {selectedConversation.muted
+                          ? "Muted"
+                          : "Enabled"}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                <div className="mt-7 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowProfile(
+                        false
+                      )
+                    }
+                    className="min-w-[120px] h-11 px-6 rounded-[14px] bg-[#7C6CFF] text-white text-[11px] font-semibold hover:bg-[#6F60F0] transition"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -43,6 +43,11 @@ import {
   updateChild as updateChildInDatabase,
 } from "../models/childModel";
 
+
+import {
+  createNotification,
+} from "../models/notificationModel";
+
 import type {
   AuthenticatedRequest,
 } from "../middleware/authMiddleware";
@@ -3095,6 +3100,68 @@ export const assignUserToChild = async (
         childId,
         user.full_name
       );
+
+    }
+
+
+    if (
+      !result.alreadyLinked &&
+      user.role ===
+        "therapist"
+    ) {
+
+      try {
+
+        const assignedChild =
+          await getChildById(
+            childId
+          );
+
+
+        if (
+          assignedChild
+        ) {
+
+          await createNotification({
+            userId:
+              user.id,
+
+            type:
+              "child_assigned",
+
+            title:
+              "New Child Assigned",
+
+            body:
+              `${assignedChild.full_name} has been assigned to you.`,
+
+            actorUserId:
+              currentUser.id,
+
+            childId,
+
+            entityType:
+              "child",
+
+            entityId:
+              childId,
+
+            actionPath:
+              `/children/${childId}`,
+          });
+
+        }
+
+      } catch (
+        notificationError
+      ) {
+
+        console.error(
+          "Failed to create child assignment notification:",
+          notificationError
+        );
+
+      }
 
     }
 

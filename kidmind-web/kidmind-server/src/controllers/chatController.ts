@@ -2,15 +2,20 @@ import type {
   Response,
 } from "express";
 
+import fs from "fs";
+import path from "path";
+
 import {
   clearConversationForUser,
   createMessage,
+  getConversationById,
   getConversationForUser,
   getConversationMessages,
   getLatestConversationMessage,
   getMessageById,
   getOrCreateConversation,
   getUserConversations,
+  isConversationMutedForUser,
   isUserInConversation,
   markConversationAsRead,
   updateConversationMutedState,
@@ -21,6 +26,7 @@ import {
   getAllUsers,
   getChildForUser,
   getChildrenForUser,
+  getLinkedChildrenForUser,
   getTherapistsForUserChildren,
   getUserById,
   getUsersForChild,
@@ -31,11 +37,35 @@ import type {
   AuthenticatedRequest,
 } from "../middleware/authMiddleware";
 
+import {
+  createNotification,
+} from "../models/notificationModel";
+
+
 type ConversationAccess = {
   conversationType:
     ChatConversationType;
   childId: number;
 };
+
+const removeUploadedFile =
+  (
+    filePath:
+      | string
+      | undefined
+  ) => {
+
+    if (!filePath) {
+      return;
+    }
+
+    fs.unlink(
+      filePath,
+      () => {}
+    );
+
+  };
+
 
 const parsePositiveId = (
   value: unknown
@@ -280,6 +310,240 @@ const resolveConversationAccess =
 
   };
 
+
+const getVisibleProfileChildren =
+  async (
+    currentUser: UserRow,
+    targetUser: UserRow
+  ) => {
+
+    if (
+      currentUser.id ===
+      targetUser.id
+    ) {
+      return null;
+    }
+
+    if (
+      !targetUser.is_active
+    ) {
+      return null;
+    }
+
+    if (
+      currentUser.role ===
+        "admin" &&
+      targetUser.role ===
+        "therapist"
+    ) {
+      return getLinkedChildrenForUser(
+        targetUser.id
+      );
+    }
+
+    if (
+      currentUser.role ===
+        "therapist" &&
+      targetUser.role ===
+        "admin"
+    ) {
+      return [];
+    }
+
+    if (
+      currentUser.role ===
+        "therapist" &&
+      targetUser.role ===
+        "therapist"
+    ) {
+      return [];
+    }
+
+    const isParentTherapistPair =
+      (
+        currentUser.role ===
+          "parent" &&
+        targetUser.role ===
+          "therapist"
+      ) ||
+      (
+        currentUser.role ===
+          "therapist" &&
+        targetUser.role ===
+          "parent"
+      );
+
+    if (
+      !isParentTherapistPair
+    ) {
+      return null;
+    }
+
+    const [
+      currentChildren,
+      targetChildren,
+    ] =
+      await Promise.all([
+        getLinkedChildrenForUser(
+          currentUser.id
+        ),
+        getLinkedChildrenForUser(
+          targetUser.id
+        ),
+      ]);
+
+    const currentChildIds =
+      new Set(
+        currentChildren.map(
+          child =>
+            Number(
+              child.id
+            )
+        )
+      );
+
+    const sharedChildren =
+      targetChildren.filter(
+        child =>
+          currentChildIds.has(
+            Number(
+              child.id
+            )
+          )
+      );
+
+    if (
+      sharedChildren.length ===
+      0
+    ) {
+      return null;
+    }
+
+    return sharedChildren;
+
+  };
+
+
+export const fetchChatUserProfile =
+  async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const currentUser =
+        await getActiveAuthenticatedUser(
+          req,
+          res
+        );
+
+      if (!currentUser) {
+        return;
+      }
+
+      const targetUserId =
+        parsePositiveId(
+          req.params
+            .userId
+        );
+
+      if (!targetUserId) {
+        return res.status(400).json({
+          message:
+            "Invalid user ID",
+        });
+      }
+
+      const targetUser =
+        await getUserById(
+          targetUserId
+        );
+
+      if (!targetUser) {
+        return res.status(404).json({
+          message:
+            "User not found",
+        });
+      }
+
+      const linkedChildren =
+        await getVisibleProfileChildren(
+          currentUser,
+          targetUser
+        );
+
+      if (
+        linkedChildren ===
+        null
+      ) {
+        return res.status(403).json({
+          message:
+            "You are not allowed to view this profile",
+        });
+      }
+
+      return res.json({
+        user: {
+          id:
+            Number(
+              targetUser.id
+            ),
+          full_name:
+            targetUser.full_name,
+          email:
+            targetUser.email,
+          role:
+            targetUser.role,
+          phone:
+            targetUser.phone,
+          region:
+            targetUser.region,
+          avatar_url:
+            targetUser.avatar_url,
+          is_active:
+            Number(
+              targetUser.is_active
+            ),
+        },
+        linked_children:
+          linkedChildren.map(
+            child => ({
+              id:
+                Number(
+                  child.id
+                ),
+              full_name:
+                child.full_name,
+              age:
+                child.age,
+              gender:
+                child.gender,
+              region:
+                child.region,
+              status:
+                child.status,
+            })
+          ),
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Fetch chat user profile error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Server Error",
+      });
+
+    }
+
+  };
+
+
 export const fetchChatContacts =
   async (
     req: AuthenticatedRequest,
@@ -330,6 +594,11 @@ export const fetchChatContacts =
                   item.region,
                 avatar_url:
                   item.avatar_url,
+                is_online:
+                  Number(
+                    item.is_online ||
+                    0
+                  ),
                 role:
                   "therapist",
                 child_id:
@@ -378,6 +647,11 @@ export const fetchChatContacts =
                   item.region,
                 avatar_url:
                   item.avatar_url,
+                is_online:
+                  Number(
+                    item.is_online ||
+                    0
+                  ),
                 role:
                   item.role,
                 child_id: null,
@@ -446,6 +720,11 @@ export const fetchChatContacts =
               childUser.region,
             avatar_url:
               childUser.avatar_url,
+            is_online:
+              Number(
+                childUser.is_online ||
+                0
+              ),
             role:
               "parent",
             child_id:
@@ -493,6 +772,11 @@ export const fetchChatContacts =
                 item.region,
               avatar_url:
                 item.avatar_url,
+              is_online:
+                Number(
+                  item.is_online ||
+                  0
+                ),
               role:
                 item.role,
               child_id: null,
@@ -990,6 +1274,100 @@ export const sendChatMessage =
         message.id
       );
 
+      try {
+
+  const conversation =
+    await getConversationById(
+      conversationId
+    );
+
+
+  if (conversation) {
+
+    const recipientUserId =
+      Number(
+        conversation.participant_one_id
+      ) ===
+      Number(
+        currentUser.id
+      )
+        ? Number(
+            conversation.participant_two_id
+          )
+        : Number(
+            conversation.participant_one_id
+          );
+
+
+    if (
+      recipientUserId > 0 &&
+      recipientUserId !==
+        Number(currentUser.id)
+    ) {
+
+      const recipientMuted =
+        await isConversationMutedForUser(
+          recipientUserId,
+          conversationId
+        );
+
+
+      if (
+        !recipientMuted
+      ) {
+
+        await createNotification({
+          userId:
+            recipientUserId,
+
+          type:
+            "new_message",
+
+          title:
+            "New Message",
+
+          body:
+            `${currentUser.full_name} sent you a new message.`,
+
+          actorUserId:
+            currentUser.id,
+
+          childId:
+            Number(
+              conversation.child_id
+            ) > 0
+              ? Number(
+                  conversation.child_id
+                )
+              : null,
+
+          entityType:
+            "chat_conversation",
+
+          entityId:
+            conversationId,
+
+          actionPath:
+            "/chat",
+        });
+
+      }
+
+    }
+
+  }
+
+} catch (
+  notificationError
+) {
+
+  console.error(
+    "Failed to create chat notification:",
+    notificationError
+  );
+
+}
+
       return res.status(201).json({
         message:
           "Message sent",
@@ -1012,6 +1390,348 @@ export const sendChatMessage =
     }
 
   };
+
+
+export const sendChatAttachment =
+  async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const currentUser =
+        await getActiveAuthenticatedUser(
+          req,
+          res
+        );
+
+      if (!currentUser) {
+
+        removeUploadedFile(
+          req.file?.path
+        );
+
+        return;
+      }
+
+      const conversationId =
+        parsePositiveId(
+          req.params
+            .conversationId
+        );
+
+      if (!conversationId) {
+
+        removeUploadedFile(
+          req.file?.path
+        );
+
+        return res.status(400).json({
+          message:
+            "Invalid conversation ID",
+        });
+      }
+
+      const isMember =
+        await isUserInConversation(
+          currentUser.id,
+          conversationId
+        );
+
+      if (!isMember) {
+
+        removeUploadedFile(
+          req.file?.path
+        );
+
+        return res.status(403).json({
+          message:
+            "You do not have access to this conversation",
+        });
+      }
+
+      const uploadedFile =
+        req.file;
+
+      if (!uploadedFile) {
+
+        return res.status(400).json({
+          message:
+            "Please select a file",
+        });
+      }
+
+      const messageType =
+        uploadedFile.mimetype
+          .startsWith(
+            "image/"
+          )
+          ? "image"
+          : "file";
+
+      const message =
+        await createMessage({
+          conversationId,
+          senderId:
+            currentUser.id,
+          messageType,
+          body:
+            null,
+          attachmentUrl:
+            uploadedFile.filename,
+          attachmentName:
+            uploadedFile.originalname,
+          attachmentMime:
+            uploadedFile.mimetype,
+          attachmentSize:
+            uploadedFile.size,
+        });
+
+      if (!message) {
+
+        removeUploadedFile(
+          uploadedFile.path
+        );
+
+        return res.status(500).json({
+          message:
+            "Failed to send attachment",
+        });
+      }
+
+      await markConversationAsRead(
+        currentUser.id,
+        conversationId,
+        message.id
+      );
+
+      try {
+
+        const conversation =
+          await getConversationById(
+            conversationId
+          );
+
+        if (conversation) {
+
+          const recipientUserId =
+            Number(
+              conversation.participant_one_id
+            ) ===
+            Number(
+              currentUser.id
+            )
+              ? Number(
+                  conversation.participant_two_id
+                )
+              : Number(
+                  conversation.participant_one_id
+                );
+
+          if (
+            recipientUserId > 0 &&
+            recipientUserId !==
+              Number(
+                currentUser.id
+              )
+          ) {
+
+            const recipientMuted =
+              await isConversationMutedForUser(
+                recipientUserId,
+                conversationId
+              );
+
+            if (
+              !recipientMuted
+            ) {
+
+              await createNotification({
+                userId:
+                  recipientUserId,
+                type:
+                  "new_message",
+                title:
+                  "New File",
+                body:
+                  `${currentUser.full_name} sent you "${uploadedFile.originalname}".`,
+                actorUserId:
+                  currentUser.id,
+                childId:
+                  Number(
+                    conversation.child_id
+                  ) > 0
+                    ? Number(
+                        conversation.child_id
+                      )
+                    : null,
+                entityType:
+                  "chat_conversation",
+                entityId:
+                  conversationId,
+                actionPath:
+                  "/chat",
+              });
+
+            }
+
+          }
+
+        }
+
+      } catch (
+        notificationError
+      ) {
+
+        console.error(
+          "Failed to create attachment notification:",
+          notificationError
+        );
+
+      }
+
+      return res.status(201).json({
+        message:
+          "Attachment sent",
+        chat_message:
+          message,
+      });
+
+    } catch (error) {
+
+      removeUploadedFile(
+        req.file?.path
+      );
+
+      console.error(
+        "Send chat attachment error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Server Error",
+      });
+
+    }
+
+  };
+
+
+export const downloadChatAttachment =
+  async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+
+    try {
+
+      const currentUser =
+        await getActiveAuthenticatedUser(
+          req,
+          res
+        );
+
+      if (!currentUser) {
+        return;
+      }
+
+      const messageId =
+        parsePositiveId(
+          req.params
+            .messageId
+        );
+
+      if (!messageId) {
+
+        return res.status(400).json({
+          message:
+            "Invalid message ID",
+        });
+      }
+
+      const message =
+        await getMessageById(
+          messageId
+        );
+
+      if (
+        !message ||
+        !message.attachment_url
+      ) {
+
+        return res.status(404).json({
+          message:
+            "Attachment not found",
+        });
+      }
+
+      const isMember =
+        await isUserInConversation(
+          currentUser.id,
+          Number(
+            message.conversation_id
+          )
+        );
+
+      if (!isMember) {
+
+        return res.status(403).json({
+          message:
+            "You do not have access to this attachment",
+        });
+      }
+
+      const safeStoredName =
+        path.basename(
+          message.attachment_url
+        );
+
+      const absolutePath =
+        path.join(
+          path.resolve(
+            process.cwd(),
+            "uploads",
+            "chat"
+          ),
+          safeStoredName
+        );
+
+      if (
+        !fs.existsSync(
+          absolutePath
+        )
+      ) {
+
+        return res.status(404).json({
+          message:
+            "Attachment file is missing",
+        });
+      }
+
+      return res.download(
+        absolutePath,
+        message.attachment_name ||
+          safeStoredName
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Download chat attachment error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Server Error",
+      });
+
+    }
+
+  };
+
 
 export const markChatConversationRead =
   async (

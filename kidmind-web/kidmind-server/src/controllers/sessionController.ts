@@ -36,24 +36,16 @@ import {
 import {
   getChildForUser,
   getUserById,
+  getUsersForChild,
 } from "../models/userModel";
 
 import {
-  getGameBuilderAssignments,
-  getGameBuilderGameById,
-} from "../models/gameBuilderModel";
+  createNotification,
+} from "../models/notificationModel";
 
 import type {
   AuthenticatedRequest,
 } from "../middleware/authMiddleware";
-
-
-type SessionGameWithCustomId =
-  SessionGameInput & {
-    custom_game_id?:
-      | number
-      | null;
-  };
 
 
 const getSessionDetails = async (
@@ -178,6 +170,108 @@ const isFinishedGameStatus = (
   ].includes(status);
 
 };
+
+
+const createSessionCompletedNotifications =
+  async ({
+    actorUserId,
+    childId,
+    sessionId,
+    score,
+  }: {
+    actorUserId: number;
+    childId: number;
+    sessionId: number;
+    score: number;
+  }) => {
+
+    try {
+
+      const [
+        child,
+        childUsers,
+      ] =
+        await Promise.all([
+          getChildById(
+            childId
+          ),
+          getUsersForChild(
+            childId
+          ),
+        ]);
+
+
+      if (!child) {
+        return;
+      }
+
+
+      const recipients =
+        childUsers.filter(
+          user =>
+            Boolean(
+              user.is_active
+            ) &&
+            (
+              user.role ===
+                "parent" ||
+              user.role ===
+                "therapist"
+            )
+        );
+
+
+      for (
+        const recipient of
+          recipients
+      ) {
+
+        await createNotification({
+          userId:
+            Number(
+              recipient.id
+            ),
+
+          type:
+            "session_completed",
+
+          title:
+            "Session Completed",
+
+          body:
+            `${child.full_name} completed Session #${sessionId} with a score of ${score}%.`,
+
+          actorUserId,
+
+          childId,
+
+          entityType:
+            "session",
+
+          entityId:
+            sessionId,
+
+          actionPath:
+            recipient.role ===
+              "parent"
+              ? "/parent"
+              : `/sessions/${sessionId}`,
+        });
+
+      }
+
+    } catch (
+      notificationError
+    ) {
+
+      console.error(
+        "Failed to create session completed notifications:",
+        notificationError
+      );
+
+    }
+
+  };
 
 
 export const fetchAllSessions = async (
@@ -604,173 +698,54 @@ export const createSession = async (
 
               difficulty:
                 req.body.difficulty,
-
-              custom_game_id:
-                req.body.custom_game_id,
             },
           ];
 
 
     const games:
-      SessionGameWithCustomId[] =
-        [];
+      SessionGameInput[] =
+        rawGames.map(
+          (
+            game: {
+              game_name?: unknown;
+              difficulty?: unknown;
+              custom_game_id?: unknown;
+            }
+          ) => {
 
-
-    for (
-      const rawGame of
-      rawGames
-    ) {
-
-      const customGameId =
-        rawGame
-          ?.custom_game_id ===
-          undefined ||
-        rawGame
-          ?.custom_game_id ===
-          null ||
-        rawGame
-          ?.custom_game_id ===
-          ""
-          ? null
-          : Number(
-              rawGame
-                .custom_game_id
-            );
-
-
-      if (
-        customGameId !== null
-      ) {
-
-        if (
-          !Number.isInteger(
-            customGameId
-          ) ||
-          customGameId <= 0
-        ) {
-
-          return res.status(400).json({
-            message:
-              "Invalid custom game ID",
-          });
-
-        }
-
-
-        if (
-          req.auth.role !==
-          "therapist"
-        ) {
-
-          return res.status(403).json({
-            message:
-              "Only therapists can start custom assigned games",
-          });
-
-        }
-
-
-        const customGame =
-          await getGameBuilderGameById(
-            customGameId,
-            req.auth.id
-          );
-
-
-        if (!customGame) {
-
-          return res.status(404).json({
-            message:
-              "Custom game not found",
-          });
-
-        }
-
-
-        const assignments =
-          await getGameBuilderAssignments(
-            customGameId,
-            req.auth.id
-          );
-
-
-        const assignedToChild =
-          assignments.some(
-            (assignment) =>
-              assignment
-                .assignment_type ===
-                "child" &&
+            const parsedCustomGameId =
               Number(
-                assignment.child_id
-              ) ===
-                childId
-          );
+                game.custom_game_id
+              );
 
 
-        if (
-          !assignedToChild
-        ) {
+            return {
 
-          return res.status(403).json({
-            message:
-              "This game is not assigned to this child",
-          });
+              game_name:
+                typeof game.game_name ===
+                "string"
+                  ? game.game_name.trim()
+                  : "",
 
-        }
+              difficulty:
+                typeof game.difficulty ===
+                  "string" &&
+                game.difficulty.trim()
+                  ? game.difficulty.trim()
+                  : null,
 
+              custom_game_id:
+                Number.isInteger(
+                  parsedCustomGameId
+                ) &&
+                parsedCustomGameId > 0
+                  ? parsedCustomGameId
+                  : null,
 
-        games.push({
-          game_name:
-            customGame.title,
+            };
 
-          difficulty:
-            customGame.difficulty ||
-            null,
-
-          custom_game_id:
-            customGameId,
-        });
-
-
-        continue;
-
-      }
-
-
-      const gameName =
-        typeof rawGame
-          ?.game_name ===
-          "string"
-          ? rawGame
-              .game_name
-              .trim()
-          : "";
-
-
-      const difficulty =
-        typeof rawGame
-          ?.difficulty ===
-          "string" &&
-        rawGame
-          .difficulty
-          .trim()
-          ? rawGame
-              .difficulty
-              .trim()
-          : null;
-
-
-      games.push({
-        game_name:
-          gameName,
-
-        difficulty,
-
-        custom_game_id:
-          null,
-      });
-
-    }
+          }
+        );
 
 
     const invalidGame =
@@ -1320,6 +1295,23 @@ export const completeSession = async (
       await getSessionDetails(
         id
       );
+
+
+    await createSessionCompletedNotifications({
+      actorUserId:
+        req.auth.id,
+
+      childId:
+        Number(
+          (currentSession as any).child_id
+        ),
+
+      sessionId:
+        id,
+
+      score:
+        score,
+    });
 
 
     return res.json({
@@ -2054,6 +2046,11 @@ export const completeSessionGame = async (
       false;
 
 
+    let finalSessionScore:
+      number | null =
+        null;
+
+
     if (
       remainingGames ===
       0
@@ -2065,6 +2062,10 @@ export const completeSessionGame = async (
             summary?.average_score
           ) || 0
         );
+
+
+      finalSessionScore =
+        averageScore;
 
 
       const totalGameDuration =
@@ -2108,6 +2109,29 @@ export const completeSessionGame = async (
       await getSessionDetails(
         sessionId
       );
+
+
+    if (
+      allGamesCompleted
+    ) {
+
+      await createSessionCompletedNotifications({
+        actorUserId:
+          req.auth.id,
+
+        childId:
+          Number(
+            (session as any).child_id
+          ),
+
+        sessionId,
+
+        score:
+          finalSessionScore ??
+          score,
+      });
+
+    }
 
 
     return res.json({

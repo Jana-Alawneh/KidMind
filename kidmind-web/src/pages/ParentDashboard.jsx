@@ -544,6 +544,13 @@ export default function ParentDashboard() {
 
 
   const [
+    unreadCount,
+    setUnreadCount,
+  ] =
+    useState(0);
+
+
+  const [
     selectedReport,
     setSelectedReport,
   ] =
@@ -705,6 +712,93 @@ export default function ParentDashboard() {
     () => {
 
       loadData();
+
+    },
+    []
+  );
+
+
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+
+      const loadUnreadCount =
+        async () => {
+
+          try {
+
+            const response =
+              await api.get(
+                "/notifications/unread-count"
+              );
+
+
+            if (active) {
+
+              setUnreadCount(
+                Number(
+                  response.data
+                    ?.unread_count ||
+                  0
+                )
+              );
+
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              "Unable to load notification count:",
+              requestError
+            );
+
+          }
+
+        };
+
+
+      loadUnreadCount();
+
+
+      const interval =
+        window.setInterval(
+          loadUnreadCount,
+          30000
+        );
+
+
+      const handleNotificationUpdate =
+        () => {
+          loadUnreadCount();
+        };
+
+
+      window.addEventListener(
+        "kidmind-notifications-updated",
+        handleNotificationUpdate
+      );
+
+
+      return () => {
+
+        active =
+          false;
+
+        window.clearInterval(
+          interval
+        );
+
+        window.removeEventListener(
+          "kidmind-notifications-updated",
+          handleNotificationUpdate
+        );
+
+      };
 
     },
     []
@@ -2850,6 +2944,20 @@ export default function ParentDashboard() {
                       }
 
 
+                      if (
+                        item.key ===
+                        "notifications"
+                      ) {
+
+                        navigate(
+                          "/notifications"
+                        );
+
+                        return;
+
+                      }
+
+
                       setActiveSection(
                         item.key
                       );
@@ -2860,11 +2968,30 @@ export default function ParentDashboard() {
                       size={19}
                     />
 
-                    <span>
+                    <span className="parent-nav-title">
                       {
                         item.title
                       }
                     </span>
+
+
+                    {
+                      item.key ===
+                        "notifications" &&
+                      unreadCount >
+                        0 && (
+
+                        <span className="parent-nav-badge">
+                          {
+                            unreadCount >
+                            99
+                              ? "99+"
+                              : unreadCount
+                          }
+                        </span>
+
+                      )
+                    }
                   </button>
                 );
 
@@ -2909,12 +3036,50 @@ export default function ParentDashboard() {
           </div>
 
 
-          <div className="topbar-avatar">
-            {
-              getInitials(
-                currentUser.full_name
-              )
-            }
+          <div className="parent-topbar-actions">
+
+            <button
+              className="parent-notification-button"
+              onClick={() =>
+                navigate(
+                  "/notifications"
+                )
+              }
+              aria-label="Open notifications"
+            >
+
+              <Bell
+                size={20}
+              />
+
+
+              {
+                unreadCount >
+                  0 && (
+
+                  <span className="parent-topbar-badge">
+                    {
+                      unreadCount >
+                      99
+                        ? "99+"
+                        : unreadCount
+                    }
+                  </span>
+
+                )
+              }
+
+            </button>
+
+
+            <div className="topbar-avatar">
+              {
+                getInitials(
+                  currentUser.full_name
+                )
+              }
+            </div>
+
           </div>
 
         </div>
@@ -3326,6 +3491,31 @@ export default function ParentDashboard() {
           );
         }
 
+        .parent-nav-title {
+          flex: 1;
+          text-align: left;
+        }
+
+        .parent-nav-badge {
+          min-width: 23px;
+          height: 23px;
+          padding: 0 6px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: #7C6CFF;
+          font-size: 10px;
+          font-weight: 800;
+          line-height: 1;
+        }
+
+        .parent-sidebar nav button.active .parent-nav-badge {
+          color: #6D5BC8;
+          background: white;
+        }
+
         .parent-logout {
           margin-top: auto;
           color: #c1536e;
@@ -3378,6 +3568,49 @@ export default function ParentDashboard() {
         .parent-topbar strong {
           margin-top: 2px;
           font-size: 13px;
+        }
+
+        .parent-topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .parent-notification-button {
+          width: 41px;
+          height: 41px;
+          position: relative;
+          border: 1px solid #E8E5F4;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          color: #6D5BC8;
+          background: white;
+          transition: .18s ease;
+        }
+
+        .parent-notification-button:hover {
+          background: #F6F3FF;
+          border-color: #DDD7F7;
+        }
+
+        .parent-topbar-badge {
+          min-width: 20px;
+          height: 20px;
+          padding: 0 5px;
+          position: absolute;
+          top: -7px;
+          right: -7px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white !important;
+          background: #7C6CFF;
+          border: 2px solid white;
+          font-size: 9px !important;
+          font-weight: 800;
+          line-height: 1;
         }
 
         .topbar-avatar {
