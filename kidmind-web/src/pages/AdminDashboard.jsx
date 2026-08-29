@@ -17,6 +17,7 @@ import {
   Users,
   UserRoundCog,
   Link2,
+  BrainCircuit,
 } from "lucide-react";
 
 import {
@@ -30,6 +31,7 @@ import AdminTherapists from "../components/admin/AdminTherapists";
 import AdminAssignments from "../components/admin/AdminAssignments";
 import AdminReports from "../components/admin/AdminReports";
 import AdminSettings from "../components/admin/AdminSettings";
+import AdminAIInsights from "../components/admin/AdminAIInsights";
 
 
 const menu = [
@@ -64,9 +66,19 @@ const menu = [
     icon: FileText,
   },
   {
+  key: "ai-insights",
+  title: "AI Insights",
+  icon: BrainCircuit,
+},
+  {
     key: "messages",
     title: "Messages",
     icon: MessageCircle,
+  },
+  {
+    key: "notifications",
+    title: "Notifications",
+    icon: Bell,
   },
   {
     key: "feedback",
@@ -150,6 +162,12 @@ export default function AdminDashboard() {
     error,
     setError,
   ] = useState("");
+
+
+  const [
+    unreadCount,
+    setUnreadCount,
+  ] = useState(0);
 
 
   const [
@@ -330,6 +348,93 @@ export default function AdminDashboard() {
     () => {
 
       loadDashboard();
+
+    },
+    []
+  );
+
+
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+
+      const loadUnreadCount =
+        async () => {
+
+          try {
+
+            const response =
+              await api.get(
+                "/notifications/unread-count"
+              );
+
+
+            if (active) {
+
+              setUnreadCount(
+                Number(
+                  response.data
+                    ?.unread_count ||
+                  0
+                )
+              );
+
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              "Unable to load notification count:",
+              requestError
+            );
+
+          }
+
+        };
+
+
+      loadUnreadCount();
+
+
+      const interval =
+        window.setInterval(
+          loadUnreadCount,
+          30000
+        );
+
+
+      const handleNotificationUpdate =
+        () => {
+          loadUnreadCount();
+        };
+
+
+      window.addEventListener(
+        "kidmind-notifications-updated",
+        handleNotificationUpdate
+      );
+
+
+      return () => {
+
+        active =
+          false;
+
+        window.clearInterval(
+          interval
+        );
+
+        window.removeEventListener(
+          "kidmind-notifications-updated",
+          handleNotificationUpdate
+        );
+
+      };
 
     },
     []
@@ -1336,6 +1441,20 @@ export default function AdminDashboard() {
                       }
 
 
+                      if (
+                        item.key ===
+                        "notifications"
+                      ) {
+
+                        navigate(
+                          "/notifications"
+                        );
+
+                        return;
+
+                      }
+
+
                       setActiveSection(
                         item.key
                       );
@@ -1347,11 +1466,30 @@ export default function AdminDashboard() {
                       size={19}
                     />
 
-                    <span>
+                    <span className="admin-nav-title">
                       {
                         item.title
                       }
                     </span>
+
+
+                    {
+                      item.key ===
+                        "notifications" &&
+                      unreadCount >
+                        0 && (
+
+                        <span className="admin-nav-badge">
+                          {
+                            unreadCount >
+                            99
+                              ? "99+"
+                              : unreadCount
+                          }
+                        </span>
+
+                      )
+                    }
 
                   </button>
 
@@ -1402,11 +1540,36 @@ export default function AdminDashboard() {
           </div>
 
 
-          <button className="notification-button">
+          <button
+            className="notification-button"
+            onClick={() =>
+              navigate(
+                "/notifications"
+              )
+            }
+            aria-label="Open notifications"
+          >
 
             <Bell
               size={20}
             />
+
+
+            {
+              unreadCount >
+                0 && (
+
+                <span className="header-notification-badge">
+                  {
+                    unreadCount >
+                    99
+                      ? "99+"
+                      : unreadCount
+                  }
+                </span>
+
+              )
+            }
 
           </button>
 
@@ -1416,28 +1579,31 @@ export default function AdminDashboard() {
         <div className="admin-content">
 
           {
-            activeSection ===
-              "overview"
-              ? renderOverview()
+activeSection ===
+  "overview"
+  ? renderOverview()
+  : activeSection ===
+    "children"
+    ? <AdminChildren />
+    : activeSection ===
+      "parents"
+      ? <AdminParents />
+      : activeSection ===
+        "therapists"
+        ? <AdminTherapists />
+        : activeSection ===
+          "assignments"
+          ? <AdminAssignments />
+          : activeSection ===
+            "reports"
+            ? <AdminReports />
+            : activeSection ===
+              "ai-insights"
+              ? <AdminAIInsights />
               : activeSection ===
-                "children"
-                ? <AdminChildren />
-                : activeSection ===
-                  "parents"
-                  ? <AdminParents />
-                  : activeSection ===
-                    "therapists"
-                    ? <AdminTherapists />
-                    : activeSection ===
-                      "assignments"
-                      ? <AdminAssignments />
-                      : activeSection ===
-                        "reports"
-                        ? <AdminReports />
-                        : activeSection ===
-                          "settings"
-                          ? (
-                            <AdminSettings
+                "settings"
+                ? (
+                  <AdminSettings
                               onProfileUpdated={
                                 updatedUser =>
                                   setCurrentUser(
@@ -1582,6 +1748,26 @@ export default function AdminDashboard() {
           font-weight: 600;
         }
 
+        .admin-nav-title {
+          flex: 1;
+          text-align: left;
+        }
+
+        .admin-nav-badge {
+          min-width: 23px;
+          height: 23px;
+          padding: 0 6px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: #7C6CFF;
+          font-size: 10px;
+          font-weight: 800;
+          line-height: 1;
+        }
+
         .admin-logout {
           height: 44px;
           border: 0;
@@ -1638,6 +1824,7 @@ export default function AdminDashboard() {
         .notification-button {
           width: 42px;
           height: 42px;
+          position: relative;
           border-radius: 13px;
           border: 1px solid #ECECF4;
           display: grid;
@@ -1645,6 +1832,32 @@ export default function AdminDashboard() {
           color: #757991;
           background: white;
           cursor: pointer;
+          transition: .18s ease;
+        }
+
+        .notification-button:hover {
+          color: #7465E8;
+          background: #F8F6FF;
+          border-color: #DED8FF;
+        }
+
+        .header-notification-badge {
+          min-width: 20px;
+          height: 20px;
+          padding: 0 5px;
+          position: absolute;
+          top: -7px;
+          right: -7px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: #7C6CFF;
+          border: 2px solid white;
+          font-size: 9px;
+          font-weight: 800;
+          line-height: 1;
         }
 
         .admin-content {

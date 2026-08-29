@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Users,
@@ -11,331 +12,418 @@ import {
   LogOut,
 } from "lucide-react";
 
-import { NavLink } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  NavLink,
+} from "react-router-dom";
+
+import api from "../../services/api";
 
 
 const menu = [
 
   {
-    title: "Dashboard",
-    icon: <LayoutDashboard size={19} />,
-    path: "/",
+    title:
+      "Dashboard",
+    icon:
+      <LayoutDashboard
+        size={19}
+      />,
+    path:
+      "/",
   },
 
   {
-    title: "Children",
-    icon: <Users size={19} />,
-    path: "/children",
+    title:
+      "Children",
+    icon:
+      <Users
+        size={19}
+      />,
+    path:
+      "/children",
   },
 
   {
-    title: "Sessions",
-    icon: <CalendarDays size={19} />,
-    path: "/sessions",
+    title:
+      "Sessions",
+    icon:
+      <CalendarDays
+        size={19}
+      />,
+    path:
+      "/sessions",
   },
 
   {
-    title: "Game Builder",
-    icon: <Gamepad2 size={19} />,
-    path: "/games",
+    title:
+      "Game Builder",
+    icon:
+      <Gamepad2
+        size={19}
+      />,
+    path:
+      "/games",
   },
 
   {
-    title: "Reports",
-    icon: <FileText size={19} />,
-    path: "/reports",
+    title:
+      "Reports",
+    icon:
+      <FileText
+        size={19}
+      />,
+    path:
+      "/reports",
   },
 
   {
-    title: "AI Assistant",
-    icon: <Bot size={19} />,
-    path: "/ai",
+    title:
+      "AI Assistant",
+    icon:
+      <Bot
+        size={19}
+      />,
+    path:
+      "/ai",
   },
 
   {
-    title: "Therapist Chat",
-    icon: <MessageCircle size={19} />,
-    path: "/chat",
+    title:
+      "Therapist Chat",
+    icon:
+      <MessageCircle
+        size={19}
+      />,
+    path:
+      "/chat",
   },
 
   {
-    title: "Notifications",
-    icon: <Bell size={19} />,
-    path: "/notifications",
+    title:
+      "Notifications",
+    icon:
+      <Bell
+        size={19}
+      />,
+    path:
+      "/notifications",
   },
 
   {
-    title: "Settings",
-    icon: <Settings size={19} />,
-    path: "/settings",
+    title:
+      "Settings",
+    icon:
+      <Settings
+        size={19}
+      />,
+    path:
+      "/settings",
   },
 
 ];
 
 
-
 const Sidebar = () => {
 
+  const [
+    unreadCount,
+    setUnreadCount,
+  ] = useState(0);
 
-return (
 
-<aside
+  useEffect(() => {
 
-className="
-w-[270px]
-h-screen
+    let active = true;
 
-bg-white/80
 
-backdrop-blur-xl
+    const loadUnreadCount =
+      async () => {
 
-border-r
-border-[#ECECF5]
+        try {
 
-shadow-[0_10px_40px_rgba(124,108,255,.08)]
+          const response =
+            await api.get(
+              "/notifications/unread-count"
+            );
 
-flex
-flex-col
 
-px-5
-py-4
+          if (active) {
 
-"
+            setUnreadCount(
+              Number(
+                response
+                  .data
+                  ?.unread_count ||
+                0
+              )
+            );
 
->
+          }
 
+        } catch (
+          error
+        ) {
 
-{/* Logo */}
+          console.error(
+            "Failed to load notification count:",
+            error
+          );
 
-<div
+        }
 
-className="
-flex
-justify-center
-mb-5
-"
+      };
 
->
 
-<img
+    loadUnreadCount();
 
-src="/logo.png"
 
-alt="KidMind Logo"
+    const interval =
+      window.setInterval(
+        loadUnreadCount,
+        30000
+      );
 
-className="
-w-60
-h-60
-object-contain
-"
 
-/>
+    const handleUpdate =
+      () => {
 
+        loadUnreadCount();
 
-</div>
+      };
 
 
+    window.addEventListener(
+      "kidmind-notifications-updated",
+      handleUpdate
+    );
 
 
-{/* Menu */}
+    return () => {
 
-<nav
+      active = false;
 
-className="
-flex-1
-space-y-1
+      window.clearInterval(
+        interval
+      );
 
-"
-
->
-
-
-{
-
-menu.map((item)=>(
-
-
-<NavLink
-
-key={item.title}
-
-to={item.path}
-
-
-className={({isActive}) =>
-
-`
-
-group
-
-relative
-
-flex
-
-items-center
-
-gap-3
-
-h-11
-
-px-4
-
-rounded-[16px]
-
-transition-all
-
-duration-300
-
-
-${
-isActive
-
-?
-
-"bg-[#F2EEFF] text-[#7C6CFF] shadow-sm"
-
-:
-
-"text-[#8E91A8] hover:bg-[#F8F8FC] hover:text-[#7C6CFF]"
-
-}
-
-`
-
-}
-
-
->
-
-
-{({isActive}) => (
-
-<>
-
-
-{
-isActive &&
-
-<div
-
-className="
-absolute
-left-0
-top-2
-bottom-2
-w-1
-rounded-full
-bg-[#7C6CFF]
-"
-
-/>
-
-}
-
-
-
-<span>
-
-{item.icon}
-
-</span>
-
-
-
-<span
-
-className="
-font-medium
-text-[14px]
-"
-
->
-
-{item.title}
-
-</span>
-
-
-
-</>
-
-)}
-
-
-
-</NavLink>
-
-
-))
-
-}
-
-
-</nav>
-
-
-
-
-
-{/* Logout */}
-
-<button
-
-className="
-
-mt-3
-
-flex
-
-items-center
-
-gap-3
-
-h-11
-
-px-4
-
-rounded-[16px]
-
-text-red-500
-
-hover:bg-red-50
-
-transition-all
-
-duration-300
-
-"
-
->
-
-
-<LogOut size={19}/>
-
-
-<span
-
-className="
-font-medium
-text-[14px]
-"
-
->
-
-Logout
-
-</span>
-
-
-</button>
-
-
-
-</aside>
-
-
-);
-
+      window.removeEventListener(
+        "kidmind-notifications-updated",
+        handleUpdate
+      );
+
+    };
+
+  }, []);
+
+
+  return (
+
+    <aside
+      className="
+        w-[270px]
+        h-screen
+        bg-white/80
+        backdrop-blur-xl
+        border-r
+        border-[#ECECF5]
+        shadow-[0_10px_40px_rgba(124,108,255,.08)]
+        flex
+        flex-col
+        px-5
+        py-4
+      "
+    >
+
+      <div
+        className="
+          flex
+          justify-center
+          mb-5
+        "
+      >
+
+        <img
+          src="/logo.png"
+          alt="KidMind Logo"
+          className="
+            w-60
+            h-60
+            object-contain
+          "
+        />
+
+      </div>
+
+
+      <nav
+        className="
+          flex-1
+          space-y-1
+        "
+      >
+
+        {
+          menu.map(
+            item => (
+
+              <NavLink
+                key={
+                  item.title
+                }
+                to={
+                  item.path
+                }
+                className={({
+                  isActive,
+                }) => `
+                  group
+                  relative
+                  flex
+                  items-center
+                  gap-3
+                  h-11
+                  px-4
+                  rounded-[16px]
+                  transition-all
+                  duration-300
+                  ${
+                    isActive
+                      ? "bg-[#F2EEFF] text-[#7C6CFF] shadow-sm"
+                      : "text-[#8E91A8] hover:bg-[#F8F8FC] hover:text-[#7C6CFF]"
+                  }
+                `}
+              >
+
+                {({
+                  isActive,
+                }) => (
+
+                  <>
+
+                    {
+                      isActive && (
+
+                        <div
+                          className="
+                            absolute
+                            left-0
+                            top-2
+                            bottom-2
+                            w-1
+                            rounded-full
+                            bg-[#7C6CFF]
+                          "
+                        />
+
+                      )
+                    }
+
+
+                    <span>
+                      {
+                        item.icon
+                      }
+                    </span>
+
+
+                    <span
+                      className="
+                        font-medium
+                        text-[14px]
+                        flex-1
+                      "
+                    >
+                      {
+                        item.title
+                      }
+                    </span>
+
+
+                    {
+                      item.path ===
+                        "/notifications" &&
+                      unreadCount >
+                        0 && (
+
+                        <span
+                          className="
+                            min-w-6
+                            h-6
+                            px-1.5
+                            rounded-full
+                            bg-[#7C6CFF]
+                            text-white
+                            text-[11px]
+                            font-bold
+                            flex
+                            items-center
+                            justify-center
+                          "
+                        >
+                          {
+                            unreadCount >
+                            99
+                              ? "99+"
+                              : unreadCount
+                          }
+                        </span>
+
+                      )
+                    }
+
+                  </>
+
+                )}
+
+              </NavLink>
+
+            )
+          )
+        }
+
+      </nav>
+
+
+      <button
+        className="
+          mt-3
+          flex
+          items-center
+          gap-3
+          h-11
+          px-4
+          rounded-[16px]
+          text-red-500
+          hover:bg-red-50
+          transition-all
+          duration-300
+        "
+      >
+
+        <LogOut
+          size={19}
+        />
+
+
+        <span
+          className="
+            font-medium
+            text-[14px]
+          "
+        >
+          Logout
+        </span>
+
+      </button>
+
+    </aside>
+
+  );
 
 };
 

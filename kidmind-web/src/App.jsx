@@ -1,5 +1,7 @@
+
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -7,6 +9,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import api from "./services/api";
@@ -30,6 +33,178 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
 import Chat from "./pages/Chat";
+import Notifications from "./pages/Notifications";
+
+
+const sendPresenceOffline =
+  token => {
+
+    if (!token) {
+      return;
+    }
+
+
+    const baseUrl =
+      String(
+        api.defaults.baseURL ||
+        "http://localhost:5000"
+      ).replace(
+        /\/$/,
+        ""
+      );
+
+
+    fetch(
+      `${baseUrl}/users/presence/offline`,
+      {
+        method:
+          "POST",
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
+        keepalive:
+          true,
+      }
+    ).catch(
+      () => {}
+    );
+
+  };
+
+
+function PresenceTracker() {
+
+  const location =
+    useLocation();
+
+  const previousTokenRef =
+    useRef(null);
+
+
+  useEffect(
+    () => {
+
+      const token =
+        sessionStorage.getItem(
+          "kidmind_token"
+        );
+
+
+      const previousToken =
+        previousTokenRef.current;
+
+
+      if (!token) {
+
+        if (
+          previousToken
+        ) {
+
+          sendPresenceOffline(
+            previousToken
+          );
+
+        }
+
+
+        previousTokenRef.current =
+          null;
+
+        return;
+
+      }
+
+
+      previousTokenRef.current =
+        token;
+
+
+      let active =
+        true;
+
+
+      const heartbeat =
+        async () => {
+
+          try {
+
+            await api.post(
+              "/users/presence/heartbeat"
+            );
+
+          } catch (
+            error
+          ) {
+
+            if (
+              active
+            ) {
+
+              console.error(
+                "Presence heartbeat failed:",
+                error
+              );
+
+            }
+
+          }
+
+        };
+
+
+      heartbeat();
+
+
+      const interval =
+        window.setInterval(
+          heartbeat,
+          30000
+        );
+
+
+      const handlePageHide =
+        () => {
+
+          sendPresenceOffline(
+            token
+          );
+
+        };
+
+
+      window.addEventListener(
+        "pagehide",
+        handlePageHide
+      );
+
+
+      return () => {
+
+        active =
+          false;
+
+        window.clearInterval(
+          interval
+        );
+
+        window.removeEventListener(
+          "pagehide",
+          handlePageHide
+        );
+
+      };
+
+    },
+    [
+      location.pathname,
+    ]
+  );
+
+
+  return null;
+
+}
 
 
 const getHomeByRole = (
@@ -251,7 +426,7 @@ function App() {
     "therapist",
   ];
 
-  const chatRoles = [
+  const sharedRoles = [
     "therapist",
     "parent",
     "admin",
@@ -260,7 +435,11 @@ function App() {
 
   return (
 
-    <Routes>
+    <>
+
+      <PresenceTracker />
+
+      <Routes>
 
       <Route
         path="/login"
@@ -323,11 +502,27 @@ function App() {
         element={
           <ProtectedRoute
             allowedRoles={
-              chatRoles
+              sharedRoles
             }
           >
 
             <Chat />
+
+          </ProtectedRoute>
+        }
+      />
+
+
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute
+            allowedRoles={
+              sharedRoles
+            }
+          >
+
+            <Notifications />
 
           </ProtectedRoute>
         }
@@ -568,7 +763,9 @@ function App() {
         }
       />
 
-    </Routes>
+      </Routes>
+
+    </>
 
   );
 

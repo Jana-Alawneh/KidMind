@@ -55,6 +55,10 @@ import {
   type GameBuilderAssignment,
 } from "@/api/gameBuilderApi";
 
+import {
+  takeAIGameDraft,
+} from "@/state/aiGameDraftStore";
+
 
 type Difficulty =
   | "Easy"
@@ -325,6 +329,7 @@ export default function GameBuilder() {
     useLocalSearchParams<{
       gameId?: string;
       openAssignment?: string;
+      fromAI?: string;
     }>();
 
   const initialGameId =
@@ -391,6 +396,46 @@ export default function GameBuilder() {
     useState(
       "Custom cognitive assessment game."
     );
+
+  const [
+    gameDomain,
+    setGameDomain,
+  ] =
+    useState(
+      "Custom Cognitive Assessment"
+    );
+
+  const [
+    isAiGenerated,
+    setIsAiGenerated,
+  ] =
+    useState(false);
+
+  const [
+    aiChildId,
+    setAiChildId,
+  ] =
+    useState<
+      number | null
+    >(null);
+
+  const [
+    aiChildName,
+    setAiChildName,
+  ] =
+    useState("");
+
+  const [
+    aiTargetSkill,
+    setAiTargetSkill,
+  ] =
+    useState("");
+
+  const [
+    aiAnalysis,
+    setAiAnalysis,
+  ] =
+    useState("");
 
   const [
     difficulty,
@@ -631,6 +676,43 @@ export default function GameBuilder() {
             "Custom cognitive assessment game."
           );
 
+          setGameDomain(
+            game.domain ||
+            "Custom Cognitive Assessment"
+          );
+
+          setIsAiGenerated(
+            Boolean(
+              game.is_ai_generated
+            )
+          );
+
+          setAiChildId(
+            game.ai_child_id ===
+              null ||
+            game.ai_child_id ===
+              undefined
+              ? null
+              : Number(
+                  game.ai_child_id
+                )
+          );
+
+          setAiChildName(
+            game.ai_child_name ||
+            ""
+          );
+
+          setAiTargetSkill(
+            game.ai_target_skill ||
+            ""
+          );
+
+          setAiAnalysis(
+            game.ai_analysis ||
+            ""
+          );
+
           const loadedDifficulty =
             (
               [
@@ -724,6 +806,129 @@ export default function GameBuilder() {
     },
     [
       loadGame,
+    ]
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        params.fromAI !==
+          "1" ||
+        currentGameId
+      ) {
+        return;
+      }
+
+      const draft =
+        takeAIGameDraft();
+
+      if (!draft) {
+        return;
+      }
+
+      setGameName(
+        draft.gameName ||
+        "AI Personalized Game"
+      );
+
+      setGameDescription(
+        draft.gameDescription ||
+        "AI-generated personalized cognitive game."
+      );
+
+      setGameDomain(
+        draft.domain ||
+        "Custom Cognitive Assessment"
+      );
+
+      setDifficulty(
+        draft.difficulty
+      );
+
+      setTime(
+        Number(
+          draft.timeLimit
+        ) ||
+        difficultySettings[
+          draft.difficulty
+        ].time
+      );
+
+      setLives(
+        Number(
+          draft.lives
+        ) ||
+        difficultySettings[
+          draft.difficulty
+        ].lives
+      );
+
+      setScoreEnabled(
+        draft.scoreEnabled !==
+          false
+      );
+
+      setObjects(
+        Array.isArray(
+          draft.objects
+        )
+          ? draft.objects as BuilderObject[]
+          : []
+      );
+
+      setRules(
+        Array.isArray(
+          draft.rules
+        )
+          ? draft.rules as BuilderRule[]
+          : []
+      );
+
+      setIsAiGenerated(
+        true
+      );
+
+      setAiChildId(
+        draft.childId
+      );
+
+      setAiChildName(
+        draft.childName ||
+        ""
+      );
+
+      setAiTargetSkill(
+        draft.targetSkill ||
+        ""
+      );
+
+      setAiAnalysis(
+        [
+          draft.analysis,
+          draft.therapyPlan
+            ? `Strengthening plan:\n${draft.therapyPlan}`
+            : "",
+        ]
+          .filter(
+            Boolean
+          )
+          .join(
+            "\n\n"
+          )
+      );
+
+      setSavedMessage(
+        "AI-generated draft loaded. Review and edit it before saving."
+      );
+
+      setError(
+        ""
+      );
+    },
+    [
+      params.fromAI,
+      currentGameId,
     ]
   );
 
@@ -992,6 +1197,7 @@ export default function GameBuilder() {
       description:
         gameDescription.trim(),
       domain:
+        gameDomain.trim() ||
         "Custom Cognitive Assessment",
       difficulty,
       time_seconds:
@@ -1031,13 +1237,23 @@ export default function GameBuilder() {
           })
         ),
       is_ai_generated:
-        false,
+        Boolean(
+          isAiGenerated
+        ),
       ai_child_id:
-        null,
+        isAiGenerated
+          ? aiChildId
+          : null,
       ai_target_skill:
-        null,
+        isAiGenerated
+          ? aiTargetSkill ||
+            null
+          : null,
       ai_analysis:
-        "",
+        isAiGenerated
+          ? aiAnalysis ||
+            null
+          : null,
       status:
         "draft",
     });
@@ -1613,6 +1829,65 @@ export default function GameBuilder() {
           </Pressable>
 
         </View>
+
+
+        {isAiGenerated ? (
+          <View
+            style={
+              styles.aiDraftBanner
+            }
+          >
+            <View
+              style={
+                styles.aiDraftIcon
+              }
+            >
+              <Brain
+                size={19}
+                color="#6B5CDD"
+              />
+            </View>
+
+            <View
+              style={
+                styles.aiDraftText
+              }
+            >
+              <Text
+                style={
+                  styles.aiDraftTitle
+                }
+              >
+                AI-generated personalized draft
+              </Text>
+
+              <Text
+                style={
+                  styles.aiDraftSubtitle
+                }
+              >
+                {
+                  aiChildName
+                    ? `Child: ${aiChildName}`
+                    : "Personalized child game"
+                }
+                {
+                  aiTargetSkill
+                    ? ` • Target: ${aiTargetSkill}`
+                    : ""
+                }
+              </Text>
+
+              <Text
+                style={
+                  styles.aiDraftHint
+                }
+              >
+                Review objects, rules and settings before saving or assigning.
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
 
         {error ? (
@@ -4104,6 +4379,64 @@ const styles =
         "center",
       justifyContent:
         "center",
+    },
+
+
+    aiDraftBanner: {
+      marginBottom: 14,
+      padding: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor:
+        "#E5E0FF",
+      backgroundColor:
+        "#F7F4FF",
+      flexDirection:
+        "row",
+      alignItems:
+        "flex-start",
+      gap: 10,
+    },
+
+    aiDraftIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#EEE9FF",
+    },
+
+    aiDraftText: {
+      flex: 1,
+    },
+
+    aiDraftTitle: {
+      fontSize: 11.5,
+      fontWeight:
+        "800",
+      color:
+        "#51469A",
+    },
+
+    aiDraftSubtitle: {
+      marginTop: 3,
+      fontSize: 9.5,
+      fontWeight:
+        "600",
+      color:
+        "#756AA4",
+    },
+
+    aiDraftHint: {
+      marginTop: 4,
+      fontSize: 8.8,
+      lineHeight: 13,
+      color:
+        "#9993B5",
     },
 
   });

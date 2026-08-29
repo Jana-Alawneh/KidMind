@@ -31,6 +31,7 @@ import {
 
 import {
   Bell,
+  BrainCircuit,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -57,6 +58,7 @@ import AdminParents from "@/components/admin/AdminParents";
 import AdminTherapists from "@/components/admin/AdminTherapists";
 import AdminAssignments from "@/components/admin/AdminAssignments";
 import AdminReports from "@/components/admin/AdminReports";
+import AdminAIInsights from "@/components/admin/AdminAIInsights";
 import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
 
@@ -142,6 +144,7 @@ type SectionKey =
   | "therapists"
   | "assignments"
   | "reports"
+  | "ai-insights"
   | "messages"
   | "feedback"
   | "settings";
@@ -211,6 +214,15 @@ const menu:
         "Reports",
       icon:
         FileText,
+    },
+
+    {
+      key:
+        "ai-insights",
+      title:
+        "AI Insights",
+      icon:
+        BrainCircuit,
     },
 
     {
@@ -1611,6 +1623,23 @@ export default function AdminDashboard() {
                 }
               />
 
+
+              <ManagementButton
+                icon={
+                  <BrainCircuit
+                    size={22}
+                    color="#7566E8"
+                  />
+                }
+                title="AI Insights"
+                subtitle="Analyze platform statistics, trends and recommendations"
+                onPress={() =>
+                  selectSection(
+                    "ai-insights"
+                  )
+                }
+              />
+
             </View>
 
           </View>
@@ -1768,6 +1797,16 @@ export default function AdminDashboard() {
       ) {
         return (
           <AdminReports />
+        );
+      }
+
+
+      if (
+        activeSection ===
+        "ai-insights"
+      ) {
+        return (
+          <AdminAIInsights />
         );
       }
 
