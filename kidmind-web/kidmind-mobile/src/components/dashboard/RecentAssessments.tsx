@@ -5,7 +5,6 @@ import {
 
 import {
   ActivityIndicator,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,10 +16,9 @@ import {
 } from "expo-router";
 
 import {
+  ArrowUpRight,
   FileText,
 } from "lucide-react-native";
-
-import Card from "../ui/Card";
 
 import {
   getSessions,
@@ -288,27 +286,38 @@ const getSessionScore = (
   session: any
 ) => {
 
-  const sessionScore =
-    Number(
-      session?.score
-    );
-
-
   if (
-    Number.isFinite(
-      sessionScore
-    )
+    session?.score !==
+      null &&
+    session?.score !==
+      undefined &&
+    session?.score !==
+      ""
   ) {
 
-    return Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(
-          sessionScore
-        )
+    const sessionScore =
+      Number(
+        session.score
+      );
+
+
+    if (
+      Number.isFinite(
+        sessionScore
       )
-    );
+    ) {
+
+      return Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            sessionScore
+          )
+        )
+      );
+
+    }
 
   }
 
@@ -320,168 +329,201 @@ const getSessionScore = (
 };
 
 
+const getInitial = (
+  name: string
+) => {
+
+  return String(
+    name || "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+};
+
+
 const RecentAssessments = () => {
 
   const [
     assessments,
     setAssessments,
-  ] = useState<any[]>([]);
+  ] =
+    useState<any[]>([]);
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadAssessments =
-      async () => {
+      const loadAssessments =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError("");
+            setLoading(
+              true
+            );
 
-
-          const [
-            sessionsData,
-            childrenData,
-          ] =
-            await Promise.all([
-              getSessions(),
-              getChildren(),
-            ]);
+            setError(
+              ""
+            );
 
 
-          const allSessions =
-            Array.isArray(
-              sessionsData
-            )
-              ? sessionsData
-              : [];
+            const [
+              sessionsData,
+              childrenData,
+            ] =
+              await Promise.all([
+                getSessions(),
+                getChildren(),
+              ]);
 
 
-          const allChildren =
-            Array.isArray(
-              childrenData
-            )
-              ? childrenData
-              : [];
-
-
-          const recentAssessments =
-            allSessions
-              .filter(
-                (session) =>
-                  session.status ===
-                  "Completed"
+            const allSessions =
+              Array.isArray(
+                sessionsData
               )
-              .map(
-                (session) => {
-
-                  const child =
-                    allChildren.find(
-                      (item) =>
-                        Number(
-                          item.id
-                        ) ===
-                        Number(
-                          session.child_id
-                        )
-                    );
+                ? sessionsData
+                : [];
 
 
-                  const assessmentDate =
-                    getAssessmentDate(
-                      session
-                    );
+            const allChildren =
+              Array.isArray(
+                childrenData
+              )
+                ? childrenData
+                : [];
 
 
-                  return {
-                    ...session,
+            const recentAssessments =
+              allSessions
+                .filter(
+                  session =>
+                    session.status ===
+                    "Completed"
+                )
+                .map(
+                  session => {
 
-                    dashboardDate:
-                      assessmentDate,
+                    const child =
+                      allChildren.find(
+                        item =>
+                          Number(
+                            item.id
+                          ) ===
+                          Number(
+                            session.child_id
+                          )
+                      );
 
-                    dashboardChildName:
-                      session.child_name ||
-                      child?.full_name ||
-                      `Child #${session.child_id}`,
 
-                    dashboardActivity:
-                      getActivityText(
+                    const assessmentDate =
+                      getAssessmentDate(
                         session
-                      ),
-
-                    dashboardScore:
-                      getSessionScore(
-                        session
-                      ),
-                  };
-
-                }
-              )
-              .sort(
-                (
-                  first,
-                  second
-                ) =>
-                  getTimestamp(
-                    second.dashboardDate
-                  ) -
-                  getTimestamp(
-                    first.dashboardDate
-                  )
-              )
-              .slice(
-                0,
-                3
-              );
+                      );
 
 
-          setAssessments(
-            recentAssessments
-          );
+                    return {
+                      ...session,
 
-        } catch (loadError) {
+                      dashboardDate:
+                        assessmentDate,
 
-          console.error(
-            "Failed to load recent assessments:",
+                      dashboardChildName:
+                        session.child_name ||
+                        child?.full_name ||
+                        `Child #${session.child_id}`,
+
+                      dashboardActivity:
+                        getActivityText(
+                          session
+                        ),
+
+                      dashboardScore:
+                        getSessionScore(
+                          session
+                        ),
+                    };
+
+                  }
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) =>
+                    getTimestamp(
+                      second.dashboardDate
+                    ) -
+                    getTimestamp(
+                      first.dashboardDate
+                    )
+                )
+                .slice(
+                  0,
+                  3
+                );
+
+
+            setAssessments(
+              recentAssessments
+            );
+
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load recent assessments:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load recent assessments"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load recent assessments"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadAssessments();
+      loadAssessments();
 
-  }, []);
+    },
+    []
+  );
 
 
   return (
 
-    <Card>
+    <View
+      style={
+        styles.panel
+      }
+    >
 
       <View
         style={
@@ -489,29 +531,61 @@ const RecentAssessments = () => {
         }
       >
 
-        <View>
+        <View
+          style={
+            styles.headerLeft
+          }
+        >
 
-          <Text
+          <View
             style={
-              styles.title
+              styles.headerIcon
             }
           >
-            Recent Assessments
-          </Text>
+
+            <FileText
+              size={18}
+              color="#7465E8"
+            />
+
+          </View>
 
 
-          <Text
+          <View
             style={
-              styles.subtitle
+              styles.headerCopy
             }
           >
-            Latest cognitive evaluation results
-          </Text>
+
+            <Text
+              style={
+                styles.title
+              }
+            >
+              Recent Assessments
+            </Text>
+
+
+            <Text
+              style={
+                styles.subtitle
+              }
+            >
+              Latest cognitive evaluation results
+            </Text>
+
+          </View>
 
         </View>
 
 
         <TouchableOpacity
+          activeOpacity={
+            0.7
+          }
+          style={
+            styles.viewAllButton
+          }
           onPress={() => {
 
             router.push(
@@ -534,326 +608,366 @@ const RecentAssessments = () => {
       </View>
 
 
-      {loading && (
+      {
+        loading && (
 
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <ActivityIndicator
-            color="#7B6EF6"
-          />
-
-
-          <Text
+          <View
             style={
-              styles.stateText
+              styles.stateBox
             }
           >
-            Loading assessments...
-          </Text>
 
-        </View>
-
-      )}
+            <ActivityIndicator
+              color="#7B6EF6"
+            />
 
 
-      {!loading &&
-        error !== "" && (
-
-        <View
-          style={
-            styles.errorBox
-          }
-        >
-
-          <Text
-            style={
-              styles.errorText
-            }
-          >
-            {error}
-          </Text>
-
-        </View>
-
-      )}
-
-
-      {!loading &&
-        error === "" &&
-        assessments.length ===
-          0 && (
-
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <Text
-            style={
-              styles.emptyTitle
-            }
-          >
-            No completed assessments
-          </Text>
-
-
-          <Text
-            style={
-              styles.stateText
-            }
-          >
-            Completed assessment sessions will appear here.
-          </Text>
-
-        </View>
-
-      )}
-
-
-      {!loading &&
-        error === "" &&
-        assessments.length >
-          0 && (
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-        >
-
-          <View>
-
-            <View
+            <Text
               style={
-                styles.row
+                styles.stateText
               }
             >
-
-              <Text
-                style={[
-                  styles.headerCell,
-                  styles.childHeader,
-                ]}
-              >
-                Child
-              </Text>
-
-
-              <Text
-                style={
-                  styles.headerCell
-                }
-              >
-                Activity
-              </Text>
-
-
-              <Text
-                style={
-                  styles.scoreHeader
-                }
-              >
-                Score
-              </Text>
-
-
-              <Text
-                style={
-                  styles.headerCell
-                }
-              >
-                Date
-              </Text>
-
-
-              <Text
-                style={
-                  styles.statusHeader
-                }
-              >
-                Status
-              </Text>
-
-
-              <Text
-                style={
-                  styles.actionHeader
-                }
-              >
-                Action
-              </Text>
-
-            </View>
-
-
-            {assessments.map(
-              (item) => (
-
-                <View
-                  key={
-                    item.id
-                  }
-                  style={
-                    styles.dataRow
-                  }
-                >
-
-                  <View
-                    style={
-                      styles.childContainer
-                    }
-                  >
-
-                    <View
-                      style={
-                        styles.iconBox
-                      }
-                    >
-
-                      <FileText
-                        size={18}
-                        color="#7B6EF6"
-                      />
-
-                    </View>
-
-
-                    <Text
-                      style={
-                        styles.childName
-                      }
-                      numberOfLines={
-                        2
-                      }
-                    >
-                      {item.dashboardChildName}
-                    </Text>
-
-                  </View>
-
-
-                  <Text
-                    style={
-                      styles.cell
-                    }
-                    numberOfLines={
-                      2
-                    }
-                  >
-                    {item.dashboardActivity}
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.score
-                    }
-                  >
-                    {typeof item.dashboardScore ===
-                    "number"
-                      ? `${item.dashboardScore}%`
-                      : "—"}
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.cell
-                    }
-                  >
-                    {formatDate(
-                      item.dashboardDate
-                    )}
-                  </Text>
-
-
-                  <View
-                    style={
-                      styles.statusCell
-                    }
-                  >
-
-                    <View
-                      style={[
-                        styles.status,
-                        styles.completed,
-                      ]}
-                    >
-
-                      <Text
-                        style={[
-                          styles.statusText,
-                          styles.completedText,
-                        ]}
-                      >
-                        Completed
-                      </Text>
-
-                    </View>
-
-                  </View>
-
-
-                  <View
-                    style={
-                      styles.actionCell
-                    }
-                  >
-
-                    <TouchableOpacity
-                      activeOpacity={
-                        0.8
-                      }
-                      style={
-                        styles.reportButton
-                      }
-                      onPress={() => {
-
-                        router.push({
-                          pathname:
-                            "/sessions/[id]",
-
-                          params: {
-                            id:
-                              String(
-                                item.id
-                              ),
-                          },
-                        });
-
-                      }}
-                    >
-
-                      <Text
-                        style={
-                          styles.reportText
-                        }
-                      >
-                        View Report
-                      </Text>
-
-                    </TouchableOpacity>
-
-                  </View>
-
-                </View>
-
-              )
-            )}
+              Loading assessments...
+            </Text>
 
           </View>
 
-        </ScrollView>
+        )
+      }
 
-      )}
 
-    </Card>
+      {
+        !loading &&
+        error !==
+          "" && (
+
+          <View
+            style={
+              styles.errorBox
+            }
+          >
+
+            <Text
+              style={
+                styles.errorTitle
+              }
+            >
+              Unable to load assessments
+            </Text>
+
+
+            <Text
+              style={
+                styles.errorText
+              }
+            >
+              {error}
+            </Text>
+
+          </View>
+
+        )
+      }
+
+
+      {
+        !loading &&
+        error ===
+          "" &&
+        assessments.length ===
+          0 && (
+
+          <View
+            style={
+              styles.stateBox
+            }
+          >
+
+            <Text
+              style={
+                styles.emptyTitle
+              }
+            >
+              No completed assessments
+            </Text>
+
+
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              Completed assessment sessions will appear here.
+            </Text>
+
+          </View>
+
+        )
+      }
+
+
+      {
+        !loading &&
+        error ===
+          "" &&
+        assessments.length >
+          0 && (
+
+          <View
+            style={
+              styles.list
+            }
+          >
+
+            {
+              assessments.map(
+                item => (
+
+                  <View
+                    key={
+                      item.id
+                    }
+                    style={
+                      styles.assessmentRow
+                    }
+                  >
+
+                    <View
+                      style={
+                        styles.topRow
+                      }
+                    >
+
+                      <View
+                        style={
+                          styles.childMain
+                        }
+                      >
+
+                        <View
+                          style={
+                            styles.avatar
+                          }
+                        >
+
+                          <Text
+                            style={
+                              styles.avatarText
+                            }
+                          >
+                            {
+                              getInitial(
+                                item.dashboardChildName
+                              )
+                            }
+                          </Text>
+
+                        </View>
+
+
+                        <View
+                          style={
+                            styles.childCopy
+                          }
+                        >
+
+                          <Text
+                            style={
+                              styles.childName
+                            }
+                            numberOfLines={
+                              1
+                            }
+                          >
+                            {
+                              item.dashboardChildName
+                            }
+                          </Text>
+
+
+                          <Text
+                            style={
+                              styles.sessionId
+                            }
+                          >
+                            Session #{item.id}
+                          </Text>
+
+                        </View>
+
+                      </View>
+
+
+                      <View
+                        style={
+                          styles.scoreBox
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.score
+                          }
+                        >
+                          {
+                            typeof item.dashboardScore ===
+                              "number"
+                              ? `${item.dashboardScore}%`
+                              : "—"
+                          }
+                        </Text>
+
+                      </View>
+
+                    </View>
+
+
+                    <View
+                      style={
+                        styles.detailsRow
+                      }
+                    >
+
+                      <View
+                        style={
+                          styles.detailBlock
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.detailLabel
+                          }
+                        >
+                          Activity
+                        </Text>
+
+
+                        <Text
+                          style={
+                            styles.detailValue
+                          }
+                          numberOfLines={
+                            1
+                          }
+                        >
+                          {
+                            item.dashboardActivity
+                          }
+                        </Text>
+
+                      </View>
+
+
+                      <View
+                        style={
+                          styles.dateBlock
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.detailLabel
+                          }
+                        >
+                          Date
+                        </Text>
+
+
+                        <Text
+                          style={
+                            styles.detailValue
+                          }
+                        >
+                          {
+                            formatDate(
+                              item.dashboardDate
+                            )
+                          }
+                        </Text>
+
+                      </View>
+
+                    </View>
+
+
+                    <View
+                      style={
+                        styles.footerRow
+                      }
+                    >
+
+                      <View
+                        style={
+                          styles.status
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.statusText
+                          }
+                        >
+                          Completed
+                        </Text>
+
+                      </View>
+
+
+                      <TouchableOpacity
+                        activeOpacity={
+                          0.75
+                        }
+                        style={
+                          styles.reportButton
+                        }
+                        onPress={() => {
+
+                          router.push({
+                            pathname:
+                              "/sessions/[id]",
+
+                            params: {
+                              id:
+                                String(
+                                  item.id
+                                ),
+                            },
+                          });
+
+                        }}
+                      >
+
+                        <Text
+                          style={
+                            styles.reportText
+                          }
+                        >
+                          View Report
+                        </Text>
+
+
+                        <ArrowUpRight
+                          size={13}
+                          color="#7566EB"
+                        />
+
+                      </TouchableOpacity>
+
+                    </View>
+
+                  </View>
+
+                )
+              )
+            }
+
+          </View>
+
+        )
+      }
+
+    </View>
 
   );
 
@@ -863,47 +977,158 @@ const RecentAssessments = () => {
 const styles =
   StyleSheet.create({
 
+    panel: {
+
+      padding:
+        18,
+
+      borderRadius:
+        21,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.035,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
+
+    },
+
+
     header: {
 
       flexDirection:
         "row",
 
+      alignItems:
+        "flex-start",
+
       justifyContent:
         "space-between",
+
+      gap:
+        10,
+
+      marginBottom:
+        15,
+
+    },
+
+
+    headerLeft: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
-      marginBottom:
-        24,
-
       gap:
+        10,
+
+    },
+
+
+    headerIcon: {
+
+      width:
+        38,
+
+      height:
+        38,
+
+      flexShrink:
+        0,
+
+      borderRadius:
         12,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    headerCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
 
     },
 
 
     title: {
 
+      color:
+        "#333554",
+
       fontSize:
-        20,
+        15.5,
 
       fontWeight:
-        "600",
+        "700",
 
     },
 
 
     subtitle: {
 
-      fontSize:
-        14,
+      marginTop:
+        3,
 
       color:
-        "#94A3B8",
+        "#A0A3B4",
 
-      marginTop:
-        4,
+      fontSize:
+        10.5,
+
+    },
+
+
+    viewAllButton: {
+
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        6,
+
+      borderRadius:
+        9,
 
     },
 
@@ -911,154 +1136,69 @@ const styles =
     viewAll: {
 
       color:
-        "#7B6EF6",
+        "#7566EB",
+
+      fontSize:
+        10.5,
 
       fontWeight:
-        "600",
-
-      fontSize:
-        14,
+        "700",
 
     },
 
 
-    row: {
+    list: {
 
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      borderBottomWidth:
-        1,
-
-      borderColor:
-        "#F1F1F1",
-
-      paddingBottom:
-        12,
+      gap:
+        10,
 
     },
 
 
-    dataRow: {
+    assessmentRow: {
 
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      paddingVertical:
-        20,
-
-      borderBottomWidth:
-        1,
-
-      borderColor:
-        "#F1F1F1",
-
-    },
-
-
-    headerCell: {
-
-      width:
-        150,
-
-      color:
-        "#94A3B8",
-
-      fontSize:
-        14,
-
-      fontWeight:
-        "500",
-
-    },
-
-
-    childHeader: {
-
-      width:
-        180,
-
-    },
-
-
-    scoreHeader: {
-
-      width:
-        100,
-
-      color:
-        "#94A3B8",
-
-      fontSize:
-        14,
-
-      fontWeight:
-        "500",
-
-    },
-
-
-    statusHeader: {
-
-      width:
-        120,
-
-      color:
-        "#94A3B8",
-
-      fontSize:
-        14,
-
-      fontWeight:
-        "500",
-
-    },
-
-
-    actionHeader: {
-
-      width:
-        130,
-
-      color:
-        "#94A3B8",
-
-      fontSize:
-        14,
-
-      fontWeight:
-        "500",
-
-    },
-
-
-    cell: {
-
-      width:
-        150,
-
-      color:
-        "#475569",
-
-      fontSize:
+      padding:
         13,
 
-      paddingRight:
+      borderRadius:
+        15,
+
+      backgroundColor:
+        "#FCFCFE",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#EFEFF5",
+
+    },
+
+
+    topRow: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
         12,
 
     },
 
 
-    childContainer: {
+    childMain: {
 
-      width:
-        180,
+      flex:
+        1,
+
+      minWidth:
+        0,
 
       flexDirection:
         "row",
@@ -1067,72 +1207,228 @@ const styles =
         "center",
 
       gap:
-        12,
-
-      paddingRight:
-        12,
+        10,
 
     },
 
 
-    iconBox: {
+    avatar: {
 
       width:
-        40,
+        39,
 
       height:
-        40,
+        39,
+
+      flexShrink:
+        0,
 
       borderRadius:
-        16,
+        12,
 
-      backgroundColor:
-        "#EEE9FF",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      alignItems:
-        "center",
+      backgroundColor:
+        "#FFF0FA",
+
+    },
+
+
+    avatarText: {
+
+      color:
+        "#B05D9B",
+
+      fontSize:
+        13,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    childCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
 
     },
 
 
     childName: {
 
-      fontWeight:
-        "600",
+      color:
+        "#373953",
 
-      flex:
-        1,
+      fontSize:
+        12,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    sessionId: {
+
+      marginTop:
+        2,
 
       color:
-        "#1E293B",
+        "#A0A3B4",
+
+      fontSize:
+        9,
+
+    },
+
+
+    scoreBox: {
+
+      minWidth:
+        51,
+
+      paddingHorizontal:
+        9,
+
+      paddingVertical:
+        7,
+
+      flexShrink:
+        0,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        10,
+
+      backgroundColor:
+        "#F3F0FF",
 
     },
 
 
     score: {
 
-      width:
-        100,
+      color:
+        "#7566EB",
+
+      fontSize:
+        11,
 
       fontWeight:
-        "700",
-
-      color:
-        "#7B6EF6",
+        "800",
 
     },
 
 
-    statusCell: {
+    detailsRow: {
 
-      width:
-        120,
+      marginTop:
+        12,
+
+      paddingTop:
+        11,
+
+      flexDirection:
+        "row",
+
+      gap:
+        12,
+
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#F1F1F6",
+
+    },
+
+
+    detailBlock: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    dateBlock: {
+
+      minWidth:
+        80,
+
+    },
+
+
+    detailLabel: {
+
+      color:
+        "#AAADBC",
+
+      fontSize:
+        8.5,
+
+      fontWeight:
+        "600",
+
+      textTransform:
+        "uppercase",
+
+      letterSpacing:
+        0.4,
+
+    },
+
+
+    detailValue: {
+
+      marginTop:
+        3,
+
+      color:
+        "#66697E",
+
+      fontSize:
+        10.5,
+
+      fontWeight:
+        "500",
+
+    },
+
+
+    footerRow: {
+
+      marginTop:
+        12,
+
+      flexDirection:
+        "row",
 
       alignItems:
-        "flex-start",
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        10,
 
     },
 
@@ -1140,68 +1436,65 @@ const styles =
     status: {
 
       paddingHorizontal:
-        12,
+        9,
 
       paddingVertical:
         5,
 
       borderRadius:
-        50,
-
-    },
-
-
-    completed: {
+        999,
 
       backgroundColor:
-        "#E8FFF5",
+        "#ECFAF4",
 
     },
 
 
     statusText: {
 
+      color:
+        "#3E9E7D",
+
       fontSize:
-        12,
+        9,
 
       fontWeight:
-        "600",
-
-    },
-
-
-    completedText: {
-
-      color:
-        "#38B2AC",
-
-    },
-
-
-    actionCell: {
-
-      width:
-        130,
-
-      alignItems:
-        "flex-start",
+        "700",
 
     },
 
 
     reportButton: {
 
-      backgroundColor:
-        "#7B6EF6",
+      minHeight:
+        32,
 
       paddingHorizontal:
-        16,
-
-      paddingVertical:
         10,
 
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      gap:
+        5,
+
       borderRadius:
-        12,
+        10,
+
+      backgroundColor:
+        "#F6F3FF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E1DCFF",
 
     },
 
@@ -1209,13 +1502,13 @@ const styles =
     reportText: {
 
       color:
-        "#FFFFFF",
+        "#7566EB",
 
       fontSize:
-        12,
+        9.5,
 
       fontWeight:
-        "600",
+        "700",
 
     },
 
@@ -1223,7 +1516,7 @@ const styles =
     stateBox: {
 
       minHeight:
-        150,
+        145,
 
       alignItems:
         "center",
@@ -1239,31 +1532,34 @@ const styles =
 
     stateText: {
 
-      fontSize:
-        13,
+      marginTop:
+        7,
 
       color:
-        "#94A3B8",
+        "#A0A3B4",
 
       textAlign:
         "center",
 
-      marginTop:
-        8,
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
 
     },
 
 
     emptyTitle: {
 
+      color:
+        "#62657B",
+
       fontSize:
-        16,
+        13,
 
       fontWeight:
         "700",
-
-      color:
-        "#475569",
 
     },
 
@@ -1273,34 +1569,57 @@ const styles =
       minHeight:
         120,
 
-      backgroundColor:
-        "#FEF2F2",
-
-      borderRadius:
+      padding:
         16,
 
-      padding:
-        20,
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      alignItems:
-        "center",
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FFF0F3",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F6D8DF",
+
+    },
+
+
+    errorTitle: {
+
+      color:
+        "#B9415E",
+
+      fontSize:
+        12.5,
+
+      fontWeight:
+        "700",
 
     },
 
 
     errorText: {
 
-      color:
-        "#DC2626",
+      marginTop:
+        4,
 
-      fontSize:
-        13,
+      color:
+        "#C55A70",
 
       textAlign:
         "center",
+
+      fontSize:
+        10.5,
 
     },
 

@@ -4,7 +4,9 @@ import {
   useState,
 } from "react";
 
-import Card from "../ui/Card";
+import {
+  Activity,
+} from "lucide-react";
 
 import {
   ResponsiveContainer,
@@ -199,55 +201,60 @@ const PerformanceChart = () => {
   ] = useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadPerformance =
-      async () => {
+      const loadPerformance =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError("");
-
-
-          const data =
-            await getSessions();
+            setLoading(true);
+            setError("");
 
 
-          setSessions(
-            Array.isArray(
-              data
-            )
-              ? data
-              : []
-          );
+            const data =
+              await getSessions();
 
-        } catch (loadError) {
 
-          console.error(
-            "Failed to load dashboard performance:",
+            setSessions(
+              Array.isArray(
+                data
+              )
+                ? data
+                : []
+            );
+
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load dashboard performance:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load performance data"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load performance data"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(false);
 
-        }
+          }
 
-      };
+        };
 
 
-    loadPerformance();
+      loadPerformance();
 
-  }, []);
+    },
+    []
+  );
 
 
   const chartData =
@@ -261,13 +268,11 @@ const PerformanceChart = () => {
 
 
         const selectedYear =
-          selectedMonth
-            .getFullYear();
+          selectedMonth.getFullYear();
 
 
         const selectedMonthIndex =
-          selectedMonth
-            .getMonth();
+          selectedMonth.getMonth();
 
 
         const weeklyValues = [
@@ -279,7 +284,7 @@ const PerformanceChart = () => {
 
 
         sessions.forEach(
-          (session) => {
+          session => {
 
             if (
               !Array.isArray(
@@ -291,7 +296,7 @@ const PerformanceChart = () => {
 
 
             session.games.forEach(
-              (game) => {
+              game => {
 
                 const isFinished =
                   game.status ===
@@ -344,7 +349,7 @@ const PerformanceChart = () => {
 
                 const domain =
                   domainConfigs.find(
-                    (item) =>
+                    item =>
                       item.gameName ===
                       normalizeGameName(
                         game.game_name
@@ -366,31 +371,36 @@ const PerformanceChart = () => {
                 if (
                   !weeklyValues[
                     weekIndex
-                  ][domain.key]
+                  ][
+                    domain.key
+                  ]
                 ) {
 
                   weeklyValues[
                     weekIndex
-                  ][domain.key] =
-                    [];
+                  ][
+                    domain.key
+                  ] = [];
 
                 }
 
 
                 weeklyValues[
                   weekIndex
-                ][domain.key]
-                  .push(
-                    Math.max(
-                      0,
-                      Math.min(
-                        100,
-                        score
-                      )
+                ][
+                  domain.key
+                ].push(
+                  Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      score
                     )
-                  );
+                  )
+                );
 
-              });
+              }
+            );
 
           }
         );
@@ -409,7 +419,7 @@ const PerformanceChart = () => {
 
 
             domainConfigs.forEach(
-              (domain) => {
+              domain => {
 
                 const values =
                   week[
@@ -420,7 +430,8 @@ const PerformanceChart = () => {
                 item[
                   domain.key
                 ] =
-                  values.length > 0
+                  values.length >
+                  0
                     ? Math.round(
                         values.reduce(
                           (
@@ -431,7 +442,7 @@ const PerformanceChart = () => {
                             value,
                           0
                         ) /
-                          values.length
+                        values.length
                       )
                     : null;
 
@@ -454,9 +465,9 @@ const PerformanceChart = () => {
 
   const hasData =
     chartData.some(
-      (week) =>
+      week =>
         domainConfigs.some(
-          (domain) =>
+          domain =>
             typeof week[
               domain.key
             ] === "number"
@@ -466,38 +477,33 @@ const PerformanceChart = () => {
 
   return (
 
-    <Card>
+    <section className="performance-panel">
 
-      <div
-        className="
-        flex
-        justify-between
-        items-center
-        mb-8
-        gap-4
-        "
-      >
+      <div className="performance-heading">
 
-        <div>
+        <div className="performance-title">
 
-          <h2
-            className="
-            text-xl
-            font-semibold
-            "
-          >
-            Cognitive Performance
-          </h2>
+          <div className="performance-icon">
 
-          <p
-            className="
-            text-slate-400
-            text-sm
-            mt-1
-            "
-          >
-            Children's average cognitive performance by week
-          </p>
+            <Activity
+              size={18}
+            />
+
+          </div>
+
+
+          <div>
+
+            <h2>
+              Cognitive Performance
+            </h2>
+
+            <p>
+              Average cognitive performance
+              by week
+            </p>
+
+          </div>
 
         </div>
 
@@ -506,33 +512,19 @@ const PerformanceChart = () => {
           value={
             period
           }
-          onChange={(
-            event
-          ) => {
-            setPeriod(
-              event.target.value
-            );
-          }}
-          className="
-          border
-          rounded-xl
-          px-4
-          py-2
-          text-sm
-          outline-none
-          bg-white
-          "
+          onChange={
+            event =>
+              setPeriod(
+                event.target.value
+              )
+          }
         >
 
-          <option
-            value="current"
-          >
+          <option value="current">
             This Month
           </option>
 
-          <option
-            value="last"
-          >
+          <option value="last">
             Last Month
           </option>
 
@@ -541,283 +533,398 @@ const PerformanceChart = () => {
       </div>
 
 
-      {loading && (
+      {
+        loading && (
 
-        <div
-          className="
-          h-[340px]
-          flex
-          items-center
-          justify-center
-          "
-        >
+          <div className="performance-state">
 
-          <div
-            className="
-            text-center
-            "
-          >
+            <div>
 
-            <div
-              className="
-              w-10
-              h-10
-              border-4
-              border-[#E6E2FF]
-              border-t-[#7B6EF6]
-              rounded-full
-              animate-spin
-              mx-auto
-              "
-            />
+              <div className="performance-loader" />
 
-            <p
-              className="
-              text-sm
-              text-slate-400
-              mt-3
-              "
-            >
-              Loading performance...
-            </p>
+              <p>
+                Loading performance...
+              </p>
+
+            </div>
 
           </div>
 
-        </div>
+        )
+      }
 
-      )}
 
-
-      {!loading &&
+      {
+        !loading &&
         error && (
 
-        <div
-          className="
-          h-[340px]
-          flex
-          items-center
-          justify-center
-          "
-        >
+          <div className="performance-state">
 
-          <div
-            className="
-            text-center
-            bg-red-50
-            border
-            border-red-100
-            rounded-2xl
-            p-6
-            "
-          >
+            <div className="performance-error">
 
-            <p
-              className="
-              font-semibold
-              text-red-700
-              "
-            >
-              Unable to load performance
-            </p>
+              <strong>
+                Unable to load performance
+              </strong>
 
-            <p
-              className="
-              text-sm
-              text-red-500
-              mt-1
-              "
-            >
-              {error}
-            </p>
-
-          </div>
-
-        </div>
-
-      )}
-
-
-      {!loading &&
-        !error &&
-        !hasData && (
-
-        <div
-          className="
-          h-[340px]
-          flex
-          items-center
-          justify-center
-          "
-        >
-
-          <div
-            className="
-            text-center
-            "
-          >
-
-            <p
-              className="
-              font-semibold
-              text-slate-600
-              "
-            >
-              No assessment data
-            </p>
-
-            <p
-              className="
-              text-sm
-              text-slate-400
-              mt-1
-              "
-            >
-              No completed game results are available for this period.
-            </p>
-
-          </div>
-
-        </div>
-
-      )}
-
-
-      {!loading &&
-        !error &&
-        hasData && (
-
-        <ResponsiveContainer
-          width="100%"
-          height={340}
-        >
-
-          <LineChart
-            data={
-              chartData
-            }
-          >
-
-            <CartesianGrid
-              stroke="#ECECF5"
-              strokeDasharray="5 5"
-            />
-
-            <XAxis
-              dataKey="week"
-            />
-
-            <YAxis
-              domain={[
-                0,
-                100
-              ]}
-            />
-
-            <Tooltip
-              formatter={(
-                value
-              ) =>
-                value ===
-                  null ||
-                value ===
-                  undefined
-                  ? "No data"
-                  : `${value}%`
-              }
-            />
-
-
-            {domainConfigs.map(
-              (domain) => (
-
-                <Line
-                  key={
-                    domain.key
-                  }
-                  type="monotone"
-                  dataKey={
-                    domain.key
-                  }
-                  name={
-                    domain.label
-                  }
-                  stroke={
-                    domain.color
-                  }
-                  strokeWidth={3}
-                  connectNulls={
-                    false
-                  }
-                  dot={{
-                    r: 4,
-                  }}
-                  activeDot={{
-                    r: 6,
-                  }}
-                />
-
-              )
-            )}
-
-          </LineChart>
-
-        </ResponsiveContainer>
-
-      )}
-
-
-      <div
-        className="
-        flex
-        gap-6
-        mt-6
-        flex-wrap
-        "
-      >
-
-        {domainConfigs.map(
-          (domain) => (
-
-            <div
-              key={
-                domain.key
-              }
-              className="
-              flex
-              items-center
-              gap-2
-              "
-            >
-
-              <div
-                className="
-                w-3
-                h-3
-                rounded-full
-                "
-                style={{
-                  backgroundColor:
-                    domain.color,
-                }}
-              />
-
-              <span
-                className="
-                text-sm
-                text-slate-500
-                "
-              >
-                {domain.label}
+              <span>
+                {error}
               </span>
 
             </div>
 
+          </div>
+
+        )
+      }
+
+
+      {
+        !loading &&
+        !error &&
+        !hasData && (
+
+          <div className="performance-state">
+
+            <div className="performance-empty">
+
+              <strong>
+                No assessment data
+              </strong>
+
+              <span>
+                No completed game results are
+                available for this period.
+              </span>
+
+            </div>
+
+          </div>
+
+        )
+      }
+
+
+      {
+        !loading &&
+        !error &&
+        hasData && (
+
+          <div className="performance-chart">
+
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+
+              <LineChart
+                data={
+                  chartData
+                }
+                margin={{
+                  top: 8,
+                  right: 12,
+                  left: -15,
+                  bottom: 0,
+                }}
+              >
+
+                <CartesianGrid
+                  stroke="#ECECF5"
+                  strokeDasharray="5 5"
+                  vertical={false}
+                />
+
+
+                <XAxis
+                  dataKey="week"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#989BAD",
+                    fontSize: 11,
+                  }}
+                />
+
+
+                <YAxis
+                  domain={[
+                    0,
+                    100,
+                  ]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#989BAD",
+                    fontSize: 11,
+                  }}
+                />
+
+
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 14,
+                    border:
+                      "1px solid #ECECF4",
+                    boxShadow:
+                      "0 8px 28px rgba(68,68,110,.08)",
+                    fontSize: 12,
+                  }}
+                  formatter={
+                    value =>
+                      value ===
+                        null ||
+                      value ===
+                        undefined
+                        ? "No data"
+                        : `${value}%`
+                  }
+                />
+
+
+                {
+                  domainConfigs.map(
+                    domain => (
+
+                      <Line
+                        key={
+                          domain.key
+                        }
+                        type="monotone"
+                        dataKey={
+                          domain.key
+                        }
+                        name={
+                          domain.label
+                        }
+                        stroke={
+                          domain.color
+                        }
+                        strokeWidth={2.5}
+                        connectNulls={false}
+                        dot={{
+                          r: 3.5,
+                        }}
+                        activeDot={{
+                          r: 5,
+                        }}
+                      />
+
+                    )
+                  )
+                }
+
+              </LineChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+        )
+      }
+
+
+      <div className="performance-legend">
+
+        {
+          domainConfigs.map(
+            domain => (
+
+              <div
+                key={
+                  domain.key
+                }
+              >
+
+                <span
+                  style={{
+                    backgroundColor:
+                      domain.color,
+                  }}
+                />
+
+                {
+                  domain.label
+                }
+
+              </div>
+
+            )
           )
-        )}
+        }
 
       </div>
 
-    </Card>
+
+      <style>
+        {`
+
+        .performance-panel {
+          min-width: 0;
+          height: 100%;
+          padding: 22px;
+          border-radius: 22px;
+          background: white;
+          border: 1px solid #ECECF4;
+          box-shadow:
+            0 8px 26px
+            rgba(68,68,110,.035);
+        }
+
+        .performance-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 18px;
+        }
+
+        .performance-title {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .performance-icon {
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          color: #7465E8;
+          background: #F0EDFF;
+        }
+
+        .performance-title h2 {
+          margin: 0;
+          color: #333554;
+          font-size: 16px;
+          line-height: 1.3;
+        }
+
+        .performance-title p {
+          margin: 4px 0 0;
+          color: #A0A3B4;
+          font-size: 11.5px;
+        }
+
+        .performance-heading select {
+          height: 37px;
+          padding: 0 34px 0 12px;
+          border-radius: 11px;
+          border: 1px solid #E7E7F0;
+          outline: none;
+          color: #6E7188;
+          background: white;
+          font-size: 11.5px;
+          cursor: pointer;
+        }
+
+        .performance-heading select:focus {
+          border-color: #CFC7FF;
+        }
+
+        .performance-chart {
+          width: 100%;
+          min-width: 0;
+          padding-top: 7px;
+        }
+
+        .performance-state {
+          min-height: 300px;
+          display: grid;
+          place-items: center;
+          text-align: center;
+        }
+
+        .performance-loader {
+          width: 36px;
+          height: 36px;
+          margin: auto;
+          border: 4px solid #E6E2FF;
+          border-top-color: #7B6EF6;
+          border-radius: 50%;
+          animation:
+            therapist-spin .8s
+            linear infinite;
+        }
+
+        .performance-state p {
+          margin: 11px 0 0;
+          color: #A0A3B4;
+          font-size: 12px;
+        }
+
+        .performance-error,
+        .performance-empty {
+          max-width: 360px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .performance-error {
+          padding: 18px 22px;
+          border-radius: 15px;
+          color: #B9415E;
+          background: #FFF0F3;
+          border: 1px solid #F6D8DF;
+        }
+
+        .performance-error strong,
+        .performance-empty strong {
+          font-size: 13px;
+        }
+
+        .performance-error span,
+        .performance-empty span {
+          margin-top: 5px;
+          font-size: 11px;
+          line-height: 1.5;
+        }
+
+        .performance-empty {
+          color: #8E91A4;
+        }
+
+        .performance-empty strong {
+          color: #62657B;
+        }
+
+        .performance-legend {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px 18px;
+          margin-top: 13px;
+          padding-top: 15px;
+          border-top: 1px solid #F1F1F6;
+        }
+
+        .performance-legend div {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: #888B9E;
+          font-size: 10.5px;
+        }
+
+        .performance-legend span {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+        }
+
+        @keyframes therapist-spin {
+
+          to {
+            transform: rotate(360deg);
+          }
+
+        }
+
+        `}
+      </style>
+
+    </section>
 
   );
 

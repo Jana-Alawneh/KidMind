@@ -15,14 +15,17 @@ import {
 } from "react-native";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
+  Activity,
   ChevronDown,
 } from "lucide-react-native";
 
 import {
   LineChart,
 } from "react-native-chart-kit";
-
-import Card from "../ui/Card";
 
 import {
   getSessions,
@@ -237,19 +240,22 @@ const PerformanceChart = () => {
   const [
     sessions,
     setSessions,
-  ] = useState<any[]>([]);
+  ] =
+    useState<any[]>([]);
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const [
@@ -264,262 +270,276 @@ const PerformanceChart = () => {
   const [
     periodModalOpen,
     setPeriodModalOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadSessions =
-      async () => {
+      const loadSessions =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError("");
+            setLoading(
+              true
+            );
+
+            setError(
+              ""
+            );
 
 
-          const data =
-            await getSessions();
+            const data =
+              await getSessions();
 
 
-          setSessions(
-            Array.isArray(
-              data
-            )
-              ? data
-              : []
-          );
+            setSessions(
+              Array.isArray(
+                data
+              )
+                ? data
+                : []
+            );
 
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load performance chart:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load performance chart:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load performance data"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load performance data"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadSessions();
+      loadSessions();
 
-  }, []);
+    },
+    []
+  );
 
 
   const chartValues =
-    useMemo(() => {
+    useMemo(
+      () => {
 
-      const now =
-        new Date();
-
-
-      let targetYear =
-        now.getFullYear();
+        const now =
+          new Date();
 
 
-      let targetMonth =
-        now.getMonth();
+        let targetYear =
+          now.getFullYear();
 
 
-      if (
-        period ===
-        "last"
-      ) {
-
-        targetMonth -=
-          1;
+        let targetMonth =
+          now.getMonth();
 
 
         if (
-          targetMonth <
-          0
+          period ===
+          "last"
         ) {
 
-          targetMonth =
-            11;
-
-          targetYear -=
+          targetMonth -=
             1;
+
+
+          if (
+            targetMonth <
+            0
+          ) {
+
+            targetMonth =
+              11;
+
+            targetYear -=
+              1;
+
+          }
 
         }
 
-      }
+
+        return domains.map(
+          domain => {
+
+            const weeklyScores:
+              number[][] = [
+                [],
+                [],
+                [],
+                [],
+              ];
 
 
-      return domains.map(
-        (domain) => {
+            sessions.forEach(
+              session => {
 
-          const weeklyScores: number[][] =
-            [
-              [],
-              [],
-              [],
-              [],
-            ];
-
-
-          sessions.forEach(
-            (session) => {
-
-              const games =
-                Array.isArray(
-                  session?.games
-                )
-                  ? session.games
-                  : [];
+                const games =
+                  Array.isArray(
+                    session?.games
+                  )
+                    ? session.games
+                    : [];
 
 
-              games.forEach(
-                (game: any) => {
+                games.forEach(
+                  (game: any) => {
 
-                  if (
-                    normalizeGameName(
-                      game?.game_name
-                    ) !==
+                    if (
+                      normalizeGameName(
+                        game?.game_name
+                      ) !==
                       domain.gameName
-                  ) {
-                    return;
-                  }
+                    ) {
+                      return;
+                    }
 
 
-                  if (
-                    game?.status !==
-                      "Completed" &&
-                    game?.status !==
-                      "Failed"
-                  ) {
-                    return;
-                  }
+                    if (
+                      game?.status !==
+                        "Completed" &&
+                      game?.status !==
+                        "Failed"
+                    ) {
+                      return;
+                    }
 
 
-                  const score =
-                    Number(
-                      game?.score
-                    );
+                    const score =
+                      Number(
+                        game?.score
+                      );
 
 
-                  if (
-                    !Number.isFinite(
-                      score
-                    )
-                  ) {
-                    return;
-                  }
-
-
-                  const date =
-                    getGameDate(
-                      game,
-                      session
-                    );
-
-
-                  if (!date) {
-                    return;
-                  }
-
-
-                  if (
-                    date.getFullYear() !==
-                      targetYear ||
-                    date.getMonth() !==
-                      targetMonth
-                  ) {
-                    return;
-                  }
-
-
-                  const weekIndex =
-                    getWeekIndex(
-                      date
-                    );
-
-
-                  weeklyScores[
-                    weekIndex
-                  ].push(
-                    Math.max(
-                      0,
-                      Math.min(
-                        100,
+                    if (
+                      !Number.isFinite(
                         score
                       )
-                    )
-                  );
-
-                }
-              );
-
-            }
-          );
+                    ) {
+                      return;
+                    }
 
 
-          const averages =
-            weeklyScores.map(
-              (
-                scores
-              ) => {
-
-                if (
-                  scores.length ===
-                  0
-                ) {
-                  return null;
-                }
+                    const date =
+                      getGameDate(
+                        game,
+                        session
+                      );
 
 
-                const total =
-                  scores.reduce(
-                    (
-                      sum,
-                      score
-                    ) =>
-                      sum +
-                      score,
-                    0
-                  );
+                    if (!date) {
+                      return;
+                    }
 
 
-                return Math.round(
-                  total /
-                    scores.length
+                    if (
+                      date.getFullYear() !==
+                        targetYear ||
+                      date.getMonth() !==
+                        targetMonth
+                    ) {
+                      return;
+                    }
+
+
+                    const weekIndex =
+                      getWeekIndex(
+                        date
+                      );
+
+
+                    weeklyScores[
+                      weekIndex
+                    ].push(
+                      Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          score
+                        )
+                      )
+                    );
+
+                  }
                 );
 
               }
             );
 
 
-          return {
-            ...domain,
-            averages,
-          };
+            const averages =
+              weeklyScores.map(
+                scores => {
 
-        }
-      );
+                  if (
+                    scores.length ===
+                    0
+                  ) {
+                    return null;
+                  }
 
-    }, [
-      sessions,
-      period,
-    ]);
+
+                  const total =
+                    scores.reduce(
+                      (
+                        sum,
+                        score
+                      ) =>
+                        sum +
+                        score,
+                      0
+                    );
+
+
+                  return Math.round(
+                    total /
+                    scores.length
+                  );
+
+                }
+              );
+
+
+            return {
+              ...domain,
+              averages,
+            };
+
+          }
+        );
+
+      },
+      [
+        sessions,
+        period,
+      ]
+    );
 
 
   const hasAnyData =
     chartValues.some(
-      (domain) =>
+      domain =>
         domain.averages.some(
-          (value) =>
+          value =>
             value !==
             null
         )
@@ -528,20 +548,18 @@ const PerformanceChart = () => {
 
   const data = {
     labels: [
-      "Week 1",
-      "Week 2",
-      "Week 3",
-      "Week 4",
+      "W1",
+      "W2",
+      "W3",
+      "W4",
     ],
 
     datasets:
       chartValues.map(
-        (
-          domain
-        ) => ({
+        domain => ({
           data:
             domain.averages.map(
-              (value) =>
+              value =>
                 value ??
                 0
             ),
@@ -551,7 +569,7 @@ const PerformanceChart = () => {
               domain.color,
 
           strokeWidth:
-            3,
+            2.5,
         })
       ),
   };
@@ -559,7 +577,7 @@ const PerformanceChart = () => {
 
   const chartWidth =
     Math.max(
-      300,
+      290,
       Math.min(
         width -
           72,
@@ -570,14 +588,18 @@ const PerformanceChart = () => {
 
   const periodLabel =
     period ===
-    "this"
+      "this"
       ? "This Month"
       : "Last Month";
 
 
   return (
 
-    <Card>
+    <View
+      style={
+        styles.panel
+      }
+    >
 
       <View
         style={
@@ -587,26 +609,51 @@ const PerformanceChart = () => {
 
         <View
           style={
-            styles.titleSection
+            styles.titleGroup
           }
         >
 
-          <Text
+          <View
             style={
-              styles.title
+              styles.titleIcon
             }
           >
-            Cognitive Performance
-          </Text>
+
+            <Activity
+              size={18}
+              color="#7465E8"
+            />
+
+          </View>
 
 
-          <Text
+          <View
             style={
-              styles.subtitle
+              styles.titleSection
             }
           >
-            Average performance across all children
-          </Text>
+
+            <Text
+              style={
+                styles.title
+              }
+            >
+              Cognitive Performance
+            </Text>
+
+
+            <Text
+              style={
+                styles.subtitle
+              }
+              numberOfLines={
+                2
+              }
+            >
+              Average cognitive performance by week
+            </Text>
+
+          </View>
 
         </View>
 
@@ -634,8 +681,8 @@ const PerformanceChart = () => {
 
 
           <ChevronDown
-            size={16}
-            color="#64748B"
+            size={14}
+            color="#74778C"
           />
 
         </Pressable>
@@ -643,193 +690,219 @@ const PerformanceChart = () => {
       </View>
 
 
-      {loading && (
-
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <ActivityIndicator
-            color="#7B6EF6"
-          />
-
-
-          <Text
-            style={
-              styles.stateText
-            }
-          >
-            Loading performance...
-          </Text>
-
-        </View>
-
-      )}
-
-
-      {!loading &&
-        error !== "" && (
-
-        <View
-          style={
-            styles.errorBox
-          }
-        >
-
-          <Text
-            style={
-              styles.errorText
-            }
-          >
-            {error}
-          </Text>
-
-        </View>
-
-      )}
-
-
-      {!loading &&
-        error === "" &&
-        !hasAnyData && (
-
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <Text
-            style={
-              styles.emptyTitle
-            }
-          >
-            No performance data
-          </Text>
-
-
-          <Text
-            style={
-              styles.stateText
-            }
-          >
-            No completed assessment games were found for this period.
-          </Text>
-
-        </View>
-
-      )}
-
-
-      {!loading &&
-        error === "" &&
-        hasAnyData && (
-
-        <>
-
-          <LineChart
-
-            data={
-              data
-            }
-
-            width={
-              chartWidth
-            }
-
-            height={
-              260
-            }
-
-            fromZero
-
-            segments={
-              4
-            }
-
-            yAxisSuffix="%"
-
-            chartConfig={{
-
-              backgroundGradientFrom:
-                "#FFFFFF",
-
-              backgroundGradientTo:
-                "#FFFFFF",
-
-              decimalPlaces:
-                0,
-
-              color:
-                () =>
-                  "#64748B",
-
-              labelColor:
-                () =>
-                  "#64748B",
-
-              propsForDots: {
-
-                r:
-                  "4",
-
-                strokeWidth:
-                  "2",
-
-              },
-
-            }}
-
-            withInnerLines
-
-            withOuterLines={
-              false
-            }
-
-            bezier
-
-            style={
-              styles.chart
-            }
-
-          />
-
+      {
+        loading && (
 
           <View
             style={
-              styles.legend
+              styles.stateBox
             }
           >
 
-            {domains.map(
-              (domain) => (
+            <ActivityIndicator
+              color="#7B6EF6"
+            />
 
-                <Legend
-                  key={
-                    domain.key
-                  }
-                  color={
-                    domain.color
-                  }
-                  text={
-                    domain.label
-                  }
-                />
 
-              )
-            )}
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              Loading performance...
+            </Text>
 
           </View>
 
-        </>
+        )
+      }
 
-      )}
+
+      {
+        !loading &&
+        error !==
+          "" && (
+
+          <View
+            style={
+              styles.errorBox
+            }
+          >
+
+            <Text
+              style={
+                styles.errorTitle
+              }
+            >
+              Unable to load performance
+            </Text>
+
+
+            <Text
+              style={
+                styles.errorText
+              }
+            >
+              {error}
+            </Text>
+
+          </View>
+
+        )
+      }
+
+
+      {
+        !loading &&
+        error ===
+          "" &&
+        !hasAnyData && (
+
+          <View
+            style={
+              styles.stateBox
+            }
+          >
+
+            <Text
+              style={
+                styles.emptyTitle
+              }
+            >
+              No assessment data
+            </Text>
+
+
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              No completed game results are available for this period.
+            </Text>
+
+          </View>
+
+        )
+      }
+
+
+      {
+        !loading &&
+        error ===
+          "" &&
+        hasAnyData && (
+
+          <>
+
+            <View
+              style={
+                styles.chartWrapper
+              }
+            >
+
+              <LineChart
+                data={
+                  data
+                }
+                width={
+                  chartWidth
+                }
+                height={
+                  245
+                }
+                fromZero
+                segments={
+                  4
+                }
+                yAxisSuffix="%"
+                chartConfig={{
+                  backgroundGradientFrom:
+                    "#FFFFFF",
+
+                  backgroundGradientTo:
+                    "#FFFFFF",
+
+                  decimalPlaces:
+                    0,
+
+                  color:
+                    () =>
+                      "#A0A3B4",
+
+                  labelColor:
+                    () =>
+                      "#9295A8",
+
+                  propsForDots: {
+                    r:
+                      "3.5",
+
+                    strokeWidth:
+                      "1.5",
+                  },
+
+                  propsForBackgroundLines: {
+                    stroke:
+                      "#ECECF5",
+
+                    strokeDasharray:
+                      "5 5",
+                  },
+                }}
+                withInnerLines
+                withOuterLines={
+                  false
+                }
+                withVerticalLines={
+                  false
+                }
+                bezier
+                style={
+                  styles.chart
+                }
+              />
+
+            </View>
+
+
+            <View
+              style={
+                styles.legend
+              }
+            >
+
+              {
+                domains.map(
+                  domain => (
+
+                    <Legend
+                      key={
+                        domain.key
+                      }
+                      color={
+                        domain.color
+                      }
+                      text={
+                        domain.label
+                      }
+                    />
+
+                  )
+                )
+              }
+
+            </View>
+
+          </>
+
+        )
+      }
 
 
       <Modal
         transparent
+        statusBarTranslucent
         animationType="fade"
         visible={
           periodModalOpen
@@ -843,113 +916,125 @@ const PerformanceChart = () => {
         }}
       >
 
-        <Pressable
+        <SafeAreaView
           style={
-            styles.modalOverlay
+            styles.modalSafeArea
           }
-          onPress={() => {
-
-            setPeriodModalOpen(
-              false
-            );
-
-          }}
+          edges={[
+            "top",
+            "bottom",
+          ]}
         >
 
           <Pressable
             style={
-              styles.modalCard
+              styles.modalOverlay
             }
-            onPress={() => {}}
+            onPress={() => {
+
+              setPeriodModalOpen(
+                false
+              );
+
+            }}
           >
 
-            <Text
-              style={
-                styles.modalTitle
-              }
-            >
-              Select Period
-            </Text>
-
-
             <Pressable
-              style={[
-                styles.periodOption,
-
-                period ===
-                  "this" &&
-                  styles.periodOptionSelected,
-              ]}
-              onPress={() => {
-
-                setPeriod(
-                  "this"
-                );
-
-                setPeriodModalOpen(
-                  false
-                );
-
-              }}
+              style={
+                styles.modalCard
+              }
+              onPress={() => {}}
             >
 
               <Text
+                style={
+                  styles.modalTitle
+                }
+              >
+                Select Period
+              </Text>
+
+
+              <Pressable
                 style={[
-                  styles.periodOptionText,
+                  styles.periodOption,
 
                   period ===
                     "this" &&
-                    styles.periodOptionTextSelected,
+                    styles.periodOptionSelected,
                 ]}
+                onPress={() => {
+
+                  setPeriod(
+                    "this"
+                  );
+
+                  setPeriodModalOpen(
+                    false
+                  );
+
+                }}
               >
-                This Month
-              </Text>
 
-            </Pressable>
+                <Text
+                  style={[
+                    styles.periodOptionText,
+
+                    period ===
+                      "this" &&
+                      styles.periodOptionTextSelected,
+                  ]}
+                >
+                  This Month
+                </Text>
+
+              </Pressable>
 
 
-            <Pressable
-              style={[
-                styles.periodOption,
-
-                period ===
-                  "last" &&
-                  styles.periodOptionSelected,
-              ]}
-              onPress={() => {
-
-                setPeriod(
-                  "last"
-                );
-
-                setPeriodModalOpen(
-                  false
-                );
-
-              }}
-            >
-
-              <Text
+              <Pressable
                 style={[
-                  styles.periodOptionText,
+                  styles.periodOption,
 
                   period ===
                     "last" &&
-                    styles.periodOptionTextSelected,
+                    styles.periodOptionSelected,
                 ]}
+                onPress={() => {
+
+                  setPeriod(
+                    "last"
+                  );
+
+                  setPeriodModalOpen(
+                    false
+                  );
+
+                }}
               >
-                Last Month
-              </Text>
+
+                <Text
+                  style={[
+                    styles.periodOptionText,
+
+                    period ===
+                      "last" &&
+                      styles.periodOptionTextSelected,
+                  ]}
+                >
+                  Last Month
+                </Text>
+
+              </Pressable>
 
             </Pressable>
 
           </Pressable>
 
-        </Pressable>
+        </SafeAreaView>
 
       </Modal>
 
-    </Card>
+    </View>
 
   );
 
@@ -1001,22 +1086,105 @@ function Legend({
 const styles =
   StyleSheet.create({
 
+    panel: {
+
+      padding:
+        18,
+
+      borderRadius:
+        21,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.035,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
+
+    },
+
+
     header: {
 
       flexDirection:
         "row",
 
+      alignItems:
+        "flex-start",
+
       justifyContent:
         "space-between",
+
+      gap:
+        10,
+
+      marginBottom:
+        14,
+
+    },
+
+
+    titleGroup: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
       gap:
+        9,
+
+    },
+
+
+    titleIcon: {
+
+      width:
+        37,
+
+      height:
+        37,
+
+      flexShrink:
+        0,
+
+      borderRadius:
         12,
 
-      marginBottom:
-        25,
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
 
     },
 
@@ -1026,13 +1194,22 @@ const styles =
       flex:
         1,
 
+      minWidth:
+        0,
+
     },
 
 
     title: {
 
+      color:
+        "#333554",
+
       fontSize:
-        20,
+        15,
+
+      lineHeight:
+        19,
 
       fontWeight:
         "700",
@@ -1042,34 +1219,28 @@ const styles =
 
     subtitle: {
 
-      fontSize:
-        13,
+      marginTop:
+        3,
 
       color:
-        "#94A3B8",
+        "#A0A3B4",
 
-      marginTop:
-        5,
+      fontSize:
+        10,
+
+      lineHeight:
+        14,
 
     },
 
 
     select: {
 
-      borderWidth:
-        1,
-
-      borderColor:
-        "#E5E7EB",
-
-      borderRadius:
-        12,
+      minHeight:
+        35,
 
       paddingHorizontal:
-        12,
-
-      paddingVertical:
-        8,
+        9,
 
       flexDirection:
         "row",
@@ -1078,7 +1249,16 @@ const styles =
         "center",
 
       gap:
-        5,
+        4,
+
+      borderRadius:
+        10,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E7E7F0",
 
       backgroundColor:
         "#FFFFFF",
@@ -1088,14 +1268,25 @@ const styles =
 
     selectText: {
 
-      fontSize:
-        13,
-
       color:
-        "#475569",
+        "#6E7188",
+
+      fontSize:
+        10,
 
       fontWeight:
-        "500",
+        "600",
+
+    },
+
+
+    chartWrapper: {
+
+      alignItems:
+        "center",
+
+      overflow:
+        "hidden",
 
     },
 
@@ -1103,10 +1294,10 @@ const styles =
     chart: {
 
       marginLeft:
-        -20,
+        -10,
 
       borderRadius:
-        16,
+        14,
 
     },
 
@@ -1120,10 +1311,19 @@ const styles =
         "wrap",
 
       gap:
-        15,
+        11,
 
       marginTop:
-        20,
+        13,
+
+      paddingTop:
+        14,
+
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#F1F1F6",
 
     },
 
@@ -1137,7 +1337,7 @@ const styles =
         "center",
 
       gap:
-        6,
+        5,
 
     },
 
@@ -1145,24 +1345,24 @@ const styles =
     dot: {
 
       width:
-        10,
+        8,
 
       height:
-        10,
+        8,
 
       borderRadius:
-        5,
+        4,
 
     },
 
 
     legendText: {
 
-      fontSize:
-        12,
-
       color:
-        "#64748B",
+        "#888B9E",
+
+      fontSize:
+        9.5,
 
     },
 
@@ -1170,7 +1370,7 @@ const styles =
     stateBox: {
 
       minHeight:
-        220,
+        230,
 
       alignItems:
         "center",
@@ -1186,31 +1386,34 @@ const styles =
 
     stateText: {
 
-      fontSize:
-        13,
+      marginTop:
+        8,
 
       color:
-        "#94A3B8",
+        "#A0A3B4",
 
       textAlign:
         "center",
 
-      marginTop:
-        10,
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
 
     },
 
 
     emptyTitle: {
 
+      color:
+        "#62657B",
+
       fontSize:
-        16,
+        13,
 
       fontWeight:
         "700",
-
-      color:
-        "#475569",
 
     },
 
@@ -1218,13 +1421,10 @@ const styles =
     errorBox: {
 
       minHeight:
-        180,
+        190,
 
-      backgroundColor:
-        "#FEF2F2",
-
-      borderRadius:
-        16,
+      padding:
+        18,
 
       alignItems:
         "center",
@@ -1232,22 +1432,59 @@ const styles =
       justifyContent:
         "center",
 
-      padding:
-        20,
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FFF0F3",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F6D8DF",
+
+    },
+
+
+    errorTitle: {
+
+      color:
+        "#B9415E",
+
+      fontSize:
+        12.5,
+
+      fontWeight:
+        "700",
 
     },
 
 
     errorText: {
 
+      marginTop:
+        4,
+
       color:
-        "#DC2626",
+        "#C55A70",
 
       textAlign:
         "center",
 
       fontSize:
-        13,
+        10.5,
+
+    },
+
+
+    modalSafeArea: {
+
+      flex:
+        1,
+
+      backgroundColor:
+        "rgba(30,31,50,0.32)",
 
     },
 
@@ -1256,9 +1493,6 @@ const styles =
 
       flex:
         1,
-
-      backgroundColor:
-        "rgba(0,0,0,0.3)",
 
       alignItems:
         "center",
@@ -1278,33 +1512,39 @@ const styles =
         "100%",
 
       maxWidth:
-        360,
+        350,
+
+      padding:
+        20,
+
+      borderRadius:
+        21,
 
       backgroundColor:
         "#FFFFFF",
 
-      borderRadius:
-        24,
+      borderWidth:
+        1,
 
-      padding:
-        22,
+      borderColor:
+        "#ECECF4",
 
     },
 
 
     modalTitle: {
 
+      marginBottom:
+        14,
+
+      color:
+        "#333554",
+
       fontSize:
-        18,
+        16,
 
       fontWeight:
         "700",
-
-      marginBottom:
-        16,
-
-      color:
-        "#1E293B",
 
     },
 
@@ -1312,19 +1552,19 @@ const styles =
     periodOption: {
 
       height:
-        50,
+        46,
 
       justifyContent:
         "center",
 
       paddingHorizontal:
-        16,
+        14,
+
+      marginBottom:
+        7,
 
       borderRadius:
         12,
-
-      marginBottom:
-        8,
 
     },
 
@@ -1332,18 +1572,18 @@ const styles =
     periodOptionSelected: {
 
       backgroundColor:
-        "#F3EEFF",
+        "#F0EDFF",
 
     },
 
 
     periodOptionText: {
 
-      fontSize:
-        15,
-
       color:
-        "#475569",
+        "#62657A",
+
+      fontSize:
+        12.5,
 
     },
 
@@ -1351,7 +1591,7 @@ const styles =
     periodOptionTextSelected: {
 
       color:
-        "#7B6EF6",
+        "#7566EB",
 
       fontWeight:
         "700",

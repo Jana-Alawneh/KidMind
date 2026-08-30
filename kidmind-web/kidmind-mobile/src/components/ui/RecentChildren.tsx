@@ -5,7 +5,6 @@ import {
 
 import {
   ActivityIndicator,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,8 +15,6 @@ import {
   router,
   useFocusEffect,
 } from "expo-router";
-
-import Card from "./Card";
 
 import {
   getChildren,
@@ -146,7 +143,7 @@ const getLatestGameScore = (
 
 
   sessions.forEach(
-    (session) => {
+    session => {
 
       const games =
         Array.isArray(
@@ -323,24 +320,56 @@ const getChildTimestamp = (
 };
 
 
+const getChildName = (
+  child: any
+) => {
+
+  return (
+    child?.full_name ||
+    child?.name ||
+    `Child ${child?.id ?? ""}`
+  );
+
+};
+
+
+const getInitial = (
+  child: any
+) => {
+
+  return String(
+    getChildName(
+      child
+    ) || "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+};
+
+
 const RecentChildren = () => {
 
   const [
     children,
     setChildren,
-  ] = useState<any[]>([]);
+  ] =
+    useState<any[]>([]);
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const loadChildren =
@@ -387,11 +416,11 @@ const RecentChildren = () => {
           const recentChildren =
             allChildren
               .map(
-                (child) => {
+                child => {
 
                   const childSessions =
                     allSessions.filter(
-                      (session) =>
+                      session =>
                         Number(
                           session.child_id
                         ) ===
@@ -434,7 +463,9 @@ const RecentChildren = () => {
             recentChildren
           );
 
-        } catch (loadError) {
+        } catch (
+          loadError
+        ) {
 
           console.error(
             "Failed to load recent children:",
@@ -477,7 +508,11 @@ const RecentChildren = () => {
 
   return (
 
-    <Card>
+    <View
+      style={
+        styles.panel
+      }
+    >
 
       <View
         style={
@@ -485,16 +520,39 @@ const RecentChildren = () => {
         }
       >
 
-        <Text
+        <View
           style={
-            styles.title
+            styles.headerCopy
           }
         >
-          Recent Children
-        </Text>
+
+          <Text
+            style={
+              styles.title
+            }
+          >
+            Recent Children
+          </Text>
+
+
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
+            Recently added children in your care
+          </Text>
+
+        </View>
 
 
         <TouchableOpacity
+          activeOpacity={
+            0.7
+          }
+          style={
+            styles.viewAllButton
+          }
           onPress={() => {
 
             router.push(
@@ -517,207 +575,256 @@ const RecentChildren = () => {
       </View>
 
 
-      {loading && (
+      {
+        loading && (
 
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <ActivityIndicator
-            color="#7B6EF6"
-          />
-
-
-          <Text
+          <View
             style={
-              styles.stateText
+              styles.stateBox
             }
           >
-            Loading children...
-          </Text>
 
-        </View>
-
-      )}
+            <ActivityIndicator
+              color="#7B6EF6"
+            />
 
 
-      {!loading &&
-        error !== "" && (
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              Loading children...
+            </Text>
 
-        <View
-          style={
-            styles.errorBox
-          }
-        >
+          </View>
 
-          <Text
+        )
+      }
+
+
+      {
+        !loading &&
+        error !==
+          "" && (
+
+          <View
             style={
-              styles.errorTitle
+              styles.errorBox
             }
           >
-            Unable to load children
-          </Text>
+
+            <Text
+              style={
+                styles.errorTitle
+              }
+            >
+              Unable to load children
+            </Text>
 
 
-          <Text
-            style={
-              styles.errorText
-            }
-          >
-            {error}
-          </Text>
+            <Text
+              style={
+                styles.errorText
+              }
+            >
+              {error}
+            </Text>
 
-        </View>
+          </View>
 
-      )}
+        )
+      }
 
 
-      {!loading &&
-        error === "" &&
+      {
+        !loading &&
+        error ===
+          "" &&
         children.length ===
           0 && (
 
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <Text
+          <View
             style={
-              styles.emptyTitle
+              styles.stateBox
             }
           >
-            No children yet
-          </Text>
+
+            <Text
+              style={
+                styles.emptyTitle
+              }
+            >
+              No children yet
+            </Text>
 
 
-          <Text
-            style={
-              styles.stateText
-            }
-          >
-            Registered children will appear here.
-          </Text>
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              Registered children will appear here.
+            </Text>
 
-        </View>
+          </View>
 
-      )}
+        )
+      }
 
 
-      {!loading &&
-        error === "" &&
+      {
+        !loading &&
+        error ===
+          "" &&
         children.length >
           0 && (
 
-        <View>
+          <View
+            style={
+              styles.childrenList
+            }
+          >
 
-          {children.map(
-            (child) => (
+            {
+              children.map(
+                child => (
 
-              <TouchableOpacity
-                key={
-                  child.id
-                }
-                activeOpacity={
-                  0.75
-                }
-                style={
-                  styles.childRow
-                }
-                onPress={() => {
+                  <TouchableOpacity
+                    key={
+                      child.id
+                    }
+                    activeOpacity={
+                      0.72
+                    }
+                    style={
+                      styles.childRow
+                    }
+                    onPress={() => {
 
-                  router.push({
-                    pathname:
-                      "/children/[id]",
+                      router.push({
+                        pathname:
+                          "/children/[id]",
 
-                    params: {
-                      id:
-                        String(
-                          child.id
-                        ),
-                    },
-                  });
+                        params: {
+                          id:
+                            String(
+                              child.id
+                            ),
+                        },
+                      });
 
-                }}
-              >
-
-                <View
-                  style={
-                    styles.childInfo
-                  }
-                >
-
-                  <Image
-                    source={{
-                      uri:
-                        `https://api.dicebear.com/7.x/adventurer/png?seed=${encodeURIComponent(
-                          child.full_name ||
-                          `Child ${child.id}`
-                        )}`,
                     }}
-                    style={
-                      styles.avatar
-                    }
-                  />
-
-
-                  <View
-                    style={
-                      styles.childText
-                    }
                   >
 
-                    <Text
+                    <View
                       style={
-                        styles.name
-                      }
-                      numberOfLines={
-                        1
+                        styles.childInfo
                       }
                     >
-                      {child.full_name}
-                    </Text>
+
+                      <View
+                        style={
+                          styles.avatar
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.avatarText
+                          }
+                        >
+                          {
+                            getInitial(
+                              child
+                            )
+                          }
+                        </Text>
+
+                      </View>
 
 
-                    <Text
-                      style={
-                        styles.age
-                      }
+                      <View
+                        style={
+                          styles.childText
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.name
+                          }
+                          numberOfLines={
+                            1
+                          }
+                        >
+                          {
+                            getChildName(
+                              child
+                            )
+                          }
+                        </Text>
+
+
+                        <Text
+                          style={
+                            styles.age
+                          }
+                        >
+                          Age {
+                            child.age ??
+                            "—"
+                          }
+                          {"  •  "}
+                          ID #{child.id}
+                        </Text>
+
+                      </View>
+
+                    </View>
+
+
+                    <View
+                      style={[
+                        styles.scoreBox,
+
+                        typeof child.dashboardScore !==
+                          "number" &&
+                          styles.scoreBoxEmpty,
+                      ]}
                     >
-                      Age {child.age}
-                      {" · "}
-                      ID #{child.id}
-                    </Text>
 
-                  </View>
+                      <Text
+                        style={[
+                          styles.score,
 
-                </View>
+                          typeof child.dashboardScore !==
+                            "number" &&
+                            styles.scoreEmpty,
+                        ]}
+                      >
+                        {
+                          typeof child.dashboardScore ===
+                            "number"
+                            ? `${child.dashboardScore}%`
+                            : "—"
+                        }
+                      </Text>
 
+                    </View>
 
-                <Text
-                  style={
-                    styles.score
-                  }
-                >
-                  {typeof child.dashboardScore ===
-                  "number"
-                    ? `${child.dashboardScore}%`
-                    : "—"}
-                </Text>
+                  </TouchableOpacity>
 
-              </TouchableOpacity>
+                )
+              )
+            }
 
-            )
-          )}
+          </View>
 
-        </View>
+        )
+      }
 
-      )}
-
-    </Card>
+    </View>
 
   );
 
@@ -727,33 +834,112 @@ const RecentChildren = () => {
 const styles =
   StyleSheet.create({
 
+    panel: {
+
+      padding:
+        18,
+
+      borderRadius:
+        21,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.035,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
+
+    },
+
+
     header: {
 
       flexDirection:
         "row",
 
+      alignItems:
+        "flex-start",
+
       justifyContent:
         "space-between",
 
-      alignItems:
-        "center",
+      gap:
+        12,
 
       marginBottom:
-        24,
+        14,
+
+    },
+
+
+    headerCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
 
     },
 
 
     title: {
 
+      color:
+        "#333554",
+
       fontSize:
-        20,
+        15.5,
 
       fontWeight:
-        "600",
+        "700",
+
+    },
+
+
+    subtitle: {
+
+      marginTop:
+        3,
 
       color:
-        "#111827",
+        "#A0A3B4",
+
+      fontSize:
+        10.5,
+
+    },
+
+
+    viewAllButton: {
+
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        6,
+
+      borderRadius:
+        9,
 
     },
 
@@ -761,33 +947,53 @@ const styles =
     viewAll: {
 
       color:
-        "#7B6EF6",
+        "#7566EB",
+
+      fontSize:
+        10.5,
 
       fontWeight:
-        "600",
+        "700",
+
+    },
+
+
+    childrenList: {
+
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#F1F1F6",
 
     },
 
 
     childRow: {
 
+      minHeight:
+        69,
+
+      paddingVertical:
+        11,
+
       flexDirection:
         "row",
-
-      justifyContent:
-        "space-between",
 
       alignItems:
         "center",
 
-      marginBottom:
-        20,
-
-      paddingVertical:
-        4,
+      justifyContent:
+        "space-between",
 
       gap:
         12,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#F1F1F6",
 
     },
 
@@ -797,11 +1003,17 @@ const styles =
       flex:
         1,
 
+      minWidth:
+        0,
+
       flexDirection:
         "row",
 
       alignItems:
         "center",
+
+      gap:
+        11,
 
     },
 
@@ -809,19 +1021,39 @@ const styles =
     avatar: {
 
       width:
-        48,
+        41,
 
       height:
-        48,
+        41,
+
+      flexShrink:
+        0,
 
       borderRadius:
-        16,
+        13,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
 
       backgroundColor:
-        "#F3F4FF",
+        "#FFF0FA",
 
-      marginRight:
-        16,
+    },
+
+
+    avatarText: {
+
+      color:
+        "#B05D9B",
+
+      fontSize:
+        13,
+
+      fontWeight:
+        "800",
 
     },
 
@@ -831,33 +1063,73 @@ const styles =
       flex:
         1,
 
+      minWidth:
+        0,
+
     },
 
 
     name: {
 
-      fontWeight:
-        "600",
+      color:
+        "#373953",
 
       fontSize:
-        16,
+        12.5,
 
-      color:
-        "#111827",
+      fontWeight:
+        "700",
 
     },
 
 
     age: {
 
-      fontSize:
-        14,
-
-      color:
-        "#64748B",
-
       marginTop:
         3,
+
+      color:
+        "#9DA0B1",
+
+      fontSize:
+        10,
+
+    },
+
+
+    scoreBox: {
+
+      minWidth:
+        51,
+
+      paddingHorizontal:
+        9,
+
+      paddingVertical:
+        7,
+
+      flexShrink:
+        0,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        10,
+
+      backgroundColor:
+        "#F3F0FF",
+
+    },
+
+
+    scoreBoxEmpty: {
+
+      backgroundColor:
+        "#F5F5F8",
 
     },
 
@@ -865,13 +1137,21 @@ const styles =
     score: {
 
       color:
-        "#7B6EF6",
-
-      fontWeight:
-        "700",
+        "#7566EB",
 
       fontSize:
-        16,
+        11,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    scoreEmpty: {
+
+      color:
+        "#A4A6B6",
 
     },
 
@@ -879,7 +1159,7 @@ const styles =
     stateBox: {
 
       minHeight:
-        150,
+        145,
 
       alignItems:
         "center",
@@ -895,31 +1175,34 @@ const styles =
 
     stateText: {
 
-      color:
-        "#94A3B8",
-
-      fontSize:
-        13,
-
       marginTop:
-        8,
+        7,
+
+      color:
+        "#A0A3B4",
 
       textAlign:
         "center",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
 
     },
 
 
     emptyTitle: {
 
+      color:
+        "#62657B",
+
       fontSize:
-        16,
+        13,
 
       fontWeight:
         "700",
-
-      color:
-        "#475569",
 
     },
 
@@ -929,14 +1212,8 @@ const styles =
       minHeight:
         120,
 
-      borderRadius:
-        16,
-
-      backgroundColor:
-        "#FEF2F2",
-
       padding:
-        18,
+        16,
 
       alignItems:
         "center",
@@ -944,36 +1221,48 @@ const styles =
       justifyContent:
         "center",
 
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FFF0F3",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F6D8DF",
+
     },
 
 
     errorTitle: {
 
       color:
-        "#B91C1C",
+        "#B9415E",
+
+      fontSize:
+        12.5,
 
       fontWeight:
         "700",
-
-      fontSize:
-        15,
 
     },
 
 
     errorText: {
 
-      color:
-        "#DC2626",
-
-      fontSize:
-        13,
-
       marginTop:
-        5,
+        4,
+
+      color:
+        "#C55A70",
 
       textAlign:
         "center",
+
+      fontSize:
+        10.5,
 
     },
 

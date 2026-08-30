@@ -14,22 +14,24 @@ import {
 } from "react-native";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
   router,
 } from "expo-router";
 
 import {
+  ArrowUpRight,
   CalendarPlus,
   Check,
   FileText,
-  Sparkles,
   UserPlus,
   X,
+  Zap,
 } from "lucide-react-native";
 
-import Card from "../ui/Card";
-
 import AddChildModal from "../children/AddChildModal";
-
 import StartSessionModal from "../sessions/StartSessionModal";
 
 import {
@@ -179,45 +181,52 @@ const QuickActions = () => {
   const [
     addChildOpen,
     setAddChildOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     startSessionOpen,
     setStartSessionOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     reportModalOpen,
     setReportModalOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     completedSessions,
     setCompletedSessions,
-  ] = useState<any[]>([]);
+  ] =
+    useState<any[]>([]);
 
 
   const [
     selectedReportSessionId,
     setSelectedReportSessionId,
-  ] = useState<number | null>(
-    null
-  );
+  ] =
+    useState<number | null>(
+      null
+    );
 
 
   const [
     reportsLoading,
     setReportsLoading,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   const [
     reportsError,
     setReportsError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const openReportModal =
@@ -229,16 +238,13 @@ const QuickActions = () => {
           true
         );
 
-
         setReportsLoading(
           true
         );
 
-
         setReportsError(
           ""
         );
-
 
         setSelectedReportSessionId(
           null
@@ -274,16 +280,16 @@ const QuickActions = () => {
         const reports =
           allSessions
             .filter(
-              (session) =>
+              session =>
                 session.status ===
                 "Completed"
             )
             .map(
-              (session) => {
+              session => {
 
                 const child =
                   allChildren.find(
-                    (item) =>
+                    item =>
                       Number(
                         item.id
                       ) ===
@@ -332,7 +338,9 @@ const QuickActions = () => {
           reports
         );
 
-      } catch (error) {
+      } catch (
+        error
+      ) {
 
         console.error(
           "Failed to load completed sessions:",
@@ -400,14 +408,17 @@ const QuickActions = () => {
       title:
         "Add Child",
 
+      description:
+        "Register a child in your care workspace.",
+
       icon:
         UserPlus,
 
       color:
-        "#F3EEFF",
+        "#7566EB",
 
-      disabled:
-        false,
+      background:
+        "#F0EDFF",
 
       onPress:
         () => {
@@ -423,14 +434,17 @@ const QuickActions = () => {
       title:
         "Create Session",
 
+      description:
+        "Start a new cognitive assessment session.",
+
       icon:
         CalendarPlus,
 
       color:
-        "#EAF7FF",
+        "#5595DD",
 
-      disabled:
-        false,
+      background:
+        "#EDF6FF",
 
       onPress:
         () => {
@@ -446,34 +460,20 @@ const QuickActions = () => {
       title:
         "Generate Report",
 
+      description:
+        "Create a report from a completed assessment.",
+
       icon:
         FileText,
 
       color:
-        "#FFF4E8",
+        "#D867B4",
 
-      disabled:
-        false,
+      background:
+        "#FFF0FA",
 
       onPress:
         openReportModal,
-    },
-
-    {
-      title:
-        "AI Assistant",
-
-      icon:
-        Sparkles,
-
-      color:
-        "#EEF8E8",
-
-      disabled:
-        true,
-
-      onPress:
-        () => {},
     },
   ];
 
@@ -482,119 +482,176 @@ const QuickActions = () => {
 
     <>
 
-      <Card>
+      <View
+        style={
+          styles.panel
+        }
+      >
 
-        <Text
+        <View
           style={
-            styles.title
+            styles.heading
           }
         >
-          Quick Actions
-        </Text>
+
+          <View
+            style={
+              styles.headingIcon
+            }
+          >
+
+            <Zap
+              size={18}
+              color="#7465E8"
+            />
+
+          </View>
+
+
+          <View>
+
+            <Text
+              style={
+                styles.title
+              }
+            >
+              Quick Actions
+            </Text>
+
+
+            <Text
+              style={
+                styles.headingSubtitle
+              }
+            >
+              Common therapist tasks
+            </Text>
+
+          </View>
+
+        </View>
 
 
         <View
           style={
-            styles.grid
+            styles.actionList
           }
         >
 
-          {actions.map(
-            (action) => {
+          {
+            actions.map(
+              action => {
 
-              const Icon =
-                action.icon;
-
-
-              return (
-
-                <TouchableOpacity
-                  key={
-                    action.title
-                  }
-                  activeOpacity={
-                    action.disabled
-                      ? 1
-                      : 0.8
-                  }
-                  disabled={
-                    action.disabled
-                  }
-                  onPress={
-                    action.onPress
-                  }
-                  style={[
-                    styles.actionButton,
-
-                    {
-                      backgroundColor:
-                        action.color,
-                    },
-
-                    action.disabled &&
-                      styles.disabledAction,
-                  ]}
-                >
-
-                  <Icon
-                    size={22}
-                    color="#7B6EF6"
-                  />
+                const Icon =
+                  action.icon;
 
 
-                  <Text
+                return (
+
+                  <TouchableOpacity
+                    key={
+                      action.title
+                    }
+                    activeOpacity={
+                      0.75
+                    }
+                    onPress={
+                      action.onPress
+                    }
                     style={
-                      styles.actionText
+                      styles.actionButton
                     }
                   >
-                    {action.title}
-                  </Text>
+
+                    <View
+                      style={[
+                        styles.actionIcon,
+                        {
+                          backgroundColor:
+                            action.background,
+                        },
+                      ]}
+                    >
+
+                      <Icon
+                        size={19}
+                        color={
+                          action.color
+                        }
+                      />
+
+                    </View>
 
 
-                  {action.disabled && (
-
-                    <Text
+                    <View
                       style={
-                        styles.comingSoon
+                        styles.actionContent
                       }
                     >
-                      Coming Soon
-                    </Text>
 
-                  )}
+                      <Text
+                        style={
+                          styles.actionTitle
+                        }
+                      >
+                        {action.title}
+                      </Text>
 
-                </TouchableOpacity>
 
-              );
+                      <Text
+                        style={
+                          styles.actionDescription
+                        }
+                        numberOfLines={
+                          2
+                        }
+                      >
+                        {action.description}
+                      </Text>
 
-            }
-          )}
+                    </View>
+
+
+                    <ArrowUpRight
+                      size={17}
+                      color="#B0B2C1"
+                    />
+
+                  </TouchableOpacity>
+
+                );
+
+              }
+            )
+          }
 
         </View>
 
-      </Card>
+      </View>
 
 
-      {addChildOpen && (
+      {
+        addChildOpen && (
 
-        <AddChildModal
-          close={() => {
+          <AddChildModal
+            close={() => {
 
-            setAddChildOpen(
-              false
-            );
+              setAddChildOpen(
+                false
+              );
 
-          }}
-          onSuccess={() => {
+            }}
+            onSuccess={() => {
 
-            setAddChildOpen(
-              false
-            );
+              setAddChildOpen(
+                false
+              );
 
-          }}
-        />
+            }}
+          />
 
-      )}
+        )
+      }
 
 
       <StartSessionModal
@@ -608,28 +665,28 @@ const QuickActions = () => {
           );
 
         }}
-        onStarted={(
-          sessionId
-        ) => {
+        onStarted={
+          sessionId => {
 
-          setStartSessionOpen(
-            false
-          );
+            setStartSessionOpen(
+              false
+            );
 
 
-          router.push({
-            pathname:
-              "/sessions/[id]",
+            router.push({
+              pathname:
+                "/sessions/[id]",
 
-            params: {
-              id:
-                String(
-                  sessionId
-                ),
-            },
-          });
+              params: {
+                id:
+                  String(
+                    sessionId
+                  ),
+              },
+            });
 
-        }}
+          }
+        }
       />
 
 
@@ -649,378 +706,408 @@ const QuickActions = () => {
         }}
       >
 
-        <View
+        <SafeAreaView
           style={
-            styles.overlay
+            styles.modalSafeArea
           }
+          edges={[
+            "top",
+            "bottom",
+          ]}
         >
 
           <View
             style={
-              styles.reportModal
+              styles.overlay
             }
           >
 
             <View
               style={
-                styles.reportHeader
+                styles.reportModal
               }
             >
 
               <View
                 style={
-                  styles.reportHeaderLeft
+                  styles.reportHeader
                 }
               >
 
                 <View
                   style={
-                    styles.reportIconBox
+                    styles.reportHeaderLeft
                   }
                 >
 
-                  <FileText
-                    size={23}
-                    color="#F59E0B"
-                  />
-
-                </View>
-
-
-                <View
-                  style={
-                    styles.reportHeaderText
-                  }
-                >
-
-                  <Text
+                  <View
                     style={
-                      styles.reportTitle
-                    }
-                  >
-                    Generate Report
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.reportSubtitle
-                    }
-                  >
-                    Select a completed assessment session
-                  </Text>
-
-                </View>
-
-              </View>
-
-
-              <TouchableOpacity
-                onPress={() => {
-
-                  setReportModalOpen(
-                    false
-                  );
-
-                }}
-              >
-
-                <X
-                  size={23}
-                  color="#64748B"
-                />
-
-              </TouchableOpacity>
-
-            </View>
-
-
-            {reportsLoading && (
-
-              <View
-                style={
-                  styles.reportState
-                }
-              >
-
-                <ActivityIndicator
-                  color="#7B6EF6"
-                />
-
-
-                <Text
-                  style={
-                    styles.reportStateText
-                  }
-                >
-                  Loading completed assessments...
-                </Text>
-
-              </View>
-
-            )}
-
-
-            {!reportsLoading &&
-              reportsError !== "" && (
-
-              <View
-                style={
-                  styles.errorBox
-                }
-              >
-
-                <Text
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {reportsError}
-                </Text>
-
-              </View>
-
-            )}
-
-
-            {!reportsLoading &&
-              reportsError === "" &&
-              completedSessions.length ===
-                0 && (
-
-              <View
-                style={
-                  styles.reportState
-                }
-              >
-
-                <Text
-                  style={
-                    styles.emptyTitle
-                  }
-                >
-                  No completed assessments
-                </Text>
-
-
-                <Text
-                  style={
-                    styles.reportStateText
-                  }
-                >
-                  Complete an assessment session first to generate a report.
-                </Text>
-
-              </View>
-
-            )}
-
-
-            {!reportsLoading &&
-              reportsError === "" &&
-              completedSessions.length >
-                0 && (
-
-              <>
-
-                <Text
-                  style={
-                    styles.selectLabel
-                  }
-                >
-                  Completed Assessment
-                </Text>
-
-
-                <ScrollView
-                  style={
-                    styles.reportList
-                  }
-                  showsVerticalScrollIndicator={
-                    false
-                  }
-                >
-
-                  {completedSessions.map(
-                    (session) => {
-
-                      const selected =
-                        Number(
-                          selectedReportSessionId
-                        ) ===
-                        Number(
-                          session.id
-                        );
-
-
-                      return (
-
-                        <TouchableOpacity
-                          key={
-                            session.id
-                          }
-                          activeOpacity={
-                            0.8
-                          }
-                          onPress={() => {
-
-                            setSelectedReportSessionId(
-                              Number(
-                                session.id
-                              )
-                            );
-
-                          }}
-                          style={[
-                            styles.reportOption,
-
-                            selected &&
-                              styles.reportOptionSelected,
-                          ]}
-                        >
-
-                          <View
-                            style={
-                              styles.reportOptionContent
-                            }
-                          >
-
-                            <Text
-                              style={[
-                                styles.reportChildName,
-
-                                selected &&
-                                  styles.reportChildNameSelected,
-                              ]}
-                            >
-                              {session.dashboardChildName}
-                            </Text>
-
-
-                            <Text
-                              style={
-                                styles.reportMeta
-                              }
-                            >
-                              Session #{session.id}
-                              {" · "}
-                              {session.dashboardActivity}
-                            </Text>
-
-
-                            <Text
-                              style={
-                                styles.reportDate
-                              }
-                            >
-                              {formatDate(
-                                session.dashboardDate
-                              )}
-                            </Text>
-
-                          </View>
-
-
-                          <View
-                            style={[
-                              styles.radio,
-
-                              selected &&
-                                styles.radioSelected,
-                            ]}
-                          >
-
-                            {selected && (
-
-                              <Check
-                                size={15}
-                                color="#FFFFFF"
-                              />
-
-                            )}
-
-                          </View>
-
-                        </TouchableOpacity>
-
-                      );
-
-                    }
-                  )}
-
-                </ScrollView>
-
-
-                <View
-                  style={
-                    styles.reportActions
-                  }
-                >
-
-                  <TouchableOpacity
-                    style={
-                      styles.cancelButton
-                    }
-                    onPress={() => {
-
-                      setReportModalOpen(
-                        false
-                      );
-
-                    }}
-                  >
-
-                    <Text
-                      style={
-                        styles.cancelButtonText
-                      }
-                    >
-                      Cancel
-                    </Text>
-
-                  </TouchableOpacity>
-
-
-                  <TouchableOpacity
-                    style={[
-                      styles.generateButton,
-
-                      !selectedReportSessionId &&
-                        styles.generateButtonDisabled,
-                    ]}
-                    disabled={
-                      !selectedReportSessionId
-                    }
-                    onPress={
-                      handleOpenReport
+                      styles.reportIconBox
                     }
                   >
 
                     <FileText
-                      size={17}
-                      color="#FFFFFF"
+                      size={20}
+                      color="#D867B4"
                     />
 
+                  </View>
+
+
+                  <View
+                    style={
+                      styles.reportHeaderText
+                    }
+                  >
 
                     <Text
                       style={
-                        styles.generateButtonText
+                        styles.reportTitle
                       }
                     >
                       Generate Report
                     </Text>
 
-                  </TouchableOpacity>
+
+                    <Text
+                      style={
+                        styles.reportSubtitle
+                      }
+                    >
+                      Select a completed assessment session
+                    </Text>
+
+                  </View>
 
                 </View>
 
-              </>
 
-            )}
+                <TouchableOpacity
+                  style={
+                    styles.closeButton
+                  }
+                  onPress={() => {
+
+                    setReportModalOpen(
+                      false
+                    );
+
+                  }}
+                >
+
+                  <X
+                    size={18}
+                    color="#8E91A4"
+                  />
+
+                </TouchableOpacity>
+
+              </View>
+
+
+              {
+                reportsLoading && (
+
+                  <View
+                    style={
+                      styles.reportState
+                    }
+                  >
+
+                    <ActivityIndicator
+                      color="#7B6EF6"
+                    />
+
+
+                    <Text
+                      style={
+                        styles.reportStateText
+                      }
+                    >
+                      Loading completed assessments...
+                    </Text>
+
+                  </View>
+
+                )
+              }
+
+
+              {
+                !reportsLoading &&
+                reportsError !==
+                  "" && (
+
+                  <View
+                    style={
+                      styles.errorBox
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.errorText
+                      }
+                    >
+                      {reportsError}
+                    </Text>
+
+                  </View>
+
+                )
+              }
+
+
+              {
+                !reportsLoading &&
+                reportsError ===
+                  "" &&
+                completedSessions.length ===
+                  0 && (
+
+                  <View
+                    style={
+                      styles.reportState
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.emptyTitle
+                      }
+                    >
+                      No completed assessments
+                    </Text>
+
+
+                    <Text
+                      style={
+                        styles.reportStateText
+                      }
+                    >
+                      Complete an assessment session first to generate a report.
+                    </Text>
+
+                  </View>
+
+                )
+              }
+
+
+              {
+                !reportsLoading &&
+                reportsError ===
+                  "" &&
+                completedSessions.length >
+                  0 && (
+
+                  <>
+
+                    <Text
+                      style={
+                        styles.selectLabel
+                      }
+                    >
+                      Completed Assessment
+                    </Text>
+
+
+                    <ScrollView
+                      style={
+                        styles.reportList
+                      }
+                      showsVerticalScrollIndicator={
+                        false
+                      }
+                    >
+
+                      {
+                        completedSessions.map(
+                          session => {
+
+                            const selected =
+                              Number(
+                                selectedReportSessionId
+                              ) ===
+                              Number(
+                                session.id
+                              );
+
+
+                            return (
+
+                              <TouchableOpacity
+                                key={
+                                  session.id
+                                }
+                                activeOpacity={
+                                  0.8
+                                }
+                                onPress={() => {
+
+                                  setSelectedReportSessionId(
+                                    Number(
+                                      session.id
+                                    )
+                                  );
+
+                                }}
+                                style={[
+                                  styles.reportOption,
+
+                                  selected &&
+                                    styles.reportOptionSelected,
+                                ]}
+                              >
+
+                                <View
+                                  style={
+                                    styles.reportOptionContent
+                                  }
+                                >
+
+                                  <Text
+                                    style={[
+                                      styles.reportChildName,
+
+                                      selected &&
+                                        styles.reportChildNameSelected,
+                                    ]}
+                                  >
+                                    {session.dashboardChildName}
+                                  </Text>
+
+
+                                  <Text
+                                    style={
+                                      styles.reportMeta
+                                    }
+                                  >
+                                    Session #{session.id}
+                                    {"  •  "}
+                                    {session.dashboardActivity}
+                                  </Text>
+
+
+                                  <Text
+                                    style={
+                                      styles.reportDate
+                                    }
+                                  >
+                                    {formatDate(
+                                      session.dashboardDate
+                                    )}
+                                  </Text>
+
+                                </View>
+
+
+                                <View
+                                  style={[
+                                    styles.radio,
+
+                                    selected &&
+                                      styles.radioSelected,
+                                  ]}
+                                >
+
+                                  {
+                                    selected && (
+
+                                      <Check
+                                        size={14}
+                                        color="#FFFFFF"
+                                      />
+
+                                    )
+                                  }
+
+                                </View>
+
+                              </TouchableOpacity>
+
+                            );
+
+                          }
+                        )
+                      }
+
+                    </ScrollView>
+
+
+                    <View
+                      style={
+                        styles.reportActions
+                      }
+                    >
+
+                      <TouchableOpacity
+                        style={
+                          styles.cancelButton
+                        }
+                        onPress={() => {
+
+                          setReportModalOpen(
+                            false
+                          );
+
+                        }}
+                      >
+
+                        <Text
+                          style={
+                            styles.cancelButtonText
+                          }
+                        >
+                          Cancel
+                        </Text>
+
+                      </TouchableOpacity>
+
+
+                      <TouchableOpacity
+                        style={[
+                          styles.generateButton,
+
+                          !selectedReportSessionId &&
+                            styles.generateButtonDisabled,
+                        ]}
+                        disabled={
+                          !selectedReportSessionId
+                        }
+                        onPress={
+                          handleOpenReport
+                        }
+                      >
+
+                        <FileText
+                          size={16}
+                          color="#FFFFFF"
+                        />
+
+
+                        <Text
+                          style={
+                            styles.generateButtonText
+                          }
+                        >
+                          Generate Report
+                        </Text>
+
+                      </TouchableOpacity>
+
+                    </View>
+
+                  </>
+
+                )
+              }
+
+            </View>
 
           </View>
 
-        </View>
+        </SafeAreaView>
 
       </Modal>
 
@@ -1034,47 +1121,70 @@ const QuickActions = () => {
 const styles =
   StyleSheet.create({
 
-    title: {
+    panel: {
 
-      fontSize:
-        20,
+      padding:
+        18,
 
-      fontWeight:
-        "600",
+      borderRadius:
+        21,
 
-      marginBottom:
-        24,
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.035,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
 
     },
 
 
-    grid: {
+    heading: {
 
       flexDirection:
         "row",
 
-      flexWrap:
-        "wrap",
-
-      justifyContent:
-        "space-between",
+      alignItems:
+        "center",
 
       gap:
+        10,
+
+      marginBottom:
         16,
 
     },
 
 
-    actionButton: {
+    headingIcon: {
 
       width:
-        "47%",
+        38,
+
+      height:
+        38,
 
       borderRadius:
-        16,
-
-      padding:
-        20,
+        12,
 
       alignItems:
         "center",
@@ -1082,50 +1192,149 @@ const styles =
       justifyContent:
         "center",
 
-      gap:
-        12,
-
-      minHeight:
-        115,
+      backgroundColor:
+        "#F0EDFF",
 
     },
 
 
-    disabledAction: {
-
-      opacity:
-        0.5,
-
-    },
-
-
-    actionText: {
-
-      fontWeight:
-        "600",
-
-      textAlign:
-        "center",
+    title: {
 
       color:
-        "#1E293B",
+        "#333554",
+
+      fontSize:
+        16,
+
+      fontWeight:
+        "700",
 
     },
 
 
-    comingSoon: {
+    headingSubtitle: {
+
+      marginTop:
+        3,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10.5,
+
+    },
+
+
+    actionList: {
+
+      gap:
+        9,
+
+    },
+
+
+    actionButton: {
+
+      minHeight:
+        76,
+
+      padding:
+        12,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        11,
+
+      borderRadius:
+        15,
+
+      backgroundColor:
+        "#FCFCFE",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#EFEFF5",
+
+    },
+
+
+    actionIcon: {
+
+      width:
+        42,
+
+      height:
+        42,
+
+      borderRadius:
+        13,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+    },
+
+
+    actionContent: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    actionTitle: {
+
+      color:
+        "#3B3D5B",
+
+      fontSize:
+        12.5,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    actionDescription: {
+
+      marginTop:
+        3,
+
+      color:
+        "#9A9DAF",
 
       fontSize:
         10,
 
-      color:
-        "#64748B",
+      lineHeight:
+        14,
 
-      fontWeight:
-        "600",
+    },
 
-      marginTop:
-        -5,
+
+    modalSafeArea: {
+
+      flex:
+        1,
+
+      backgroundColor:
+        "rgba(30,31,50,0.34)",
 
     },
 
@@ -1135,14 +1344,14 @@ const styles =
       flex:
         1,
 
-      backgroundColor:
-        "rgba(15, 23, 42, 0.42)",
-
       justifyContent:
         "center",
 
-      padding:
+      paddingHorizontal:
         18,
+
+      paddingVertical:
+        12,
 
     },
 
@@ -1155,14 +1364,20 @@ const styles =
       maxHeight:
         "86%",
 
+      padding:
+        20,
+
+      borderRadius:
+        22,
+
       backgroundColor:
         "#FFFFFF",
 
-      borderRadius:
-        26,
+      borderWidth:
+        1,
 
-      padding:
-        22,
+      borderColor:
+        "#ECECF4",
 
     },
 
@@ -1182,7 +1397,7 @@ const styles =
         12,
 
       marginBottom:
-        22,
+        20,
 
     },
 
@@ -1199,7 +1414,7 @@ const styles =
         "center",
 
       gap:
-        12,
+        11,
 
     },
 
@@ -1207,16 +1422,16 @@ const styles =
     reportIconBox: {
 
       width:
-        48,
+        43,
 
       height:
-        48,
+        43,
 
       borderRadius:
-        16,
+        13,
 
       backgroundColor:
-        "#FFF4E8",
+        "#FFF0FA",
 
       alignItems:
         "center",
@@ -1237,28 +1452,54 @@ const styles =
 
     reportTitle: {
 
+      color:
+        "#333554",
+
       fontSize:
-        22,
+        17,
 
       fontWeight:
         "800",
-
-      color:
-        "#172554",
 
     },
 
 
     reportSubtitle: {
 
-      fontSize:
-        13,
-
-      color:
-        "#64748B",
-
       marginTop:
         3,
+
+      color:
+        "#9EA1B3",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        15,
+
+    },
+
+
+    closeButton: {
+
+      width:
+        34,
+
+      height:
+        34,
+
+      borderRadius:
+        10,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F8F8FB",
 
     },
 
@@ -1266,7 +1507,7 @@ const styles =
     reportState: {
 
       minHeight:
-        160,
+        150,
 
       alignItems:
         "center",
@@ -1282,20 +1523,20 @@ const styles =
 
     reportStateText: {
 
-      fontSize:
-        13,
+      marginTop:
+        8,
 
       color:
-        "#94A3B8",
+        "#A0A3B4",
 
       textAlign:
         "center",
 
-      marginTop:
-        9,
+      fontSize:
+        11,
 
       lineHeight:
-        19,
+        17,
 
     },
 
@@ -1303,16 +1544,13 @@ const styles =
     errorBox: {
 
       minHeight:
-        130,
-
-      borderRadius:
-        16,
-
-      backgroundColor:
-        "#FEF2F2",
+        120,
 
       padding:
-        18,
+        16,
+
+      borderRadius:
+        14,
 
       alignItems:
         "center",
@@ -1320,50 +1558,59 @@ const styles =
       justifyContent:
         "center",
 
+      backgroundColor:
+        "#FFF0F3",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F6D8DF",
+
     },
 
 
     errorText: {
 
       color:
-        "#DC2626",
+        "#B9415E",
 
       textAlign:
         "center",
 
       fontSize:
-        13,
+        11,
 
     },
 
 
     emptyTitle: {
 
+      color:
+        "#62657B",
+
       fontSize:
-        16,
+        13,
 
       fontWeight:
         "700",
-
-      color:
-        "#475569",
 
     },
 
 
     selectLabel: {
 
-      fontSize:
-        14,
+      marginBottom:
+        8,
 
       color:
-        "#475569",
+        "#676A80",
+
+      fontSize:
+        11,
 
       fontWeight:
         "700",
-
-      marginBottom:
-        10,
 
     },
 
@@ -1371,7 +1618,7 @@ const styles =
     reportList: {
 
       maxHeight:
-        360,
+        340,
 
     },
 
@@ -1379,22 +1626,13 @@ const styles =
     reportOption: {
 
       minHeight:
-        82,
-
-      borderWidth:
-        1,
-
-      borderColor:
-        "#E2E8F0",
-
-      borderRadius:
-        16,
+        78,
 
       padding:
-        14,
+        13,
 
       marginBottom:
-        10,
+        9,
 
       flexDirection:
         "row",
@@ -1406,7 +1644,16 @@ const styles =
         "space-between",
 
       gap:
-        12,
+        10,
+
+      borderRadius:
+        14,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E7E7EF",
 
       backgroundColor:
         "#FFFFFF",
@@ -1417,7 +1664,7 @@ const styles =
     reportOptionSelected: {
 
       borderColor:
-        "#7B6EF6",
+        "#CFC7FF",
 
       backgroundColor:
         "#F8F6FF",
@@ -1435,14 +1682,14 @@ const styles =
 
     reportChildName: {
 
+      color:
+        "#3B3D5B",
+
       fontSize:
-        15,
+        12.5,
 
       fontWeight:
         "700",
-
-      color:
-        "#334155",
 
     },
 
@@ -1457,28 +1704,28 @@ const styles =
 
     reportMeta: {
 
-      fontSize:
-        12,
+      marginTop:
+        3,
 
       color:
-        "#64748B",
+        "#7D8094",
 
-      marginTop:
-        4,
+      fontSize:
+        10,
 
     },
 
 
     reportDate: {
 
-      fontSize:
-        11,
+      marginTop:
+        3,
 
       color:
-        "#94A3B8",
+        "#A0A3B4",
 
-      marginTop:
-        4,
+      fontSize:
+        9.5,
 
     },
 
@@ -1486,22 +1733,13 @@ const styles =
     radio: {
 
       width:
-        27,
+        25,
 
       height:
-        27,
+        25,
 
       borderRadius:
-        9,
-
-      borderWidth:
-        1,
-
-      borderColor:
-        "#CBD5E1",
-
-      backgroundColor:
-        "#FFFFFF",
+        8,
 
       alignItems:
         "center",
@@ -1509,15 +1747,24 @@ const styles =
       justifyContent:
         "center",
 
+      borderWidth:
+        1,
+
+      borderColor:
+        "#D7D8E2",
+
+      backgroundColor:
+        "#FFFFFF",
+
     },
 
 
     radioSelected: {
 
-      borderColor:
+      backgroundColor:
         "#7B6EF6",
 
-      backgroundColor:
+      borderColor:
         "#7B6EF6",
 
     },
@@ -1529,10 +1776,10 @@ const styles =
         "row",
 
       gap:
-        12,
+        10,
 
       marginTop:
-        17,
+        15,
 
     },
 
@@ -1543,16 +1790,10 @@ const styles =
         1,
 
       minHeight:
-        50,
+        44,
 
       borderRadius:
-        14,
-
-      borderWidth:
-        1,
-
-      borderColor:
-        "#CBD5E1",
+        12,
 
       alignItems:
         "center",
@@ -1560,13 +1801,22 @@ const styles =
       justifyContent:
         "center",
 
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E4E5ED",
+
     },
 
 
     cancelButtonText: {
 
       color:
-        "#334155",
+        "#73768B",
+
+      fontSize:
+        11.5,
 
       fontWeight:
         "700",
@@ -1580,13 +1830,10 @@ const styles =
         1,
 
       minHeight:
-        50,
+        44,
 
       borderRadius:
-        14,
-
-      backgroundColor:
-        "#7B6EF6",
+        12,
 
       flexDirection:
         "row",
@@ -1598,7 +1845,10 @@ const styles =
         "center",
 
       gap:
-        7,
+        6,
+
+      backgroundColor:
+        "#7968ED",
 
     },
 
@@ -1617,7 +1867,7 @@ const styles =
         "#FFFFFF",
 
       fontSize:
-        13,
+        11.5,
 
       fontWeight:
         "700",

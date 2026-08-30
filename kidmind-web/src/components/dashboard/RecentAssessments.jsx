@@ -11,6 +11,7 @@ import Card from "../ui/Card";
 
 import {
   FileText,
+  ArrowUpRight,
 } from "lucide-react";
 
 import {
@@ -138,10 +139,9 @@ const formatDate = (
   return date.toLocaleDateString(
     "en-US",
     {
-      month:
-        "short",
-      day:
-        "numeric",
+      month: "short",
+      day: "numeric",
+
       year:
         date.getFullYear() !==
         today.getFullYear()
@@ -161,14 +161,16 @@ const getActivityText = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "Assessment Session";
   }
 
 
   if (
-    session.games.length === 1
+    session.games.length ===
+    1
   ) {
 
     return (
@@ -201,20 +203,20 @@ const getFallbackScore = (
   const scores =
     session.games
       .filter(
-        (game) =>
+        game =>
           game.status ===
             "Completed" ||
           game.status ===
             "Failed"
       )
       .map(
-        (game) =>
+        game =>
           Number(
             game.score
           )
       )
       .filter(
-        (score) =>
+        score =>
           Number.isFinite(
             score
           )
@@ -222,7 +224,8 @@ const getFallbackScore = (
 
 
   if (
-    scores.length === 0
+    scores.length ===
+    0
   ) {
     return null;
   }
@@ -254,8 +257,10 @@ const getSessionScore = (
 
 
   if (
-    session.score !== null &&
-    session.score !== undefined &&
+    session.score !==
+      null &&
+    session.score !==
+      undefined &&
     Number.isFinite(
       sessionScore
     )
@@ -277,6 +282,20 @@ const getSessionScore = (
   return getFallbackScore(
     session
   );
+
+};
+
+
+const getInitial = (
+  name
+) => {
+
+  return String(
+    name || "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
 };
 
@@ -305,182 +324,172 @@ const RecentAssessments = () => {
   ] = useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadAssessments =
-      async () => {
+      const loadAssessments =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError("");
-
-
-          const [
-            sessionsData,
-            childrenData,
-          ] =
-            await Promise.all([
-              getSessions(),
-              getChildren(),
-            ]);
+            setLoading(true);
+            setError("");
 
 
-          const allSessions =
-            Array.isArray(
-              sessionsData
-            )
-              ? sessionsData
-              : [];
+            const [
+              sessionsData,
+              childrenData,
+            ] =
+              await Promise.all([
+                getSessions(),
+                getChildren(),
+              ]);
 
 
-          const allChildren =
-            Array.isArray(
-              childrenData
-            )
-              ? childrenData
-              : [];
-
-
-          const completedAssessments =
-            allSessions
-              .filter(
-                (session) =>
-                  session.status ===
-                  "Completed"
+            const allSessions =
+              Array.isArray(
+                sessionsData
               )
-              .map(
-                (session) => {
-
-                  const child =
-                    allChildren.find(
-                      (item) =>
-                        Number(
-                          item.id
-                        ) ===
-                        Number(
-                          session.child_id
-                        )
-                    );
+                ? sessionsData
+                : [];
 
 
-                  return {
-                    ...session,
+            const allChildren =
+              Array.isArray(
+                childrenData
+              )
+                ? childrenData
+                : [];
 
-                    dashboardDate:
-                      getAssessmentDate(
-                        session
-                      ),
 
-                    dashboardChildName:
+            const completedAssessments =
+              allSessions
+                .filter(
+                  session =>
+                    session.status ===
+                    "Completed"
+                )
+                .map(
+                  session => {
+
+                    const child =
+                      allChildren.find(
+                        item =>
+                          Number(
+                            item.id
+                          ) ===
+                          Number(
+                            session.child_id
+                          )
+                      );
+
+
+                    const childName =
                       session.child_name ||
                       child?.full_name ||
                       child?.name ||
-                      `Child #${session.child_id}`,
-
-                    dashboardScore:
-                      getSessionScore(
-                        session
-                      ),
-                  };
-
-                }
-              )
-              .sort(
-                (
-                  first,
-                  second
-                ) => {
-
-                  const firstTime =
-                    first.dashboardDate
-                      ?.getTime() ||
-                    0;
+                      `Child #${session.child_id}`;
 
 
-                  const secondTime =
-                    second.dashboardDate
-                      ?.getTime() ||
-                    0;
+                    return {
+                      ...session,
+
+                      dashboardDate:
+                        getAssessmentDate(
+                          session
+                        ),
+
+                      dashboardChildName:
+                        childName,
+
+                      dashboardScore:
+                        getSessionScore(
+                          session
+                        ),
+                    };
+
+                  }
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) => {
+
+                    const firstTime =
+                      first.dashboardDate
+                        ?.getTime() ||
+                      0;
 
 
-                  return (
-                    secondTime -
-                    firstTime
-                  );
-
-                }
-              )
-              .slice(
-                0,
-                3
-              );
+                    const secondTime =
+                      second.dashboardDate
+                        ?.getTime() ||
+                      0;
 
 
-          setAssessments(
-            completedAssessments
-          );
+                    return (
+                      secondTime -
+                      firstTime
+                    );
 
-        } catch (loadError) {
+                  }
+                )
+                .slice(
+                  0,
+                  3
+                );
 
-          console.error(
-            "Failed to load recent assessments:",
+
+            setAssessments(
+              completedAssessments
+            );
+
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load recent assessments:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load recent assessments"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load recent assessments"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(false);
 
-        }
+          }
 
-      };
+        };
 
 
-    loadAssessments();
+      loadAssessments();
 
-  }, []);
+    },
+    []
+  );
 
 
   return (
 
     <Card>
 
-      <div
-        className="
-        flex
-        justify-between
-        items-center
-        mb-6
-        "
-      >
+      <div className="assessment-heading">
 
         <div>
 
-          <h2
-            className="
-            text-xl
-            font-semibold
-            "
-          >
+          <h2>
             Recent Assessments
           </h2>
 
-
-          <p
-            className="
-            text-sm
-            text-slate-400
-            mt-1
-            "
-          >
+          <p>
             Latest cognitive evaluation results
           </p>
 
@@ -489,19 +498,11 @@ const RecentAssessments = () => {
 
         <button
           type="button"
-          onClick={() => {
-
+          onClick={() =>
             navigate(
               "/sessions"
-            );
-
-          }}
-          className="
-          text-[#7B6EF6]
-          font-semibold
-          text-sm
-          hover:underline
-          "
+            )
+          }
         >
           View All
         </button>
@@ -509,426 +510,564 @@ const RecentAssessments = () => {
       </div>
 
 
-      {loading && (
+      {
+        loading && (
 
-        <div
-          className="
-          min-h-[180px]
-          flex
-          items-center
-          justify-center
-          "
-        >
+          <div className="assessment-state">
 
-          <div
-            className="
-            text-center
-            "
-          >
+            <div>
 
-            <div
-              className="
-              w-9
-              h-9
-              rounded-full
-              border-4
-              border-[#E6E2FF]
-              border-t-[#7B6EF6]
-              animate-spin
-              mx-auto
-              "
-            />
+              <div className="assessment-loader" />
 
-
-            <p
-              className="
-              text-sm
-              text-slate-400
-              mt-3
-              "
-            >
-              Loading assessments...
-            </p>
-
-          </div>
-
-        </div>
-
-      )}
-
-
-      {!loading &&
-        error && (
-
-        <div
-          className="
-          min-h-[180px]
-          flex
-          items-center
-          justify-center
-          "
-        >
-
-          <div
-            className="
-            bg-red-50
-            border
-            border-red-100
-            rounded-2xl
-            p-5
-            text-center
-            "
-          >
-
-            <p
-              className="
-              font-semibold
-              text-red-700
-              "
-            >
-              Unable to load assessments
-            </p>
-
-
-            <p
-              className="
-              text-sm
-              text-red-500
-              mt-1
-              "
-            >
-              {error}
-            </p>
-
-          </div>
-
-        </div>
-
-      )}
-
-
-      {!loading &&
-        !error &&
-        assessments.length === 0 && (
-
-        <div
-          className="
-          min-h-[180px]
-          flex
-          items-center
-          justify-center
-          "
-        >
-
-          <div
-            className="
-            text-center
-            "
-          >
-
-            <div
-              className="
-              w-12
-              h-12
-              rounded-2xl
-              bg-[#EEE9FF]
-              flex
-              items-center
-              justify-center
-              mx-auto
-              "
-            >
-
-              <FileText
-                size={20}
-                className="
-                text-[#7B6EF6]
-                "
-              />
+              <p>
+                Loading assessments...
+              </p>
 
             </div>
 
+          </div>
 
-            <p
-              className="
-              font-semibold
-              text-slate-600
-              mt-3
-              "
-            >
-              No completed assessments
-            </p>
+        )
+      }
 
 
-            <p
-              className="
-              text-sm
-              text-slate-400
-              mt-1
-              "
-            >
-              Completed assessment results will appear here.
-            </p>
+      {
+        !loading &&
+        error && (
+
+          <div className="assessment-state">
+
+            <div className="assessment-error">
+
+              <strong>
+                Unable to load assessments
+              </strong>
+
+              <span>
+                {error}
+              </span>
+
+            </div>
 
           </div>
 
-        </div>
+        )
+      }
 
-      )}
 
-
-      {!loading &&
+      {
+        !loading &&
         !error &&
-        assessments.length > 0 && (
+        assessments.length ===
+          0 && (
 
-        <div
-          className="
-          overflow-x-auto
-          "
-        >
+          <div className="assessment-state">
 
-          <table
-            className="
-            w-full
-            "
-          >
+            <div className="assessment-empty">
 
-            <thead>
+              <div className="assessment-empty-icon">
 
-              <tr
-                className="
-                text-left
-                text-sm
-                text-slate-400
-                "
-              >
+                <FileText
+                  size={20}
+                />
 
-                <th
-                  className="
-                  pb-4
-                  "
-                >
-                  Child
-                </th>
+              </div>
 
-                <th
-                  className="
-                  pb-4
-                  "
-                >
-                  Activity
-                </th>
+              <strong>
+                No completed assessments
+              </strong>
 
-                <th
-                  className="
-                  pb-4
-                  "
-                >
-                  Score
-                </th>
+              <span>
+                Completed assessment results
+                will appear here.
+              </span>
 
-                <th
-                  className="
-                  pb-4
-                  "
-                >
-                  Date
-                </th>
+            </div>
 
-                <th
-                  className="
-                  pb-4
-                  "
-                >
-                  Status
-                </th>
+          </div>
 
-                <th />
-
-              </tr>
-
-            </thead>
+        )
+      }
 
 
-            <tbody>
+      {
+        !loading &&
+        !error &&
+        assessments.length >
+          0 && (
 
-              {assessments.map(
-                (item) => (
+          <div className="assessment-table-wrap">
 
-                  <tr
-                    key={
-                      item.id
-                    }
-                    className="
-                    border-t
-                    border-gray-100
-                    hover:bg-[#FAFAFF]
-                    transition
-                    "
-                  >
+            <table className="assessment-table">
 
-                    <td
-                      className="
-                      py-5
-                      "
-                    >
+              <thead>
 
-                      <div
-                        className="
-                        flex
-                        items-center
-                        gap-3
-                        "
+                <tr>
+
+                  <th>
+                    Child
+                  </th>
+
+                  <th>
+                    Activity
+                  </th>
+
+                  <th>
+                    Score
+                  </th>
+
+                  <th>
+                    Date
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th
+                    aria-label="Actions"
+                  />
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {
+                  assessments.map(
+                    item => (
+
+                      <tr
+                        key={
+                          item.id
+                        }
                       >
 
-                        <div
-                          className="
-                          w-10
-                          h-10
-                          rounded-2xl
-                          bg-[#EEE9FF]
-                          flex
-                          items-center
-                          justify-center
-                          "
-                        >
+                        <td>
 
-                          <FileText
-                            size={18}
-                            className="
-                            text-[#7B6EF6]
-                            "
-                          />
+                          <div className="assessment-child">
 
-                        </div>
+                            <div className="assessment-avatar">
+
+                              {
+                                getInitial(
+                                  item.dashboardChildName
+                                )
+                              }
+
+                            </div>
 
 
-                        <div>
+                            <div>
 
-                          <span
-                            className="
-                            font-semibold
-                            block
-                            "
-                          >
-                            {item.dashboardChildName}
+                              <strong>
+
+                                {
+                                  item.dashboardChildName
+                                }
+
+                              </strong>
+
+                              <span>
+                                Session #{item.id}
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                        </td>
+
+
+                        <td>
+
+                          <span className="assessment-activity">
+
+                            {
+                              getActivityText(
+                                item
+                              )
+                            }
+
                           </span>
 
+                        </td>
 
-                          <span
-                            className="
-                            text-xs
-                            text-slate-400
-                            "
-                          >
-                            Session #{item.id}
+
+                        <td>
+
+                          <span className="assessment-score">
+
+                            {
+                              typeof item.dashboardScore ===
+                                "number"
+                                ? `${item.dashboardScore}%`
+                                : "—"
+                            }
+
                           </span>
 
-                        </div>
-
-                      </div>
-
-                    </td>
+                        </td>
 
 
-                    <td
-                      className="
-                      text-slate-600
-                      "
-                    >
-                      {getActivityText(
-                        item
-                      )}
-                    </td>
+                        <td>
+
+                          <span className="assessment-date">
+
+                            {
+                              formatDate(
+                                item.dashboardDate
+                              )
+                            }
+
+                          </span>
+
+                        </td>
 
 
-                    <td>
+                        <td>
 
-                      <span
-                        className="
-                        font-bold
-                        text-[#7B6EF6]
-                        "
-                      >
-                        {typeof item.dashboardScore ===
-                        "number"
-                          ? `${item.dashboardScore}%`
-                          : "—"}
-                      </span>
+                          <span className="assessment-status">
+                            Completed
+                          </span>
 
-                    </td>
+                        </td>
 
 
-                    <td
-                      className="
-                      text-slate-500
-                      "
-                    >
-                      {formatDate(
-                        item.dashboardDate
-                      )}
-                    </td>
+                        <td className="assessment-action-cell">
+
+                          <button
+                            type="button"
+                            className="assessment-report-button"
+                            onClick={() =>
+                              navigate(
+                                `/sessions/${item.id}`
+                              )
+                            }
+                          >
+
+                            <span>
+                              View Report
+                            </span>
+
+                            <ArrowUpRight
+                              size={14}
+                            />
+
+                          </button>
+
+                        </td>
+
+                      </tr>
+
+                    )
+                  )
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        )
+      }
 
 
-                    <td>
+      <style>
+        {`
 
-                      <span
-                        className="
-                        px-3
-                        py-1
-                        rounded-full
-                        text-xs
-                        font-semibold
-                        bg-[#E8FFF5]
-                        text-[#38B2AC]
-                        "
-                      >
-                        Completed
-                      </span>
+        .assessment-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 17px;
+        }
 
-                    </td>
+        .assessment-heading h2 {
+          margin: 0;
+          color: #333554;
+          font-size: 16px;
+          font-weight: 700;
+        }
 
+        .assessment-heading p {
+          margin: 4px 0 0;
+          color: #A0A3B4;
+          font-size: 11.5px;
+        }
 
-                    <td>
+        .assessment-heading button {
+          flex: 0 0 auto;
+          border: 0;
+          padding: 6px 9px;
+          border-radius: 9px;
+          color: #7566EB;
+          background: transparent;
+          cursor: pointer;
+          font-size: 11.5px;
+          font-weight: 700;
+          transition: .18s ease;
+        }
 
-                      <button
-                        type="button"
-                        onClick={() => {
+        .assessment-heading button:hover {
+          background: #F3F0FF;
+        }
 
-                          navigate(
-                            `/sessions/${item.id}`
-                          );
+        .assessment-table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          border: 1px solid #EFEFF5;
+          border-radius: 16px;
+        }
 
-                        }}
-                        className="
-                        bg-[#7B6EF6]
-                        text-white
-                        px-4
-                        py-2
-                        rounded-xl
-                        text-xs
-                        hover:bg-[#6657EF]
-                        transition
-                        whitespace-nowrap
-                        "
-                      >
-                        View Report
-                      </button>
+        .assessment-table {
+          width: 100%;
+          min-width: 900px;
+          border-collapse: collapse;
+          table-layout: auto;
+        }
 
-                    </td>
+        .assessment-table thead {
+          background: #FAFAFC;
+        }
 
-                  </tr>
+        .assessment-table th {
+          height: 45px;
+          padding: 0 14px;
+          color: #999CAD;
+          border-bottom: 1px solid #EFEFF5;
+          text-align: left;
+          white-space: nowrap;
+          font-size: 10.5px;
+          font-weight: 600;
+        }
 
-                )
-              )}
+        .assessment-table th:first-child,
+        .assessment-table td:first-child {
+          padding-left: 17px;
+        }
 
-            </tbody>
+        .assessment-table th:last-child,
+        .assessment-table td:last-child {
+          padding-right: 17px;
+        }
 
-          </table>
+        .assessment-table td {
+          height: 73px;
+          padding: 10px 14px;
+          border-bottom: 1px solid #F1F1F6;
+          vertical-align: middle;
+        }
 
-        </div>
+        .assessment-table tbody tr:last-child td {
+          border-bottom: 0;
+        }
 
-      )}
+        .assessment-table tbody tr {
+          background: white;
+          transition: .16s ease;
+        }
+
+        .assessment-table tbody tr:hover {
+          background: #FCFBFF;
+        }
+
+        .assessment-child {
+          min-width: 180px;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .assessment-avatar {
+          width: 39px;
+          height: 39px;
+          flex: 0 0 39px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          color: #B05D9B;
+          background: #FFF0FA;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .assessment-child > div:last-child {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .assessment-child strong {
+          max-width: 160px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #373953;
+          font-size: 12px;
+        }
+
+        .assessment-child span {
+          margin-top: 3px;
+          color: #A0A3B4;
+          font-size: 9.5px;
+        }
+
+        .assessment-activity {
+          display: block;
+          max-width: 250px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #62657A;
+          font-size: 11.5px;
+        }
+
+        .assessment-score {
+          color: #7566EB;
+          font-size: 12px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .assessment-date {
+          color: #7B7E91;
+          font-size: 11px;
+          white-space: nowrap;
+        }
+
+        .assessment-status {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 25px;
+          padding: 4px 9px;
+          border-radius: 999px;
+          color: #3E9E7D;
+          background: #ECFAF4;
+          font-size: 9.5px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .assessment-action-cell {
+          text-align: right;
+        }
+
+        .assessment-report-button {
+          min-width: 104px;
+          height: 33px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 0 11px;
+          border: 1px solid #E1DCFF;
+          border-radius: 10px;
+          color: #7566EB;
+          background: #F6F3FF;
+          cursor: pointer;
+          white-space: nowrap;
+          font-family: inherit;
+          font-size: 10px;
+          font-weight: 700;
+          transition: .18s ease;
+        }
+
+        .assessment-report-button:hover {
+          color: white;
+          background: #7968ED;
+          border-color: #7968ED;
+          transform: translateY(-1px);
+        }
+
+        .assessment-state {
+          min-height: 180px;
+          display: grid;
+          place-items: center;
+          text-align: center;
+        }
+
+        .assessment-loader {
+          width: 34px;
+          height: 34px;
+          margin: auto;
+          border: 4px solid #E6E2FF;
+          border-top-color: #7B6EF6;
+          border-radius: 50%;
+          animation:
+            assessment-spin .8s
+            linear infinite;
+        }
+
+        .assessment-state p {
+          margin: 10px 0 0;
+          color: #A0A3B4;
+          font-size: 11.5px;
+        }
+
+        .assessment-error {
+          max-width: 350px;
+          display: flex;
+          flex-direction: column;
+          padding: 15px 18px;
+          border: 1px solid #F6D8DF;
+          border-radius: 14px;
+          color: #B9415E;
+          background: #FFF0F3;
+        }
+
+        .assessment-error strong {
+          font-size: 12.5px;
+        }
+
+        .assessment-error span {
+          margin-top: 4px;
+          font-size: 11px;
+        }
+
+        .assessment-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          color: #999CAD;
+        }
+
+        .assessment-empty-icon {
+          width: 44px;
+          height: 44px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 10px;
+          border-radius: 13px;
+          color: #7566EB;
+          background: #F0EDFF;
+        }
+
+        .assessment-empty strong {
+          color: #62657B;
+          font-size: 12.5px;
+        }
+
+        .assessment-empty span {
+          margin-top: 4px;
+          font-size: 11px;
+        }
+
+        @keyframes assessment-spin {
+
+          to {
+            transform: rotate(360deg);
+          }
+
+        }
+
+        `}
+      </style>
 
     </Card>
 

@@ -1,4 +1,3 @@
-
 import {
   LayoutDashboard,
   Users,
@@ -10,6 +9,7 @@ import {
   MessageCircle,
   Bell,
   LogOut,
+  Stethoscope,
 } from "lucide-react";
 
 import {
@@ -19,116 +19,66 @@ import {
 
 import {
   NavLink,
+  useNavigate,
 } from "react-router-dom";
 
 import api from "../../services/api";
 
 
 const menu = [
-
   {
-    title:
-      "Dashboard",
-    icon:
-      <LayoutDashboard
-        size={19}
-      />,
-    path:
-      "/",
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/",
   },
-
   {
-    title:
-      "Children",
-    icon:
-      <Users
-        size={19}
-      />,
-    path:
-      "/children",
+    title: "Children",
+    icon: Users,
+    path: "/children",
   },
-
   {
-    title:
-      "Sessions",
-    icon:
-      <CalendarDays
-        size={19}
-      />,
-    path:
-      "/sessions",
+    title: "Sessions",
+    icon: CalendarDays,
+    path: "/sessions",
   },
-
   {
-    title:
-      "Game Builder",
-    icon:
-      <Gamepad2
-        size={19}
-      />,
-    path:
-      "/games",
+    title: "Game Builder",
+    icon: Gamepad2,
+    path: "/games",
   },
-
   {
-    title:
-      "Reports",
-    icon:
-      <FileText
-        size={19}
-      />,
-    path:
-      "/reports",
+    title: "Reports",
+    icon: FileText,
+    path: "/reports",
   },
-
   {
-    title:
-      "AI Assistant",
-    icon:
-      <Bot
-        size={19}
-      />,
-    path:
-      "/ai",
+    title: "AI Assistant",
+    icon: Bot,
+    path: "/ai",
   },
-
   {
-    title:
-      "Therapist Chat",
-    icon:
-      <MessageCircle
-        size={19}
-      />,
-    path:
-      "/chat",
+    title: "Therapist Chat",
+    icon: MessageCircle,
+    path: "/chat",
   },
-
   {
-    title:
-      "Notifications",
-    icon:
-      <Bell
-        size={19}
-      />,
-    path:
-      "/notifications",
+    title: "Notifications",
+    icon: Bell,
+    path: "/notifications",
   },
-
   {
-    title:
-      "Settings",
-    icon:
-      <Settings
-        size={19}
-      />,
-    path:
-      "/settings",
+    title: "Settings",
+    icon: Settings,
+    path: "/settings",
   },
-
 ];
 
 
 const Sidebar = () => {
+
+  const navigate =
+    useNavigate();
+
 
   const [
     unreadCount,
@@ -136,253 +86,228 @@ const Sidebar = () => {
   ] = useState(0);
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    let active = true;
-
-
-    const loadUnreadCount =
-      async () => {
-
-        try {
-
-          const response =
-            await api.get(
-              "/notifications/unread-count"
-            );
+      let active =
+        true;
 
 
-          if (active) {
+      const loadUnreadCount =
+        async () => {
 
-            setUnreadCount(
-              Number(
-                response
-                  .data
-                  ?.unread_count ||
-                0
-              )
+          try {
+
+            const response =
+              await api.get(
+                "/notifications/unread-count"
+              );
+
+
+            if (active) {
+
+              setUnreadCount(
+                Number(
+                  response.data
+                    ?.unread_count ||
+                  0
+                )
+              );
+
+            }
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              "Failed to load notification count:",
+              error
             );
 
           }
 
-        } catch (
-          error
-        ) {
-
-          console.error(
-            "Failed to load notification count:",
-            error
-          );
-
-        }
-
-      };
+        };
 
 
-    loadUnreadCount();
+      loadUnreadCount();
 
 
-    const interval =
-      window.setInterval(
-        loadUnreadCount,
-        30000
-      );
+      const interval =
+        window.setInterval(
+          loadUnreadCount,
+          30000
+        );
 
 
-    const handleUpdate =
-      () => {
+      const handleUpdate =
+        () => {
 
-        loadUnreadCount();
+          loadUnreadCount();
 
-      };
-
-
-    window.addEventListener(
-      "kidmind-notifications-updated",
-      handleUpdate
-    );
+        };
 
 
-    return () => {
-
-      active = false;
-
-      window.clearInterval(
-        interval
-      );
-
-      window.removeEventListener(
+      window.addEventListener(
         "kidmind-notifications-updated",
         handleUpdate
       );
 
-    };
 
-  }, []);
+      return () => {
+
+        active =
+          false;
+
+        window.clearInterval(
+          interval
+        );
+
+        window.removeEventListener(
+          "kidmind-notifications-updated",
+          handleUpdate
+        );
+
+      };
+
+    },
+    []
+  );
+
+
+  const handleLogout =
+    () => {
+
+      sessionStorage.removeItem(
+        "kidmind_token"
+      );
+
+      sessionStorage.removeItem(
+        "kidmind_user"
+      );
+
+
+      navigate(
+        "/login",
+        {
+          replace: true,
+        }
+      );
+
+    };
 
 
   return (
 
-    <aside
-      className="
-        w-[270px]
-        h-screen
-        bg-white/80
-        backdrop-blur-xl
-        border-r
-        border-[#ECECF5]
-        shadow-[0_10px_40px_rgba(124,108,255,.08)]
-        flex
-        flex-col
-        px-5
-        py-4
-      "
-    >
+    <aside className="therapist-sidebar">
 
-      <div
-        className="
-          flex
-          justify-center
-          mb-5
-        "
-      >
+      <div className="therapist-logo">
 
         <img
           src="/logo.png"
-          alt="KidMind Logo"
-          className="
-            w-60
-            h-60
-            object-contain
-          "
+          alt="KidMind"
         />
 
       </div>
 
 
-      <nav
-        className="
-          flex-1
-          space-y-1
-        "
-      >
+      <div className="therapist-role">
+
+        <div className="therapist-role-icon">
+
+          <Stethoscope
+            size={19}
+          />
+
+        </div>
+
+
+        <div>
+
+          <strong>
+            Therapist
+          </strong>
+
+          <span>
+            KidMind Care Center
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <nav>
 
         {
           menu.map(
-            item => (
+            item => {
 
-              <NavLink
-                key={
-                  item.title
-                }
-                to={
-                  item.path
-                }
-                className={({
-                  isActive,
-                }) => `
-                  group
-                  relative
-                  flex
-                  items-center
-                  gap-3
-                  h-11
-                  px-4
-                  rounded-[16px]
-                  transition-all
-                  duration-300
-                  ${
-                    isActive
-                      ? "bg-[#F2EEFF] text-[#7C6CFF] shadow-sm"
-                      : "text-[#8E91A8] hover:bg-[#F8F8FC] hover:text-[#7C6CFF]"
+              const Icon =
+                item.icon;
+
+
+              return (
+
+                <NavLink
+                  key={
+                    item.path
                   }
-                `}
-              >
+                  to={
+                    item.path
+                  }
+                  end={
+                    item.path ===
+                    "/"
+                  }
+                  className={({
+                    isActive,
+                  }) =>
+                    isActive
+                      ? "therapist-nav-item active"
+                      : "therapist-nav-item"
+                  }
+                >
 
-                {({
-                  isActive,
-                }) => (
-
-                  <>
-
-                    {
-                      isActive && (
-
-                        <div
-                          className="
-                            absolute
-                            left-0
-                            top-2
-                            bottom-2
-                            w-1
-                            rounded-full
-                            bg-[#7C6CFF]
-                          "
-                        />
-
-                      )
-                    }
+                  <Icon
+                    size={19}
+                  />
 
 
-                    <span>
-                      {
-                        item.icon
-                      }
-                    </span>
-
-
-                    <span
-                      className="
-                        font-medium
-                        text-[14px]
-                        flex-1
-                      "
-                    >
-                      {
-                        item.title
-                      }
-                    </span>
-
+                  <span className="therapist-nav-title">
 
                     {
-                      item.path ===
-                        "/notifications" &&
-                      unreadCount >
-                        0 && (
-
-                        <span
-                          className="
-                            min-w-6
-                            h-6
-                            px-1.5
-                            rounded-full
-                            bg-[#7C6CFF]
-                            text-white
-                            text-[11px]
-                            font-bold
-                            flex
-                            items-center
-                            justify-center
-                          "
-                        >
-                          {
-                            unreadCount >
-                            99
-                              ? "99+"
-                              : unreadCount
-                          }
-                        </span>
-
-                      )
+                      item.title
                     }
 
-                  </>
+                  </span>
 
-                )}
 
-              </NavLink>
+                  {
+                    item.path ===
+                      "/notifications" &&
+                    unreadCount >
+                      0 && (
 
-            )
+                      <span className="therapist-nav-badge">
+
+                        {
+                          unreadCount >
+                          99
+                            ? "99+"
+                            : unreadCount
+                        }
+
+                      </span>
+
+                    )
+                  }
+
+                </NavLink>
+
+              );
+
+            }
           )
         }
 
@@ -390,36 +315,195 @@ const Sidebar = () => {
 
 
       <button
-        className="
-          mt-3
-          flex
-          items-center
-          gap-3
-          h-11
-          px-4
-          rounded-[16px]
-          text-red-500
-          hover:bg-red-50
-          transition-all
-          duration-300
-        "
+        type="button"
+        className="therapist-logout"
+        onClick={
+          handleLogout
+        }
       >
 
         <LogOut
           size={19}
         />
 
-
-        <span
-          className="
-            font-medium
-            text-[14px]
-          "
-        >
+        <span>
           Logout
         </span>
 
       </button>
+
+
+      <style>
+        {`
+
+        .therapist-sidebar {
+          width: 270px;
+          height: 100vh;
+          flex: 0 0 270px;
+          position: sticky;
+          top: 0;
+          display: flex;
+          flex-direction: column;
+          padding: 18px 18px 16px;
+          background: rgba(255,255,255,.94);
+          border-right: 1px solid #ECECF5;
+          box-shadow:
+            8px 0 35px
+            rgba(124,108,255,.05);
+          font-family:
+            Inter,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+          z-index: 30;
+        }
+
+        .therapist-logo {
+          height: 125px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+        }
+
+        .therapist-logo img {
+          width: 220px;
+          height: 150px;
+          object-fit: contain;
+        }
+
+        .therapist-role {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          margin: 3px 4px 17px;
+          padding: 12px;
+          border-radius: 16px;
+          background:
+            linear-gradient(
+              135deg,
+              #F2EEFF,
+              #FBF3FF
+            );
+          border: 1px solid #EBE5FF;
+        }
+
+        .therapist-role-icon {
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          color: #7665EE;
+          background: white;
+        }
+
+        .therapist-role strong {
+          display: block;
+          color: #37306F;
+          font-size: 13px;
+          line-height: 1.3;
+        }
+
+        .therapist-role span {
+          display: block;
+          margin-top: 2px;
+          color: #989AB0;
+          font-size: 10.5px;
+        }
+
+        .therapist-sidebar nav {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+        }
+
+        .therapist-nav-item {
+          width: 100%;
+          height: 43px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 14px;
+          margin-bottom: 4px;
+          border-radius: 14px;
+          color: #8A8EA5;
+          text-decoration: none;
+          font-size: 13.5px;
+          transition:
+            background .18s ease,
+            color .18s ease,
+            transform .18s ease;
+        }
+
+        .therapist-nav-item:hover {
+          color: #7465E8;
+          background: #F8F7FD;
+        }
+
+        .therapist-nav-item.active {
+          color: #7465E8;
+          background: #F0EDFF;
+          font-weight: 600;
+        }
+
+        .therapist-nav-title {
+          min-width: 0;
+          flex: 1;
+          text-align: left;
+        }
+
+        .therapist-nav-badge {
+          min-width: 23px;
+          height: 23px;
+          padding: 0 6px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: #7C6CFF;
+          font-size: 10px;
+          font-weight: 800;
+          line-height: 1;
+        }
+
+        .therapist-logout {
+          width: 100%;
+          height: 44px;
+          flex: 0 0 44px;
+          border: 0;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 14px;
+          background: transparent;
+          color: #E35469;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 13.5px;
+          transition: .18s ease;
+        }
+
+        .therapist-logout:hover {
+          background: #FFF2F4;
+        }
+
+        @media (max-width: 900px) {
+
+          .therapist-sidebar {
+            width: 220px;
+            flex-basis: 220px;
+          }
+
+        }
+
+        `}
+      </style>
 
     </aside>
 

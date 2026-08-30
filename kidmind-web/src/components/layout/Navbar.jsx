@@ -1,217 +1,509 @@
-import { useState } from "react";
-import { Bell, Search, ChevronDown } from "lucide-react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-import Notifications from "./Notifications";
+import {
+  Bell,
+  ChevronDown,
+  Stethoscope,
+} from "lucide-react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import api from "../../services/api";
 import ProfileMenu from "./ProfileMenu";
+
 
 const Navbar = () => {
 
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [showProfile, setShowProfile] = useState(false);
+  const navigate =
+    useNavigate();
 
-    const today = new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-    });
 
-    return (
+  const [
+    showProfile,
+    setShowProfile,
+  ] = useState(false);
 
-        <div className="flex justify-between items-center">
 
-            {/* Left */}
+  const [
+    unreadCount,
+    setUnreadCount,
+  ] = useState(0);
 
-            <div>
 
-                <p className="text-sm text-slate-400">
+  const [
+    currentUser,
+    setCurrentUser,
+  ] = useState(
+    () => {
 
-                    {today}
+      try {
 
-                </p>
+        return JSON.parse(
+          sessionStorage.getItem(
+            "kidmind_user"
+          ) || "{}"
+        );
 
-                <h1 className="text-4xl font-bold mt-1">
+      } catch {
 
-                    Welcome Back
+        return {};
 
-                </h1>
+      }
 
-                <p className="text-slate-500 mt-2">
+    }
+  );
 
-                    Monitor your children's cognitive assessments in one place.
 
-                </p>
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+
+      const loadUnreadCount =
+        async () => {
+
+          try {
+
+            const response =
+              await api.get(
+                "/notifications/unread-count"
+              );
+
+
+            if (active) {
+
+              setUnreadCount(
+                Number(
+                  response.data
+                    ?.unread_count ||
+                  0
+                )
+              );
+
+            }
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              "Failed to load notification count:",
+              error
+            );
+
+          }
+
+        };
+
+
+      loadUnreadCount();
+
+
+      const interval =
+        window.setInterval(
+          loadUnreadCount,
+          30000
+        );
+
+
+      const handleUpdate =
+        () => {
+
+          loadUnreadCount();
+
+        };
+
+
+      window.addEventListener(
+        "kidmind-notifications-updated",
+        handleUpdate
+      );
+
+
+      return () => {
+
+        active =
+          false;
+
+        window.clearInterval(
+          interval
+        );
+
+        window.removeEventListener(
+          "kidmind-notifications-updated",
+          handleUpdate
+        );
+
+      };
+
+    },
+    []
+  );
+
+
+  useEffect(
+    () => {
+
+      const handleStorage =
+        () => {
+
+          try {
+
+            setCurrentUser(
+              JSON.parse(
+                sessionStorage.getItem(
+                  "kidmind_user"
+                ) || "{}"
+              )
+            );
+
+          } catch {
+
+            setCurrentUser({});
+
+          }
+
+        };
+
+
+      window.addEventListener(
+        "kidmind-user-updated",
+        handleStorage
+      );
+
+
+      return () => {
+
+        window.removeEventListener(
+          "kidmind-user-updated",
+          handleStorage
+        );
+
+      };
+
+    },
+    []
+  );
+
+
+  return (
+
+    <header className="therapist-header">
+
+      <div className="therapist-header-identity">
+
+        <span className="therapist-header-label">
+          KidMind Therapist Portal
+        </span>
+
+        <strong>
+
+          {
+            currentUser.full_name ||
+            "Therapist"
+          }
+
+        </strong>
+
+      </div>
+
+
+      <div className="therapist-header-actions">
+
+        <button
+          type="button"
+          className="therapist-notification-button"
+          onClick={() => {
+
+            setShowProfile(
+              false
+            );
+
+            navigate(
+              "/notifications"
+            );
+
+          }}
+          aria-label="Open notifications"
+        >
+
+          <Bell
+            size={20}
+          />
+
+
+          {
+            unreadCount >
+              0 && (
+
+              <span className="therapist-header-badge">
+
+                {
+                  unreadCount >
+                  99
+                    ? "99+"
+                    : unreadCount
+                }
+
+              </span>
+
+            )
+          }
+
+        </button>
+
+
+        <div className="therapist-profile-wrapper">
+
+          <button
+            type="button"
+            className="therapist-profile-button"
+            onClick={() =>
+              setShowProfile(
+                previous =>
+                  !previous
+              )
+            }
+          >
+
+            <div className="therapist-profile-icon">
+
+              <Stethoscope
+                size={17}
+              />
 
             </div>
 
-            {/* Right */}
 
-            <div className="flex items-center gap-5">
+            <div className="therapist-profile-copy">
 
-                {/* Search */}
+              <strong>
 
-                <div className="relative">
+                {
+                  currentUser.full_name ||
+                  "Therapist"
+                }
 
-                    <Search
+              </strong>
 
-                        size={18}
-
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-
-                    />
-
-                    <input
-
-                        type="text"
-
-                        placeholder="Search..."
-
-                        className="
-                        w-80
-                        h-12
-                        rounded-2xl
-                        bg-white
-                        border
-                        pl-11
-                        pr-4
-                        outline-none
-                        focus:border-[#7B6EF6]
-                        transition
-                        "
-
-                    />
-
-                </div>
-
-                {/* Notifications */}
-
-                <div className="relative">
-
-                    <button
-
-                        onClick={() => {
-
-                            setShowNotifications(!showNotifications);
-
-                            setShowProfile(false);
-
-                        }}
-
-                        className="
-                        relative
-                        w-12
-                        h-12
-                        rounded-2xl
-                        bg-white
-                        border
-                        flex
-                        justify-center
-                        items-center
-                        hover:bg-[#F7F8FC]
-                        transition
-                        "
-
-                    >
-
-                        <Bell size={20} />
-
-                        <div
-
-                            className="
-                            absolute
-                            top-2
-                            right-2
-                            w-2
-                            h-2
-                            rounded-full
-                            bg-red-500
-                            "
-
-                        />
-
-                    </button>
-
-                    {
-
-                        showNotifications && <Notifications />
-
-                    }
-
-                </div>
-
-                {/* Profile */}
-
-                <div className="relative">
-
-                    <button
-
-                        onClick={() => {
-
-                            setShowProfile(!showProfile);
-
-                            setShowNotifications(false);
-
-                        }}
-
-                        className="
-                        flex
-                        items-center
-                        gap-3
-                        bg-white
-                        border
-                        rounded-2xl
-                        px-3
-                        py-2
-                        hover:shadow-md
-                        transition
-                        "
-
-                    >
-
-                        <img
-
-                            src="https://i.pravatar.cc/100"
-
-                            className="w-11 h-11 rounded-xl"
-
-                            alt="Doctor"
-
-                        />
-
-                        <div className="text-left">
-
-                            <h3 className="font-semibold">
-
-                                Dr. Ahmad
-
-                            </h3>
-
-                            <p className="text-xs text-slate-500">
-
-                                Therapist
-
-                            </p>
-
-                        </div>
-
-                        <ChevronDown size={18} />
-
-                    </button>
-
-                    {
-
-                        showProfile && <ProfileMenu />
-
-                    }
-
-                </div>
+              <span>
+                Therapist
+              </span>
 
             </div>
+
+
+            <ChevronDown
+              size={16}
+              className={
+                showProfile
+                  ? "profile-chevron open"
+                  : "profile-chevron"
+              }
+            />
+
+          </button>
+
+
+          {
+            showProfile && (
+
+              <ProfileMenu />
+
+            )
+          }
 
         </div>
 
-    );
+      </div>
+
+
+      <style>
+        {`
+
+        .therapist-header {
+          height: 72px;
+          width: 100%;
+          position: sticky;
+          z-index: 20;
+          top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 34px;
+          background: rgba(255,255,255,.88);
+          backdrop-filter: blur(15px);
+          border-bottom: 1px solid #EEEFF5;
+          font-family:
+            Inter,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        }
+
+        .therapist-header-identity {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .therapist-header-label {
+          color: #A0A3B5;
+          font-size: 10.5px;
+          line-height: 1.3;
+        }
+
+        .therapist-header-identity strong {
+          margin-top: 2px;
+          color: #343654;
+          font-size: 14px;
+          line-height: 1.35;
+        }
+
+        .therapist-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .therapist-notification-button {
+          width: 42px;
+          height: 42px;
+          position: relative;
+          border-radius: 13px;
+          border: 1px solid #ECECF4;
+          display: grid;
+          place-items: center;
+          color: #757991;
+          background: white;
+          cursor: pointer;
+          transition: .18s ease;
+        }
+
+        .therapist-notification-button:hover {
+          color: #7465E8;
+          background: #F8F6FF;
+          border-color: #DED8FF;
+        }
+
+        .therapist-header-badge {
+          min-width: 20px;
+          height: 20px;
+          padding: 0 5px;
+          position: absolute;
+          top: -7px;
+          right: -7px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: #7C6CFF;
+          border: 2px solid white;
+          font-size: 9px;
+          font-weight: 800;
+          line-height: 1;
+        }
+
+        .therapist-profile-wrapper {
+          position: relative;
+        }
+
+        .therapist-profile-button {
+          min-width: 168px;
+          height: 42px;
+          border: 1px solid #ECECF4;
+          border-radius: 13px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 0 10px;
+          color: #757991;
+          background: white;
+          cursor: pointer;
+          font-family: inherit;
+          transition: .18s ease;
+        }
+
+        .therapist-profile-button:hover {
+          border-color: #DED8FF;
+          background: #FAF9FF;
+        }
+
+        .therapist-profile-icon {
+          width: 29px;
+          height: 29px;
+          flex: 0 0 29px;
+          border-radius: 9px;
+          display: grid;
+          place-items: center;
+          color: #7566EB;
+          background: #F0EDFF;
+        }
+
+        .therapist-profile-copy {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .therapist-profile-copy strong {
+          max-width: 110px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #3E405E;
+          font-size: 11.5px;
+          line-height: 1.25;
+        }
+
+        .therapist-profile-copy span {
+          margin-top: 1px;
+          color: #A0A3B5;
+          font-size: 9.5px;
+          line-height: 1.2;
+        }
+
+        .profile-chevron {
+          transition:
+            transform .18s ease;
+        }
+
+        .profile-chevron.open {
+          transform:
+            rotate(180deg);
+        }
+
+        @media (max-width: 900px) {
+
+          .therapist-header {
+            padding: 0 22px;
+          }
+
+          .therapist-profile-button {
+            min-width: 145px;
+          }
+
+        }
+
+        `}
+      </style>
+
+    </header>
+
+  );
 
 };
+
 
 export default Navbar;

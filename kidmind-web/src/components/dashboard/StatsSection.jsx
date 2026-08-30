@@ -1,379 +1,473 @@
 import {
-    useEffect,
-    useState
+  useEffect,
+  useState,
 } from "react";
 
-import StatCard from "../ui/StatCard";
-
 import {
-    Users,
-    CalendarCheck,
-    FileText,
-    Bot
+  Users,
+  CalendarCheck,
+  FileText,
+  Activity,
 } from "lucide-react";
 
 import {
-    getChildren
+  getChildren,
 } from "../../api/childrenApi";
 
 import {
-    getSessions
+  getSessions,
 } from "../../api/sessionsApi";
 
 
 const getSessionDate = (
-    session
+  session
 ) => {
 
-    const value =
-        session.created_at ||
-        session.scheduled_at ||
-        session.started_at ||
-        session.ended_at;
+  const value =
+    session.created_at ||
+    session.scheduled_at ||
+    session.started_at ||
+    session.ended_at;
 
 
-    if (!value) {
-        return null;
-    }
+  if (!value) {
+    return null;
+  }
 
 
-    const date =
-        new Date(
-            String(value).replace(
-                " ",
-                "T"
-            )
-        );
+  const date =
+    new Date(
+      String(value).replace(
+        " ",
+        "T"
+      )
+    );
 
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return null;
-    }
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
 
 
-    return date;
+  return date;
 
 };
 
 
 const StatsSection = () => {
 
-    const [
-        childrenCount,
-        setChildrenCount
-    ] = useState(0);
+  const [
+    childrenCount,
+    setChildrenCount,
+  ] = useState(0);
 
 
-    const [
-        monthSessionsCount,
-        setMonthSessionsCount
-    ] = useState(0);
+  const [
+    monthSessionsCount,
+    setMonthSessionsCount,
+  ] = useState(0);
 
 
-    const [
-        reportsCount,
-        setReportsCount
-    ] = useState(0);
+  const [
+    reportsCount,
+    setReportsCount,
+  ] = useState(0);
 
 
-    const [
-        loading,
-        setLoading
-    ] = useState(true);
+  const [
+    totalSessionsCount,
+    setTotalSessionsCount,
+  ] = useState(0);
 
 
-    const [
-        error,
-        setError
-    ] = useState(false);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
 
-    useEffect(() => {
-
-        const loadStats =
-            async () => {
-
-                try {
-
-                    setLoading(true);
-                    setError(false);
+  const [
+    error,
+    setError,
+  ] = useState(false);
 
 
-                    const [
-                        children,
-                        sessions
-                    ] =
-                        await Promise.all([
-                            getChildren(),
-                            getSessions()
-                        ]);
+  useEffect(
+    () => {
+
+      const loadStats =
+        async () => {
+
+          try {
+
+            setLoading(true);
+            setError(false);
 
 
-                    const childrenData =
-                        Array.isArray(
-                            children
-                        )
-                            ? children
-                            : [];
+            const [
+              children,
+              sessions,
+            ] =
+              await Promise.all([
+                getChildren(),
+                getSessions(),
+              ]);
 
 
-                    const sessionsData =
-                        Array.isArray(
-                            sessions
-                        )
-                            ? sessions
-                            : [];
+            const childrenData =
+              Array.isArray(
+                children
+              )
+                ? children
+                : [];
 
 
-                    const now =
-                        new Date();
+            const sessionsData =
+              Array.isArray(
+                sessions
+              )
+                ? sessions
+                : [];
 
 
-                    const currentYear =
-                        now.getFullYear();
+            const now =
+              new Date();
 
 
-                    const currentMonth =
-                        now.getMonth();
+            const currentYear =
+              now.getFullYear();
 
 
-                    const sessionsThisMonth =
-                        sessionsData.filter(
-                            (session) => {
-
-                                const date =
-                                    getSessionDate(
-                                        session
-                                    );
+            const currentMonth =
+              now.getMonth();
 
 
-                                if (!date) {
-                                    return false;
-                                }
+            const sessionsThisMonth =
+              sessionsData.filter(
+                session => {
 
-
-                                return (
-                                    date.getFullYear() ===
-                                        currentYear &&
-                                    date.getMonth() ===
-                                        currentMonth
-                                );
-
-                            }
-                        );
-
-
-                    const completedReports =
-                        sessionsData.filter(
-                            (session) =>
-                                session.status ===
-                                "Completed"
-                        );
-
-
-                    setChildrenCount(
-                        childrenData.length
+                  const date =
+                    getSessionDate(
+                      session
                     );
 
 
-                    setMonthSessionsCount(
-                        sessionsThisMonth.length
-                    );
+                  if (!date) {
+                    return false;
+                  }
 
 
-                    setReportsCount(
-                        completedReports.length
-                    );
-
-                } catch (loadError) {
-
-                    console.error(
-                        "Failed to load dashboard statistics:",
-                        loadError
-                    );
-
-
-                    setError(true);
-
-                } finally {
-
-                    setLoading(false);
+                  return (
+                    date.getFullYear() ===
+                      currentYear &&
+                    date.getMonth() ===
+                      currentMonth
+                  );
 
                 }
-
-            };
-
-
-        loadStats();
-
-    }, []);
+              );
 
 
-    const displayValue = (
+            const completedReports =
+              sessionsData.filter(
+                session =>
+                  session.status ===
+                  "Completed"
+              );
+
+
+            setChildrenCount(
+              childrenData.length
+            );
+
+
+            setMonthSessionsCount(
+              sessionsThisMonth.length
+            );
+
+
+            setReportsCount(
+              completedReports.length
+            );
+
+
+            setTotalSessionsCount(
+              sessionsData.length
+            );
+
+          } catch (
+            loadError
+          ) {
+
+            console.error(
+              "Failed to load dashboard statistics:",
+              loadError
+            );
+
+
+            setError(true);
+
+          } finally {
+
+            setLoading(false);
+
+          }
+
+        };
+
+
+      loadStats();
+
+    },
+    []
+  );
+
+
+  const displayValue =
+    value => {
+
+      if (loading) {
+        return "—";
+      }
+
+
+      if (error) {
+        return "—";
+      }
+
+
+      return String(
         value
-    ) => {
-
-        if (loading) {
-            return "...";
-        }
-
-
-        if (error) {
-            return "—";
-        }
-
-
-        return String(
-            value
-        );
+      );
 
     };
 
 
-    const stats = [
-
-        {
-            title:
-                "Children",
-
-            value:
-                displayValue(
-                    childrenCount
-                ),
-
-            subtitle:
-                "Registered children",
-
-            change:
-                loading
-                    ? "..."
-                    : "Live",
-
-            bg:
-                "#F1EDFF",
-
-            iconBg:
-                "#7B6EF6",
-
-            icon:
-                <Users />
-        },
-
-
-        {
-            title:
-                "Sessions",
-
-            value:
-                displayValue(
-                    monthSessionsCount
-                ),
-
-            subtitle:
-                "This month",
-
-            change:
-                loading
-                    ? "..."
-                    : "Live",
-
-            bg:
-                "#EAF7FF",
-
-            iconBg:
-                "#63B3ED",
-
-            icon:
-                <CalendarCheck />
-        },
+  const stats = [
+    {
+      title: "Children",
+      value:
+        displayValue(
+          childrenCount
+        ),
+      subtitle:
+        "Assigned children",
+      icon: Users,
+      className: "purple",
+    },
+    {
+      title: "Sessions",
+      value:
+        displayValue(
+          monthSessionsCount
+        ),
+      subtitle:
+        "Sessions this month",
+      icon: CalendarCheck,
+      className: "blue",
+    },
+    {
+      title: "Reports",
+      value:
+        displayValue(
+          reportsCount
+        ),
+      subtitle:
+        "Completed assessments",
+      icon: FileText,
+      className: "pink",
+    },
+    {
+      title: "All Sessions",
+      value:
+        displayValue(
+          totalSessionsCount
+        ),
+      subtitle:
+        "Total session records",
+      icon: Activity,
+      className: "green",
+    },
+  ];
 
 
-        {
-            title:
-                "Reports",
+  return (
 
-            value:
-                displayValue(
-                    reportsCount
-                ),
+    <div className="therapist-stats">
 
-            subtitle:
-                "Completed assessments",
+      {
+        stats.map(
+          item => {
 
-            change:
-                loading
-                    ? "..."
-                    : "Live",
-
-            bg:
-                "#FFF4E8",
-
-            iconBg:
-                "#F6AD55",
-
-            icon:
-                <FileText />
-        },
+            const Icon =
+              item.icon;
 
 
-        {
-            title:
-                "AI Insights",
+            return (
 
-            value:
-                "—",
+              <div
+                key={
+                  item.title
+                }
+                className="therapist-stat-card"
+              >
 
-            subtitle:
-                "AI integration pending",
+                <div
+                  className={
+                    `therapist-stat-icon ${item.className}`
+                  }
+                >
 
-            change:
-                "Pending",
+                  <Icon
+                    size={22}
+                  />
 
-            bg:
-                "#EEF8E8",
+                </div>
 
-            iconBg:
-                "#48BB78",
 
-            icon:
-                <Bot />
+                <div className="therapist-stat-info">
+
+                  <span className="therapist-stat-label">
+
+                    {
+                      item.title
+                    }
+
+                  </span>
+
+
+                  <strong>
+
+                    {
+                      item.value
+                    }
+
+                  </strong>
+
+
+                  <small>
+
+                    {
+                      item.subtitle
+                    }
+
+                  </small>
+
+                </div>
+
+              </div>
+
+            );
+
+          }
+        )
+      }
+
+
+      <style>
+        {`
+
+        .therapist-stats {
+          display: grid;
+          grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+          gap: 17px;
+          margin-top: 22px;
         }
 
-    ];
+        .therapist-stat-card {
+          min-height: 126px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 19px;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid #ECECF4;
+          box-shadow:
+            0 8px 26px
+            rgba(68,68,110,.04);
+        }
 
+        .therapist-stat-icon {
+          width: 47px;
+          height: 47px;
+          flex: 0 0 47px;
+          display: grid;
+          place-items: center;
+          border-radius: 14px;
+        }
 
-    return (
+        .therapist-stat-icon.purple {
+          color: #7566EB;
+          background: #F0EDFF;
+        }
 
-        <div
-            className="
-            grid
-            grid-cols-2
-            xl:grid-cols-4
-            gap-6
-            mt-8
-            "
-        >
+        .therapist-stat-icon.blue {
+          color: #5595DD;
+          background: #EDF6FF;
+        }
 
-            {stats.map(
-                (item) => (
+        .therapist-stat-icon.pink {
+          color: #D867B4;
+          background: #FFF0FA;
+        }
 
-                    <StatCard
-                        key={
-                            item.title
-                        }
-                        {...item}
-                    />
+        .therapist-stat-icon.green {
+          color: #48A784;
+          background: #ECFAF4;
+        }
 
-                )
-            )}
+        .therapist-stat-info {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
 
-        </div>
+        .therapist-stat-label {
+          color: #85899D;
+          font-size: 11.5px;
+        }
 
-    );
+        .therapist-stat-info strong {
+          margin: 2px 0;
+          color: #2E3054;
+          font-size: 25px;
+          line-height: 1.2;
+        }
+
+        .therapist-stat-info small {
+          color: #A0A3B3;
+          font-size: 10.5px;
+        }
+
+        @media (max-width: 1150px) {
+
+          .therapist-stats {
+            grid-template-columns:
+              repeat(2, minmax(0, 1fr));
+          }
+
+        }
+
+        @media (max-width: 650px) {
+
+          .therapist-stats {
+            grid-template-columns: 1fr;
+          }
+
+        }
+
+        `}
+      </style>
+
+    </div>
+
+  );
 
 };
 

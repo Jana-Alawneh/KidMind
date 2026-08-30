@@ -16,10 +16,9 @@ import {
 } from "expo-router";
 
 import {
+  CalendarDays,
   Clock3,
 } from "lucide-react-native";
-
-import Card from "../ui/Card";
 
 import {
   getSessions,
@@ -191,10 +190,10 @@ const getStatusStyle = (
 
     return {
       backgroundColor:
-        "#DCFCE7",
+        "#ECFAF4",
 
       color:
-        "#15803D",
+        "#3E9E7D",
     };
 
   }
@@ -207,10 +206,10 @@ const getStatusStyle = (
 
     return {
       backgroundColor:
-        "#DBEAFE",
+        "#EDF6FF",
 
       color:
-        "#1D4ED8",
+        "#5595DD",
     };
 
   }
@@ -223,10 +222,10 @@ const getStatusStyle = (
 
     return {
       backgroundColor:
-        "#FEF3C7",
+        "#FFF7E8",
 
       color:
-        "#B45309",
+        "#C48432",
     };
 
   }
@@ -239,10 +238,10 @@ const getStatusStyle = (
 
     return {
       backgroundColor:
-        "#FEE2E2",
+        "#FFF0F3",
 
       color:
-        "#B91C1C",
+        "#C4556C",
     };
 
   }
@@ -250,11 +249,25 @@ const getStatusStyle = (
 
   return {
     backgroundColor:
-      "#F1F5F9",
+      "#F5F5F8",
 
     color:
-      "#64748B",
+      "#85899D",
   };
+
+};
+
+
+const getInitial = (
+  name: string
+) => {
+
+  return String(
+    name || "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
 };
 
@@ -264,163 +277,182 @@ const TodaySessions = () => {
   const [
     sessions,
     setSessions,
-  ] = useState<any[]>([]);
+  ] =
+    useState<any[]>([]);
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadSessions =
-      async () => {
+      const loadSessions =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError("");
+            setLoading(
+              true
+            );
 
-
-          const [
-            sessionsData,
-            childrenData,
-          ] =
-            await Promise.all([
-              getSessions(),
-              getChildren(),
-            ]);
+            setError(
+              ""
+            );
 
 
-          const allSessions =
-            Array.isArray(
-              sessionsData
-            )
-              ? sessionsData
-              : [];
+            const [
+              sessionsData,
+              childrenData,
+            ] =
+              await Promise.all([
+                getSessions(),
+                getChildren(),
+              ]);
 
 
-          const allChildren =
-            Array.isArray(
-              childrenData
-            )
-              ? childrenData
-              : [];
-
-
-          const todaySessions =
-            allSessions
-              .map(
-                (session) => {
-
-                  const dashboardDate =
-                    getSessionDate(
-                      session
-                    );
-
-
-                  const child =
-                    allChildren.find(
-                      (item) =>
-                        Number(
-                          item.id
-                        ) ===
-                        Number(
-                          session.child_id
-                        )
-                    );
-
-
-                  return {
-                    ...session,
-
-                    dashboardDate,
-
-                    dashboardChildName:
-                      session.child_name ||
-                      child?.full_name ||
-                      `Child #${session.child_id}`,
-                  };
-
-                }
+            const allSessions =
+              Array.isArray(
+                sessionsData
               )
-              .filter(
-                (session) => {
+                ? sessionsData
+                : [];
 
-                  if (
-                    !session.dashboardDate
-                  ) {
-                    return false;
+
+            const allChildren =
+              Array.isArray(
+                childrenData
+              )
+                ? childrenData
+                : [];
+
+
+            const todaySessions =
+              allSessions
+                .map(
+                  session => {
+
+                    const dashboardDate =
+                      getSessionDate(
+                        session
+                      );
+
+
+                    const child =
+                      allChildren.find(
+                        item =>
+                          Number(
+                            item.id
+                          ) ===
+                          Number(
+                            session.child_id
+                          )
+                      );
+
+
+                    return {
+                      ...session,
+
+                      dashboardDate,
+
+                      dashboardChildName:
+                        session.child_name ||
+                        child?.full_name ||
+                        `Child #${session.child_id}`,
+                    };
+
                   }
+                )
+                .filter(
+                  session => {
+
+                    if (
+                      !session.dashboardDate
+                    ) {
+                      return false;
+                    }
 
 
-                  return isToday(
-                    session.dashboardDate
-                  );
+                    return isToday(
+                      session.dashboardDate
+                    );
 
-                }
-              )
-              .sort(
-                (
-                  first,
-                  second
-                ) =>
-                  getTimestamp(
-                    second.dashboardDate
-                  ) -
-                  getTimestamp(
-                    first.dashboardDate
-                  )
-              )
-              .slice(
-                0,
-                3
-              );
+                  }
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) =>
+                    getTimestamp(
+                      second.dashboardDate
+                    ) -
+                    getTimestamp(
+                      first.dashboardDate
+                    )
+                )
+                .slice(
+                  0,
+                  3
+                );
 
 
-          setSessions(
-            todaySessions
-          );
+            setSessions(
+              todaySessions
+            );
 
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load today's sessions:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load today's sessions:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load today's sessions"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load today's sessions"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadSessions();
+      loadSessions();
 
-  }, []);
+    },
+    []
+  );
 
 
   return (
 
-    <Card>
+    <View
+      style={
+        styles.panel
+      }
+    >
 
       <View
         style={
@@ -428,29 +460,61 @@ const TodaySessions = () => {
         }
       >
 
-        <View>
+        <View
+          style={
+            styles.headerLeft
+          }
+        >
 
-          <Text
+          <View
             style={
-              styles.title
+              styles.headerIcon
             }
           >
-            Today's Sessions
-          </Text>
+
+            <CalendarDays
+              size={18}
+              color="#7465E8"
+            />
+
+          </View>
 
 
-          <Text
+          <View
             style={
-              styles.subtitle
+              styles.headerCopy
             }
           >
-            Assessment sessions from today
-          </Text>
+
+            <Text
+              style={
+                styles.title
+              }
+            >
+              Today&apos;s Sessions
+            </Text>
+
+
+            <Text
+              style={
+                styles.subtitle
+              }
+            >
+              Assessment sessions from today
+            </Text>
+
+          </View>
 
         </View>
 
 
         <TouchableOpacity
+          activeOpacity={
+            0.7
+          }
+          style={
+            styles.viewAllButton
+          }
           onPress={() => {
 
             router.push(
@@ -473,241 +537,286 @@ const TodaySessions = () => {
       </View>
 
 
-      {loading && (
+      {
+        loading && (
 
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <ActivityIndicator
-            color="#7B6EF6"
-          />
-
-
-          <Text
+          <View
             style={
-              styles.stateText
+              styles.stateBox
             }
           >
-            Loading sessions...
-          </Text>
 
-        </View>
-
-      )}
+            <ActivityIndicator
+              color="#7B6EF6"
+            />
 
 
-      {!loading &&
-        error !== "" && (
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              Loading sessions...
+            </Text>
 
-        <View
-          style={
-            styles.errorBox
-          }
-        >
+          </View>
 
-          <Text
+        )
+      }
+
+
+      {
+        !loading &&
+        error !==
+          "" && (
+
+          <View
             style={
-              styles.errorText
+              styles.errorBox
             }
           >
-            {error}
-          </Text>
 
-        </View>
+            <Text
+              style={
+                styles.errorTitle
+              }
+            >
+              Unable to load sessions
+            </Text>
 
-      )}
+
+            <Text
+              style={
+                styles.errorText
+              }
+            >
+              {error}
+            </Text>
+
+          </View>
+
+        )
+      }
 
 
-      {!loading &&
-        error === "" &&
+      {
+        !loading &&
+        error ===
+          "" &&
         sessions.length ===
           0 && (
 
-        <View
-          style={
-            styles.stateBox
-          }
-        >
-
-          <Text
+          <View
             style={
-              styles.emptyTitle
+              styles.stateBox
             }
           >
-            No sessions today
-          </Text>
+
+            <Text
+              style={
+                styles.emptyTitle
+              }
+            >
+              No sessions today
+            </Text>
 
 
-          <Text
-            style={
-              styles.stateText
-            }
-          >
-            Today's assessment sessions will appear here.
-          </Text>
+            <Text
+              style={
+                styles.stateText
+              }
+            >
+              Today&apos;s assessment sessions will appear here.
+            </Text>
 
-        </View>
+          </View>
 
-      )}
+        )
+      }
 
 
-      {!loading &&
-        error === "" &&
+      {
+        !loading &&
+        error ===
+          "" &&
         sessions.length >
           0 && (
 
-        <View
-          style={
-            styles.sessionsContainer
-          }
-        >
+          <View
+            style={
+              styles.sessionsContainer
+            }
+          >
 
-          {sessions.map(
-            (item) => {
+            {
+              sessions.map(
+                item => {
 
-              const statusStyle =
-                getStatusStyle(
-                  item.status
-                );
+                  const statusStyle =
+                    getStatusStyle(
+                      item.status
+                    );
 
 
-              return (
+                  return (
 
-                <TouchableOpacity
-                  key={
-                    item.id
-                  }
-                  activeOpacity={
-                    0.75
-                  }
-                  style={
-                    styles.sessionCard
-                  }
-                  onPress={() => {
-
-                    router.push({
-                      pathname:
-                        "/sessions/[id]",
-
-                      params: {
-                        id:
-                          String(
-                            item.id
-                          ),
-                      },
-                    });
-
-                  }}
-                >
-
-                  <View
-                    style={
-                      styles.leftSide
-                    }
-                  >
-
-                    <View
-                      style={
-                        styles.iconBox
+                    <TouchableOpacity
+                      key={
+                        item.id
                       }
+                      activeOpacity={
+                        0.75
+                      }
+                      style={
+                        styles.sessionRow
+                      }
+                      onPress={() => {
+
+                        router.push({
+                          pathname:
+                            "/sessions/[id]",
+
+                          params: {
+                            id:
+                              String(
+                                item.id
+                              ),
+                          },
+                        });
+
+                      }}
                     >
 
-                      <Clock3
-                        size={20}
-                        color="#7B6EF6"
-                      />
-
-                    </View>
-
-
-                    <View
-                      style={
-                        styles.sessionInfo
-                      }
-                    >
-
-                      <Text
+                      <View
                         style={
-                          styles.childName
-                        }
-                        numberOfLines={
-                          1
+                          styles.sessionMain
                         }
                       >
-                        {item.dashboardChildName}
-                      </Text>
+
+                        <View
+                          style={
+                            styles.avatar
+                          }
+                        >
+
+                          <Text
+                            style={
+                              styles.avatarText
+                            }
+                          >
+                            {
+                              getInitial(
+                                item.dashboardChildName
+                              )
+                            }
+                          </Text>
+
+                        </View>
 
 
-                      <Text
-                        style={
-                          styles.game
-                        }
-                        numberOfLines={
-                          1
-                        }
-                      >
-                        {getActivityText(
-                          item
-                        )}
-                      </Text>
+                        <View
+                          style={
+                            styles.sessionInfo
+                          }
+                        >
+
+                          <Text
+                            style={
+                              styles.childName
+                            }
+                            numberOfLines={
+                              1
+                            }
+                          >
+                            {item.dashboardChildName}
+                          </Text>
+
+
+                          <Text
+                            style={
+                              styles.activity
+                            }
+                            numberOfLines={
+                              1
+                            }
+                          >
+                            {
+                              getActivityText(
+                                item
+                              )
+                            }
+                          </Text>
+
+
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor:
+                                  statusStyle.backgroundColor,
+                              },
+                            ]}
+                          >
+
+                            <Text
+                              style={[
+                                styles.statusText,
+                                {
+                                  color:
+                                    statusStyle.color,
+                                },
+                              ]}
+                            >
+                              {item.status}
+                            </Text>
+
+                          </View>
+
+                        </View>
+
+                      </View>
 
 
                       <View
-                        style={[
-                          styles.statusBadge,
-
-                          {
-                            backgroundColor:
-                              statusStyle.backgroundColor,
-                          },
-                        ]}
+                        style={
+                          styles.timeWrap
+                        }
                       >
 
-                        <Text
-                          style={[
-                            styles.statusText,
+                        <Clock3
+                          size={13}
+                          color="#9497A8"
+                        />
 
-                            {
-                              color:
-                                statusStyle.color,
-                            },
-                          ]}
+
+                        <Text
+                          style={
+                            styles.time
+                          }
                         >
-                          {item.status}
+                          {
+                            formatTime(
+                              item.dashboardDate
+                            )
+                          }
                         </Text>
 
                       </View>
 
-                    </View>
+                    </TouchableOpacity>
 
-                  </View>
+                  );
 
-
-                  <Text
-                    style={
-                      styles.time
-                    }
-                  >
-                    {formatTime(
-                      item.dashboardDate
-                    )}
-                  </Text>
-
-                </TouchableOpacity>
-
-              );
-
+                }
+              )
             }
-          )}
 
-        </View>
+          </View>
 
-      )}
+        )
+      }
 
-    </Card>
+    </View>
 
   );
 
@@ -717,47 +826,158 @@ const TodaySessions = () => {
 const styles =
   StyleSheet.create({
 
+    panel: {
+
+      padding:
+        18,
+
+      borderRadius:
+        21,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.035,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
+
+    },
+
+
     header: {
 
       flexDirection:
         "row",
 
+      alignItems:
+        "flex-start",
+
       justifyContent:
         "space-between",
+
+      gap:
+        10,
+
+      marginBottom:
+        15,
+
+    },
+
+
+    headerLeft: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
-      marginBottom:
-        24,
-
       gap:
+        10,
+
+    },
+
+
+    headerIcon: {
+
+      width:
+        38,
+
+      height:
+        38,
+
+      flexShrink:
+        0,
+
+      borderRadius:
         12,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    headerCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
 
     },
 
 
     title: {
 
+      color:
+        "#333554",
+
       fontSize:
-        20,
+        15.5,
 
       fontWeight:
-        "600",
+        "700",
 
     },
 
 
     subtitle: {
 
-      fontSize:
-        14,
-
-      color:
-        "#94A3B8",
-
       marginTop:
         3,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10.5,
+
+    },
+
+
+    viewAllButton: {
+
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        6,
+
+      borderRadius:
+        9,
 
     },
 
@@ -765,49 +985,64 @@ const styles =
     viewAll: {
 
       color:
-        "#7B6EF6",
+        "#7566EB",
+
+      fontSize:
+        10.5,
 
       fontWeight:
-        "600",
+        "700",
 
     },
 
 
     sessionsContainer: {
 
-      gap:
-        16,
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#F1F1F6",
 
     },
 
 
-    sessionCard: {
+    sessionRow: {
 
-      backgroundColor:
-        "#F8F9FD",
+      minHeight:
+        82,
 
-      borderRadius:
-        16,
-
-      padding:
-        16,
+      paddingVertical:
+        12,
 
       flexDirection:
         "row",
+
+      alignItems:
+        "center",
 
       justifyContent:
         "space-between",
 
-      alignItems:
-        "center",
-
       gap:
-        12,
+        10,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#F1F1F6",
 
     },
 
 
-    leftSide: {
+    sessionMain: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
 
       flexDirection:
         "row",
@@ -816,33 +1051,47 @@ const styles =
         "center",
 
       gap:
-        16,
-
-      flex:
-        1,
+        11,
 
     },
 
 
-    iconBox: {
+    avatar: {
 
       width:
-        48,
+        41,
 
       height:
-        48,
+        41,
+
+      flexShrink:
+        0,
 
       borderRadius:
-        16,
+        13,
 
-      backgroundColor:
-        "#EEE9FF",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      alignItems:
-        "center",
+      backgroundColor:
+        "#FFF0FA",
+
+    },
+
+
+    avatarText: {
+
+      color:
+        "#B05D9B",
+
+      fontSize:
+        13,
+
+      fontWeight:
+        "800",
 
     },
 
@@ -852,44 +1101,36 @@ const styles =
       flex:
         1,
 
+      minWidth:
+        0,
+
     },
 
 
     childName: {
 
-      fontWeight:
-        "600",
+      color:
+        "#373953",
 
       fontSize:
-        16,
+        12.5,
+
+      fontWeight:
+        "700",
 
     },
 
 
-    game: {
-
-      fontSize:
-        14,
-
-      color:
-        "#64748B",
+    activity: {
 
       marginTop:
-        4,
-
-    },
-
-
-    time: {
-
-      fontWeight:
-        "600",
-
-      fontSize:
-        13,
+        3,
 
       color:
-        "#334155",
+        "#9093A6",
+
+      fontSize:
+        10,
 
     },
 
@@ -899,17 +1140,17 @@ const styles =
       alignSelf:
         "flex-start",
 
-      borderRadius:
-        999,
+      marginTop:
+        6,
 
       paddingHorizontal:
         8,
 
       paddingVertical:
-        3,
+        4,
 
-      marginTop:
-        7,
+      borderRadius:
+        999,
 
     },
 
@@ -917,7 +1158,7 @@ const styles =
     statusText: {
 
       fontSize:
-        10,
+        9,
 
       fontWeight:
         "700",
@@ -925,10 +1166,44 @@ const styles =
     },
 
 
+    timeWrap: {
+
+      flexShrink:
+        0,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        4,
+
+      paddingLeft:
+        5,
+
+    },
+
+
+    time: {
+
+      color:
+        "#777A8E",
+
+      fontSize:
+        9.5,
+
+      fontWeight:
+        "600",
+
+    },
+
+
     stateBox: {
 
       minHeight:
-        150,
+        145,
 
       alignItems:
         "center",
@@ -944,31 +1219,34 @@ const styles =
 
     stateText: {
 
-      color:
-        "#94A3B8",
-
-      fontSize:
-        13,
-
       marginTop:
-        8,
+        7,
+
+      color:
+        "#A0A3B4",
 
       textAlign:
         "center",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
 
     },
 
 
     emptyTitle: {
 
+      color:
+        "#62657B",
+
       fontSize:
-        16,
+        13,
 
       fontWeight:
         "700",
-
-      color:
-        "#475569",
 
     },
 
@@ -978,14 +1256,8 @@ const styles =
       minHeight:
         120,
 
-      backgroundColor:
-        "#FEF2F2",
-
-      borderRadius:
-        16,
-
       padding:
-        20,
+        16,
 
       alignItems:
         "center",
@@ -993,19 +1265,48 @@ const styles =
       justifyContent:
         "center",
 
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FFF0F3",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F6D8DF",
+
+    },
+
+
+    errorTitle: {
+
+      color:
+        "#B9415E",
+
+      fontSize:
+        12.5,
+
+      fontWeight:
+        "700",
+
     },
 
 
     errorText: {
 
-      color:
-        "#DC2626",
+      marginTop:
+        4,
 
-      fontSize:
-        13,
+      color:
+        "#C55A70",
 
       textAlign:
         "center",
+
+      fontSize:
+        10.5,
 
     },
 

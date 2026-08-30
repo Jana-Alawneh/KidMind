@@ -5,17 +5,16 @@ import {
 
 import {
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 
 import {
-  Bot,
+  Activity,
   CalendarCheck,
   FileText,
   Users,
 } from "lucide-react-native";
-
-import StatCard from "../ui/StatCard";
 
 import {
   getChildren,
@@ -88,170 +87,199 @@ const StatsSection = () => {
   const [
     childrenCount,
     setChildrenCount,
-  ] = useState<number | null>(
-    null
-  );
+  ] =
+    useState<number | null>(
+      null
+    );
 
 
   const [
     sessionsThisMonth,
     setSessionsThisMonth,
-  ] = useState<number | null>(
-    null
-  );
+  ] =
+    useState<number | null>(
+      null
+    );
 
 
   const [
     reportsCount,
     setReportsCount,
-  ] = useState<number | null>(
-    null
-  );
+  ] =
+    useState<number | null>(
+      null
+    );
+
+
+  const [
+    totalSessionsCount,
+    setTotalSessionsCount,
+  ] =
+    useState<number | null>(
+      null
+    );
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadStats =
-      async () => {
+      const loadStats =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError(false);
+            setLoading(
+              true
+            );
 
-
-          const [
-            childrenData,
-            sessionsData,
-          ] =
-            await Promise.all([
-              getChildren(),
-              getSessions(),
-            ]);
+            setError(
+              false
+            );
 
 
-          const children =
-            Array.isArray(
-              childrenData
-            )
-              ? childrenData
-              : [];
+            const [
+              childrenData,
+              sessionsData,
+            ] =
+              await Promise.all([
+                getChildren(),
+                getSessions(),
+              ]);
 
 
-          const sessions =
-            Array.isArray(
-              sessionsData
-            )
-              ? sessionsData
-              : [];
+            const children =
+              Array.isArray(
+                childrenData
+              )
+                ? childrenData
+                : [];
 
 
-          const now =
-            new Date();
+            const sessions =
+              Array.isArray(
+                sessionsData
+              )
+                ? sessionsData
+                : [];
 
 
-          const currentYear =
-            now.getFullYear();
+            const now =
+              new Date();
 
 
-          const currentMonth =
-            now.getMonth();
+            const currentYear =
+              now.getFullYear();
 
 
-          const monthlySessions =
-            sessions.filter(
-              (session) => {
+            const currentMonth =
+              now.getMonth();
 
-                const date =
-                  getSessionDate(
-                    session
+
+            const monthlySessions =
+              sessions.filter(
+                session => {
+
+                  const date =
+                    getSessionDate(
+                      session
+                    );
+
+
+                  if (!date) {
+                    return false;
+                  }
+
+
+                  return (
+                    date.getFullYear() ===
+                      currentYear &&
+                    date.getMonth() ===
+                      currentMonth
                   );
 
-
-                if (!date) {
-                  return false;
                 }
+              );
 
 
-                return (
-                  date.getFullYear() ===
-                    currentYear &&
-                  date.getMonth() ===
-                    currentMonth
-                );
+            const completedReports =
+              sessions.filter(
+                session =>
+                  session.status ===
+                  "Completed"
+              );
 
-              }
+
+            setChildrenCount(
+              children.length
             );
 
 
-          const completedReports =
-            sessions.filter(
-              (session) =>
-                session.status ===
-                "Completed"
+            setSessionsThisMonth(
+              monthlySessions.length
             );
 
 
-          setChildrenCount(
-            children.length
-          );
+            setReportsCount(
+              completedReports.length
+            );
 
 
-          setSessionsThisMonth(
-            monthlySessions.length
-          );
+            setTotalSessionsCount(
+              sessions.length
+            );
 
-
-          setReportsCount(
-            completedReports.length
-          );
-
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load dashboard stats:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load dashboard stats:",
+              loadError
+            );
 
 
-          setError(true);
+            setError(
+              true
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadStats();
+      loadStats();
 
-  }, []);
+    },
+    []
+  );
 
 
   const getValue = (
     value: number | null
   ) => {
 
-    if (loading) {
-      return "...";
-    }
-
-
     if (
+      loading ||
       error ||
       value === null
     ) {
@@ -267,7 +295,6 @@ const StatsSection = () => {
 
 
   const stats = [
-
     {
       title:
         "Children",
@@ -278,20 +305,17 @@ const StatsSection = () => {
         ),
 
       subtitle:
-        "Registered children",
-
-      trend:
-        loading || error
-          ? "—"
-          : "Live",
+        "Assigned children",
 
       icon:
-        <Users
-          size={24}
-          color="#7B6EF6"
-        />,
-    },
+        Users,
 
+      color:
+        "#7566EB",
+
+      background:
+        "#F0EDFF",
+    },
 
     {
       title:
@@ -303,20 +327,17 @@ const StatsSection = () => {
         ),
 
       subtitle:
-        "This month",
-
-      trend:
-        loading || error
-          ? "—"
-          : "Live",
+        "Sessions this month",
 
       icon:
-        <CalendarCheck
-          size={24}
-          color="#63B3ED"
-        />,
-    },
+        CalendarCheck,
 
+      color:
+        "#5595DD",
+
+      background:
+        "#EDF6FF",
+    },
 
     {
       title:
@@ -328,41 +349,39 @@ const StatsSection = () => {
         ),
 
       subtitle:
-        "Generated reports",
-
-      trend:
-        loading || error
-          ? "—"
-          : "Live",
+        "Completed assessments",
 
       icon:
-        <FileText
-          size={24}
-          color="#F6AD55"
-        />,
-    },
+        FileText,
 
+      color:
+        "#D867B4",
+
+      background:
+        "#FFF0FA",
+    },
 
     {
       title:
-        "AI Insights",
+        "All Sessions",
 
       value:
-        "—",
+        getValue(
+          totalSessionsCount
+        ),
 
       subtitle:
-        "AI integration pending",
-
-      trend:
-        "Pending",
+        "Total session records",
 
       icon:
-        <Bot
-          size={24}
-          color="#48BB78"
-        />,
-    },
+        Activity,
 
+      color:
+        "#48A784",
+
+      background:
+        "#ECFAF4",
+    },
   ];
 
 
@@ -374,26 +393,81 @@ const StatsSection = () => {
       }
     >
 
-      {stats.map(
-        (item) => (
+      {
+        stats.map(
+          item => {
 
-          <View
-            key={
-              item.title
-            }
-            style={
-              styles.cardWrapper
-            }
-          >
+            const Icon =
+              item.icon;
 
-            <StatCard
-              {...item}
-            />
 
-          </View>
+            return (
 
+              <View
+                key={
+                  item.title
+                }
+                style={
+                  styles.card
+                }
+              >
+
+                <View
+                  style={[
+                    styles.iconBox,
+                    {
+                      backgroundColor:
+                        item.background,
+                    },
+                  ]}
+                >
+
+                  <Icon
+                    size={21}
+                    color={
+                      item.color
+                    }
+                  />
+
+                </View>
+
+
+                <Text
+                  style={
+                    styles.label
+                  }
+                >
+                  {item.title}
+                </Text>
+
+
+                <Text
+                  style={
+                    styles.value
+                  }
+                >
+                  {item.value}
+                </Text>
+
+
+                <Text
+                  style={
+                    styles.subtitle
+                  }
+                  numberOfLines={
+                    1
+                  }
+                >
+                  {item.subtitle}
+                </Text>
+
+              </View>
+
+            );
+
+          }
         )
-      )}
+      }
 
     </View>
 
@@ -413,19 +487,128 @@ const styles =
       flexWrap:
         "wrap",
 
+      justifyContent:
+        "space-between",
+
       gap:
-        16,
+        12,
 
       marginTop:
-        32,
+        18,
 
     },
 
 
-    cardWrapper: {
+    card: {
 
       width:
-        "47%",
+        "48%",
+
+      minHeight:
+        132,
+
+      padding:
+        15,
+
+      borderRadius:
+        19,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.04,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
+
+    },
+
+
+    iconBox: {
+
+      width:
+        41,
+
+      height:
+        41,
+
+      borderRadius:
+        13,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      marginBottom:
+        12,
+
+    },
+
+
+    label: {
+
+      color:
+        "#85899D",
+
+      fontSize:
+        10.5,
+
+      fontWeight:
+        "500",
+
+    },
+
+
+    value: {
+
+      marginTop:
+        2,
+
+      color:
+        "#2E3054",
+
+      fontSize:
+        23,
+
+      lineHeight:
+        29,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    subtitle: {
+
+      marginTop:
+        1,
+
+      color:
+        "#A0A3B3",
+
+      fontSize:
+        9.5,
 
     },
 

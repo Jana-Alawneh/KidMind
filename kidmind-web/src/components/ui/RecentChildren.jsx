@@ -120,7 +120,7 @@ const getLatestGameScore = (
 
 
   sessions.forEach(
-    (session) => {
+    session => {
 
       const games =
         Array.isArray(
@@ -131,7 +131,7 @@ const getLatestGameScore = (
 
 
       games.forEach(
-        (game) => {
+        game => {
 
           const status =
             game.status;
@@ -242,7 +242,7 @@ const getOverallScore = (
       gameNames.processingSpeed
     ),
   ].filter(
-    (score) =>
+    score =>
       typeof score ===
       "number"
   );
@@ -293,6 +293,35 @@ const getChildTimestamp = (
 };
 
 
+const getChildName = (
+  child
+) => {
+
+  return (
+    child.full_name ||
+    child.name ||
+    `Child ${child.id}`
+  );
+
+};
+
+
+const getChildInitial = (
+  child
+) => {
+
+  return String(
+    getChildName(
+      child
+    ) || "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+};
+
+
 const RecentChildren = () => {
 
   const navigate =
@@ -317,158 +346,152 @@ const RecentChildren = () => {
   ] = useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadChildren =
-      async () => {
+      const loadChildren =
+        async () => {
 
-        try {
+          try {
 
-          setLoading(true);
-          setError("");
-
-
-          const [
-            childrenData,
-            sessionsData,
-          ] =
-            await Promise.all([
-              getChildren(),
-              getSessions(),
-            ]);
+            setLoading(true);
+            setError("");
 
 
-          const allChildren =
-            Array.isArray(
-              childrenData
-            )
-              ? childrenData
-              : [];
+            const [
+              childrenData,
+              sessionsData,
+            ] =
+              await Promise.all([
+                getChildren(),
+                getSessions(),
+              ]);
 
 
-          const allSessions =
-            Array.isArray(
-              sessionsData
-            )
-              ? sessionsData
-              : [];
-
-
-          const recentChildren =
-            allChildren
-              .map(
-                (child) => {
-
-                  const childSessions =
-                    allSessions.filter(
-                      (session) =>
-                        Number(
-                          session.child_id
-                        ) ===
-                        Number(
-                          child.id
-                        )
-                    );
-
-
-                  return {
-                    ...child,
-
-                    dashboardScore:
-                      getOverallScore(
-                        childSessions
-                      ),
-                  };
-
-                }
+            const allChildren =
+              Array.isArray(
+                childrenData
               )
-              .sort(
-                (
-                  first,
-                  second
-                ) =>
-                  getChildTimestamp(
+                ? childrenData
+                : [];
+
+
+            const allSessions =
+              Array.isArray(
+                sessionsData
+              )
+                ? sessionsData
+                : [];
+
+
+            const recentChildren =
+              allChildren
+                .map(
+                  child => {
+
+                    const childSessions =
+                      allSessions.filter(
+                        session =>
+                          Number(
+                            session.child_id
+                          ) ===
+                          Number(
+                            child.id
+                          )
+                      );
+
+
+                    return {
+                      ...child,
+
+                      dashboardScore:
+                        getOverallScore(
+                          childSessions
+                        ),
+                    };
+
+                  }
+                )
+                .sort(
+                  (
+                    first,
                     second
-                  ) -
-                  getChildTimestamp(
-                    first
-                  )
-              )
-              .slice(
-                0,
-                3
-              );
+                  ) =>
+                    getChildTimestamp(
+                      second
+                    ) -
+                    getChildTimestamp(
+                      first
+                    )
+                )
+                .slice(
+                  0,
+                  3
+                );
 
 
-          setChildren(
-            recentChildren
-          );
+            setChildren(
+              recentChildren
+            );
 
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load recent children:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load recent children:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load recent children"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load recent children"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(false);
 
-        }
+          }
 
-      };
+        };
 
 
-    loadChildren();
+      loadChildren();
 
-  }, []);
+    },
+    []
+  );
 
 
   return (
 
     <Card>
 
-      <div
-        className="
-          flex
-          justify-between
-          items-center
-          mb-6
-        "
-      >
+      <div className="recent-children-heading">
 
-        <h2
-          className="
-            text-xl
-            font-semibold
-          "
-        >
-          Recent Children
-        </h2>
+        <div>
+
+          <h2>
+            Recent Children
+          </h2>
+
+          <p>
+            Recently added children in your care
+          </p>
+
+        </div>
 
 
         <button
           type="button"
-          onClick={() => {
-
+          onClick={() =>
             navigate(
               "/children"
-            );
-
-          }}
-          className="
-            text-[#7B6EF6]
-            font-semibold
-            hover:underline
-          "
+            )
+          }
         >
           View All
         </button>
@@ -476,275 +499,380 @@ const RecentChildren = () => {
       </div>
 
 
-      {loading && (
+      {
+        loading && (
 
-        <div
-          className="
-            min-h-[180px]
-            flex
-            items-center
-            justify-center
-          "
-        >
+          <div className="recent-children-state">
 
-          <div
-            className="
-              text-center
-            "
-          >
+            <div>
 
-            <div
-              className="
-                w-9
-                h-9
-                rounded-full
-                border-4
-                border-[#E6E2FF]
-                border-t-[#7B6EF6]
-                animate-spin
-                mx-auto
-              "
-            />
+              <div className="recent-children-loader" />
 
+              <p>
+                Loading children...
+              </p>
 
-            <p
-              className="
-                text-sm
-                text-slate-400
-                mt-3
-              "
-            >
-              Loading children...
-            </p>
+            </div>
 
           </div>
 
-        </div>
+        )
+      }
 
-      )}
 
-
-      {!loading &&
+      {
+        !loading &&
         error && (
 
-        <div
-          className="
-            min-h-[180px]
-            flex
-            items-center
-            justify-center
-          "
-        >
+          <div className="recent-children-state">
 
-          <div
-            className="
-              bg-red-50
-              border
-              border-red-100
-              rounded-2xl
-              p-5
-              text-center
-            "
-          >
+            <div className="recent-children-error">
 
-            <p
-              className="
-                font-semibold
-                text-red-700
-              "
-            >
-              Unable to load children
-            </p>
+              <strong>
+                Unable to load children
+              </strong>
 
+              <span>
+                {error}
+              </span>
 
-            <p
-              className="
-                text-sm
-                text-red-500
-                mt-1
-              "
-            >
-              {error}
-            </p>
+            </div>
 
           </div>
 
-        </div>
+        )
+      }
 
-      )}
 
-
-      {!loading &&
+      {
+        !loading &&
         !error &&
         children.length ===
           0 && (
 
-        <div
-          className="
-            min-h-[180px]
-            flex
-            items-center
-            justify-center
-          "
-        >
+          <div className="recent-children-state">
 
-          <div
-            className="
-              text-center
-            "
-          >
+            <div className="recent-children-empty">
 
-            <p
-              className="
-                font-semibold
-                text-slate-600
-              "
-            >
-              No children yet
-            </p>
+              <strong>
+                No children yet
+              </strong>
 
+              <span>
+                Registered children will
+                appear here.
+              </span>
 
-            <p
-              className="
-                text-sm
-                text-slate-400
-                mt-1
-              "
-            >
-              Registered children will appear here.
-            </p>
+            </div>
 
           </div>
 
-        </div>
+        )
+      }
 
-      )}
 
-
-      {!loading &&
+      {
+        !loading &&
         !error &&
         children.length >
           0 && (
 
-        <div
-          className="
-            space-y-5
-          "
-        >
+          <div className="recent-children-list">
 
-          {children.map(
-            (child) => (
+            {
+              children.map(
+                child => (
 
-              <button
-                key={
-                  child.id
-                }
-                type="button"
-                onClick={() => {
-
-                  navigate(
-                    `/children/${child.id}`
-                  );
-
-                }}
-                className="
-                  w-full
-                  flex
-                  justify-between
-                  items-center
-                  rounded-2xl
-                  p-2
-                  hover:bg-[#F8F8FD]
-                  transition
-                  text-left
-                "
-              >
-
-                <div
-                  className="
-                    flex
-                    items-center
-                    gap-4
-                    min-w-0
-                  "
-                >
-
-                  <img
-                    src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(
-                      child.full_name ||
-                      child.name ||
-                      `Child ${child.id}`
-                    )}`}
-                    alt={
-                      child.full_name ||
-                      child.name ||
-                      "Child"
+                  <button
+                    key={
+                      child.id
                     }
-                    className="
-                      w-12
-                      h-12
-                      rounded-2xl
-                      bg-[#F3F4FF]
-                      shrink-0
-                    "
-                  />
-
-
-                  <div
-                    className="
-                      min-w-0
-                    "
+                    type="button"
+                    className="recent-child-row"
+                    onClick={() =>
+                      navigate(
+                        `/children/${child.id}`
+                      )
+                    }
                   >
 
-                    <h3
-                      className="
-                        font-semibold
-                        truncate
-                      "
+                    <div className="recent-child-main">
+
+                      <div className="recent-child-avatar">
+
+                        {
+                          getChildInitial(
+                            child
+                          )
+                        }
+
+                      </div>
+
+
+                      <div className="recent-child-info">
+
+                        <strong>
+
+                          {
+                            getChildName(
+                              child
+                            )
+                          }
+
+                        </strong>
+
+
+                        <span>
+
+                          Age {
+                            child.age ??
+                            "—"
+                          }
+
+                          {"  •  "}
+
+                          ID #{child.id}
+
+                        </span>
+
+                      </div>
+
+                    </div>
+
+
+                    <div
+                      className={
+                        typeof child.dashboardScore ===
+                        "number"
+                          ? "recent-child-score"
+                          : "recent-child-score empty"
+                      }
                     >
-                      {child.full_name ||
-                        child.name}
-                    </h3>
+
+                      {
+                        typeof child.dashboardScore ===
+                          "number"
+                          ? `${child.dashboardScore}%`
+                          : "—"
+                      }
+
+                    </div>
+
+                  </button>
+
+                )
+              )
+            }
+
+          </div>
+
+        )
+      }
 
 
-                    <p
-                      className="
-                        text-sm
-                        text-slate-500
-                      "
-                    >
-                      Age {child.age}
-                      {" · "}
-                      ID #{child.id}
-                    </p>
+      <style>
+        {`
 
-                  </div>
+        .recent-children-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 14px;
+        }
 
-                </div>
+        .recent-children-heading h2 {
+          margin: 0;
+          color: #333554;
+          font-size: 16px;
+          font-weight: 700;
+        }
 
+        .recent-children-heading p {
+          margin: 4px 0 0;
+          color: #A0A3B4;
+          font-size: 11.5px;
+        }
 
-                <div
-                  className="
-                    text-[#7B6EF6]
-                    font-bold
-                    ml-4
-                    whitespace-nowrap
-                  "
-                >
-                  {typeof child.dashboardScore ===
-                  "number"
-                    ? `${child.dashboardScore}%`
-                    : "—"}
-                </div>
+        .recent-children-heading button {
+          flex: 0 0 auto;
+          border: 0;
+          padding: 6px 9px;
+          border-radius: 9px;
+          color: #7566EB;
+          background: transparent;
+          cursor: pointer;
+          font-size: 11.5px;
+          font-weight: 700;
+          transition: .18s ease;
+        }
 
-              </button>
+        .recent-children-heading button:hover {
+          background: #F3F0FF;
+        }
 
-            )
-          )}
+        .recent-children-list {
+          border-top: 1px solid #F1F1F6;
+        }
 
-        </div>
+        .recent-child-row {
+          width: 100%;
+          min-height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 12px 10px;
+          border: 0;
+          border-bottom: 1px solid #F1F1F6;
+          border-radius: 0;
+          color: inherit;
+          background: transparent;
+          cursor: pointer;
+          text-align: left;
+          font-family: inherit;
+          transition: .18s ease;
+        }
 
-      )}
+        .recent-child-row:last-child {
+          border-bottom: 0;
+        }
+
+        .recent-child-row:hover {
+          padding-left: 13px;
+          padding-right: 13px;
+          border-radius: 14px;
+          background: #FAF9FF;
+        }
+
+        .recent-child-main {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .recent-child-avatar {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          display: grid;
+          place-items: center;
+          border-radius: 13px;
+          color: #B05D9B;
+          background: #FFF0FA;
+          font-size: 14px;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+
+        .recent-child-info {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .recent-child-info strong {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #373953;
+          font-size: 12.5px;
+          font-weight: 700;
+        }
+
+        .recent-child-info span {
+          margin-top: 3px;
+          color: #9DA0B1;
+          font-size: 10.5px;
+        }
+
+        .recent-child-score {
+          min-width: 54px;
+          flex: 0 0 auto;
+          padding: 7px 10px;
+          border-radius: 10px;
+          color: #7566EB;
+          background: #F3F0FF;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .recent-child-score.empty {
+          color: #A4A6B6;
+          background: #F5F5F8;
+        }
+
+        .recent-children-state {
+          min-height: 180px;
+          display: grid;
+          place-items: center;
+          text-align: center;
+        }
+
+        .recent-children-loader {
+          width: 34px;
+          height: 34px;
+          margin: auto;
+          border: 4px solid #E6E2FF;
+          border-top-color: #7B6EF6;
+          border-radius: 50%;
+          animation:
+            recent-children-spin .8s
+            linear infinite;
+        }
+
+        .recent-children-state p {
+          margin: 10px 0 0;
+          color: #A0A3B4;
+          font-size: 11.5px;
+        }
+
+        .recent-children-error,
+        .recent-children-empty {
+          max-width: 340px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .recent-children-error {
+          padding: 15px 18px;
+          border: 1px solid #F6D8DF;
+          border-radius: 14px;
+          color: #B9415E;
+          background: #FFF0F3;
+        }
+
+        .recent-children-error strong,
+        .recent-children-empty strong {
+          font-size: 12.5px;
+        }
+
+        .recent-children-error span,
+        .recent-children-empty span {
+          margin-top: 4px;
+          font-size: 11px;
+        }
+
+        .recent-children-empty {
+          color: #999CAD;
+        }
+
+        .recent-children-empty strong {
+          color: #62657B;
+        }
+
+        @keyframes recent-children-spin {
+
+          to {
+            transform: rotate(360deg);
+          }
+
+        }
+
+        `}
+      </style>
 
     </Card>
 

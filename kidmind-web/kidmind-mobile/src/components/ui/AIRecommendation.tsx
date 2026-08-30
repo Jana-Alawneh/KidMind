@@ -5,272 +5,440 @@ import {
   View,
 } from "react-native";
 
-
 import {
+  ArrowUpRight,
   Sparkles,
 } from "lucide-react-native";
 
 
-import Card from "./Card";
-
-
-
-export default function AIRecommendation(){
-
+export default function AIRecommendation() {
 
   return (
 
-    <Card>
+    <View
+      style={
+        styles.panel
+      }
+    >
 
+      <View
+        style={
+          styles.header
+        }
+      >
 
-      <View style={styles.header}>
-
-
-        <View style={styles.iconBox}>
+        <View
+          style={
+            styles.iconBox
+          }
+        >
 
           <Sparkles
-            size={24}
-            color="#7B6EF6"
+            size={18}
+            color="#7465E8"
           />
 
         </View>
 
 
+        <View
+          style={
+            styles.headerCopy
+          }
+        >
 
-
-        <View>
-
-          <Text style={styles.title}>
+          <Text
+            style={
+              styles.title
+            }
+          >
             KidMind AI
           </Text>
 
 
-          <Text style={styles.subtitle}>
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
             Smart Recommendation
           </Text>
 
-
         </View>
-
-
 
       </View>
 
 
+      <View
+        style={
+          styles.content
+        }
+      >
+
+        <View
+          style={[
+            styles.infoBox,
+            styles.purpleBox,
+          ]}
+        >
+
+          <Text
+            style={
+              styles.infoLabel
+            }
+          >
+            Performance Insight
+          </Text>
 
 
+          <Text
+            style={
+              styles.infoText
+            }
+          >
+            Lina&apos;s attention increased by
 
-      <View style={styles.content}>
-
-
-        <View style={styles.firstBox}>
-
-
-          <Text>
-
-            Lina's attention increased by
-
-            <Text style={styles.purple}>
+            <Text
+              style={
+                styles.purple
+              }
+            >
               {" "}12%
             </Text>
-
-
           </Text>
-
 
         </View>
 
 
+        <View
+          style={[
+            styles.infoBox,
+            styles.greenBox,
+          ]}
+        >
 
-
-
-
-        <View style={styles.secondBox}>
-
-
-          <Text>
-
-            Suggested next game:
-
+          <Text
+            style={
+              styles.infoLabel
+            }
+          >
+            Suggested Next Game
           </Text>
 
 
-          <Text style={styles.bold}>
-
+          <Text
+            style={
+              styles.suggestion
+            }
+          >
             Visual Memory Level 3
-
           </Text>
 
-
         </View>
-
-
-
-
 
 
         <TouchableOpacity
-          style={styles.button}
+          activeOpacity={
+            0.8
+          }
+          style={
+            styles.button
+          }
         >
 
-          <Text style={styles.buttonText}>
+          <Text
+            style={
+              styles.buttonText
+            }
+          >
             Generate Full AI Report
           </Text>
 
 
+          <ArrowUpRight
+            size={15}
+            color="#FFFFFF"
+          />
+
         </TouchableOpacity>
-
-
 
       </View>
 
-
-
-    </Card>
-
+    </View>
 
   );
 
 }
 
 
+const styles =
+  StyleSheet.create({
 
+    panel: {
 
-const styles = StyleSheet.create({
+      padding:
+        18,
 
+      borderRadius:
+        21,
 
-header:{
+      backgroundColor:
+        "#FFFFFF",
 
-  flexDirection:"row",
+      borderWidth:
+        1,
 
-  alignItems:"center",
+      borderColor:
+        "#ECECF4",
 
-  gap:12,
+      shadowColor:
+        "#44446E",
 
-  marginBottom:24,
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
 
-},
+      shadowOpacity:
+        0.035,
 
+      shadowRadius:
+        12,
 
+      elevation:
+        2,
 
-iconBox:{
+    },
 
-  width:48,
 
-  height:48,
+    header: {
 
-  borderRadius:16,
+      flexDirection:
+        "row",
 
-  backgroundColor:"#F2EEFF",
+      alignItems:
+        "center",
 
-  alignItems:"center",
+      gap:
+        10,
 
-  justifyContent:"center",
+      marginBottom:
+        15,
 
-},
+    },
 
 
+    iconBox: {
 
-title:{
+      width:
+        38,
 
-  fontSize:20,
+      height:
+        38,
 
-  fontWeight:"700",
+      borderRadius:
+        12,
 
-},
+      alignItems:
+        "center",
 
+      justifyContent:
+        "center",
 
+      backgroundColor:
+        "#F0EDFF",
 
-subtitle:{
+    },
 
-  fontSize:14,
 
-  color:"#64748B",
+    headerCopy: {
 
-},
+      flex:
+        1,
 
+    },
 
 
+    title: {
 
-content:{
+      color:
+        "#333554",
 
-  gap:16,
+      fontSize:
+        15.5,
 
-},
+      fontWeight:
+        "700",
 
+    },
 
 
+    subtitle: {
 
-firstBox:{
+      marginTop:
+        3,
 
-  backgroundColor:"#F7F5FF",
+      color:
+        "#A0A3B4",
 
-  borderRadius:16,
+      fontSize:
+        10.5,
 
-  padding:16,
+    },
 
-},
 
+    content: {
 
+      gap:
+        10,
 
-secondBox:{
+    },
 
-  backgroundColor:"#EEF8E8",
 
-  borderRadius:16,
+    infoBox: {
 
-  padding:16,
+      padding:
+        13,
 
-},
+      borderRadius:
+        14,
 
+      borderWidth:
+        1,
 
+    },
 
-purple:{
 
-  color:"#7B6EF6",
+    purpleBox: {
 
-  fontWeight:"700",
+      backgroundColor:
+        "#FAF8FF",
 
-},
+      borderColor:
+        "#EEE9FF",
 
+    },
 
 
-bold:{
+    greenBox: {
 
-  fontWeight:"700",
+      backgroundColor:
+        "#F4FBF7",
 
-  marginTop:5,
+      borderColor:
+        "#E0F3E9",
 
-},
+    },
 
 
+    infoLabel: {
 
+      color:
+        "#999CAD",
 
-button:{
+      fontSize:
+        8.5,
 
-  backgroundColor:"#7B6EF6",
+      fontWeight:
+        "700",
 
-  borderRadius:16,
+      textTransform:
+        "uppercase",
 
-  paddingVertical:14,
+      letterSpacing:
+        0.5,
 
-  alignItems:"center",
+    },
 
-  marginTop:5,
 
-},
+    infoText: {
 
+      marginTop:
+        5,
 
+      color:
+        "#5D6076",
 
+      fontSize:
+        11,
 
-buttonText:{
+      lineHeight:
+        17,
 
-  color:"white",
+    },
 
-  fontWeight:"600",
 
-},
+    purple: {
 
+      color:
+        "#7566EB",
 
+      fontWeight:
+        "800",
 
-});
+    },
+
+
+    suggestion: {
+
+      marginTop:
+        5,
+
+      color:
+        "#3F735D",
+
+      fontSize:
+        11.5,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    button: {
+
+      minHeight:
+        42,
+
+      marginTop:
+        2,
+
+      paddingHorizontal:
+        14,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      gap:
+        6,
+
+      borderRadius:
+        12,
+
+      backgroundColor:
+        "#7968ED",
+
+    },
+
+
+    buttonText: {
+
+      color:
+        "#FFFFFF",
+
+      fontSize:
+        10.5,
+
+      fontWeight:
+        "700",
+
+    },
+
+  });
