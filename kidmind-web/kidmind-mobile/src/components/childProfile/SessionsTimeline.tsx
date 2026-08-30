@@ -16,6 +16,12 @@ import {
   useLocalSearchParams,
 } from "expo-router";
 
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Clock3,
+} from "lucide-react-native";
+
 import Card from "../ui/Card";
 
 import {
@@ -37,21 +43,27 @@ const formatDuration = (
       Number(seconds) || 0
     );
 
+
   const minutes =
     Math.floor(
       totalSeconds / 60
     );
 
+
   const remainingSeconds =
     totalSeconds % 60;
 
+
   if (
-    minutes === 0
+    minutes ===
+    0
   ) {
     return `${remainingSeconds}s`;
   }
 
+
   return `${minutes}m ${remainingSeconds}s`;
+
 };
 
 
@@ -66,6 +78,7 @@ const formatDate = (
     return "No date";
   }
 
+
   const date =
     new Date(
       String(value).replace(
@@ -73,6 +86,7 @@ const formatDate = (
         "T"
       )
     );
+
 
   if (
     Number.isNaN(
@@ -82,14 +96,21 @@ const formatDate = (
     return "No date";
   }
 
+
   return date.toLocaleDateString(
     "en-US",
     {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric",
     }
   );
+
 };
 
 
@@ -101,18 +122,23 @@ const getGamesText = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "No games";
   }
+
 
   return session.games
     .map(
       (game) =>
         game.game_name
     )
-    .filter(Boolean)
+    .filter(
+      Boolean
+    )
     .join(" • ");
+
 };
 
 
@@ -121,72 +147,83 @@ const getStatusStyle = (
 ) => {
 
   if (
-    status === "Completed"
+    status ===
+    "Completed"
   ) {
     return {
       backgroundColor:
-        "#DCFCE7",
+        "#ECFAF4",
 
       color:
-        "#15803D",
+        "#3E9E7D",
     };
   }
+
 
   if (
-    status === "In Progress"
+    status ===
+    "In Progress"
   ) {
     return {
       backgroundColor:
-        "#EDE9FE",
+        "#F0EDFF",
 
       color:
-        "#6D5CE7",
+        "#7566EB",
     };
   }
+
 
   if (
-    status === "Paused"
+    status ===
+    "Paused"
   ) {
     return {
       backgroundColor:
-        "#FEF3C7",
+        "#FFF7E8",
 
       color:
-        "#B45309",
+        "#C48432",
     };
   }
+
 
   if (
-    status === "Ended"
+    status ===
+    "Ended"
   ) {
     return {
       backgroundColor:
-        "#FEE2E2",
+        "#FFF0F3",
 
       color:
-        "#B91C1C",
+        "#C4556C",
     };
   }
+
 
   if (
-    status === "Cancelled"
+    status ===
+    "Cancelled"
   ) {
     return {
       backgroundColor:
-        "#F1F5F9",
+        "#F5F5F8",
 
       color:
-        "#64748B",
+        "#777A8F",
     };
   }
+
 
   return {
     backgroundColor:
-      "#E0F2FE",
+      "#EDF6FF",
 
     color:
-      "#0369A1",
+      "#5595DD",
   };
+
 };
 
 
@@ -215,162 +252,235 @@ const SessionsTimeline = () => {
   const [
     sessions,
     setSessions,
-  ] = useState<Session[]>([]);
+  ] =
+    useState<Session[]>(
+      []
+    );
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadSessions =
-      async () => {
+      const loadSessions =
+        async () => {
 
-        if (
-          !Number.isInteger(
-            childId
-          ) ||
-          childId <= 0
-        ) {
+          if (
+            !Number.isInteger(
+              childId
+            ) ||
+            childId <=
+              0
+          ) {
 
-          setSessions([]);
-          setLoading(false);
+            setSessions(
+              []
+            );
 
-          return;
-        }
+            setLoading(
+              false
+            );
 
+            return;
 
-        try {
-
-          setLoading(true);
-          setError("");
-
-
-          const allSessions =
-            await getSessions();
+          }
 
 
-          const childSessions =
-            allSessions
-              .filter(
-                (session) =>
-                  Number(
-                    session.child_id
-                  ) ===
-                  childId
-              )
-              .sort(
-                (
-                  first,
-                  second
-                ) => {
+          try {
 
-                  const firstDate =
-                    new Date(
-                      String(
-                        first.started_at ||
-                        first.scheduled_at ||
-                        first.created_at ||
-                        ""
-                      ).replace(
-                        " ",
-                        "T"
+            setLoading(
+              true
+            );
+
+            setError(
+              ""
+            );
+
+
+            const allSessions =
+              await getSessions();
+
+
+            const childSessions =
+              allSessions
+                .filter(
+                  (
+                    session
+                  ) =>
+                    Number(
+                      session.child_id
+                    ) ===
+                    childId
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) => {
+
+                    const firstDate =
+                      new Date(
+                        String(
+                          first.started_at ||
+                          first.scheduled_at ||
+                          first.created_at ||
+                          ""
+                        ).replace(
+                          " ",
+                          "T"
+                        )
+                      ).getTime();
+
+
+                    const secondDate =
+                      new Date(
+                        String(
+                          second.started_at ||
+                          second.scheduled_at ||
+                          second.created_at ||
+                          ""
+                        ).replace(
+                          " ",
+                          "T"
+                        )
+                      ).getTime();
+
+
+                    return (
+                      (
+                        Number.isFinite(
+                          secondDate
+                        )
+                          ? secondDate
+                          : 0
+                      ) -
+                      (
+                        Number.isFinite(
+                          firstDate
+                        )
+                          ? firstDate
+                          : 0
                       )
-                    ).getTime();
+                    );
+
+                  }
+                )
+                .slice(
+                  0,
+                  3
+                );
 
 
-                  const secondDate =
-                    new Date(
-                      String(
-                        second.started_at ||
-                        second.scheduled_at ||
-                        second.created_at ||
-                        ""
-                      ).replace(
-                        " ",
-                        "T"
-                      )
-                    ).getTime();
+            setSessions(
+              childSessions
+            );
 
-
-                  return (
-                    (
-                      Number.isFinite(
-                        secondDate
-                      )
-                        ? secondDate
-                        : 0
-                    ) -
-                    (
-                      Number.isFinite(
-                        firstDate
-                      )
-                        ? firstDate
-                        : 0
-                    )
-                  );
-                }
-              )
-              .slice(
-                0,
-                3
-              );
-
-
-          setSessions(
-            childSessions
-          );
-
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load child sessions:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load child sessions:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load sessions"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load sessions"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadSessions();
+      loadSessions();
 
-  }, [
-    childId,
-  ]);
+    },
+    [
+      childId,
+    ]
+  );
 
 
   return (
 
     <Card>
 
-      <Text
+      <View
         style={
-          styles.title
+          styles.header
         }
       >
-        Recent Sessions
-      </Text>
+
+        <View
+          style={
+            styles.headerIcon
+          }
+        >
+
+          <CalendarDays
+            size={18}
+            color="#7566EB"
+          />
+
+        </View>
+
+
+        <View
+          style={
+            styles.headerCopy
+          }
+        >
+
+          <Text
+            style={
+              styles.title
+            }
+          >
+            Recent Sessions
+          </Text>
+
+
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
+            Latest child assessment activity
+          </Text>
+
+        </View>
+
+      </View>
+
+
+      <View
+        style={
+          styles.divider
+        }
+      />
 
 
       {loading && (
@@ -401,7 +511,8 @@ const SessionsTimeline = () => {
 
 
       {!loading &&
-        error !== "" && (
+        error !==
+          "" && (
 
         <View
           style={
@@ -423,8 +534,10 @@ const SessionsTimeline = () => {
 
 
       {!loading &&
-        error === "" &&
-        sessions.length === 0 && (
+        error ===
+          "" &&
+        sessions.length ===
+          0 && (
 
         <View
           style={
@@ -455,84 +568,61 @@ const SessionsTimeline = () => {
 
 
       {!loading &&
-        error === "" &&
-        sessions.map(
-          (
-            session,
-            index
-          ) => {
+        error ===
+          "" &&
+        sessions.length >
+          0 && (
 
-            const statusStyle =
-              getStatusStyle(
-                session.status
-              );
+        <View
+          style={
+            styles.list
+          }
+        >
+
+          {sessions.map(
+            (
+              session
+            ) => {
+
+              const statusStyle =
+                getStatusStyle(
+                  session.status
+                );
 
 
-            const dateValue =
-              session.started_at ||
-              session.scheduled_at ||
-              session.created_at;
+              const dateValue =
+                session.started_at ||
+                session.scheduled_at ||
+                session.created_at;
 
 
-            return (
+              return (
 
-              <TouchableOpacity
-                key={
-                  session.id
-                }
-                activeOpacity={0.75}
-                style={
-                  styles.row
-                }
-                onPress={() => {
-
-                  router.push({
-                    pathname:
-                      "/sessions/[id]",
-
-                    params: {
-                      id:
-                        String(
-                          session.id
-                        ),
-                    },
-                  });
-
-                }}
-              >
-
-                <View
-                  style={
-                    styles.timeline
+                <TouchableOpacity
+                  key={
+                    session.id
                   }
-                >
-
-                  <View
-                    style={
-                      styles.circle
-                    }
-                  />
-
-
-                  {index !==
-                    sessions.length -
-                      1 && (
-
-                    <View
-                      style={
-                        styles.line
-                      }
-                    />
-
-                  )}
-
-                </View>
-
-
-                <View
-                  style={
-                    styles.content
+                  activeOpacity={
+                    0.75
                   }
+                  style={
+                    styles.sessionCard
+                  }
+                  onPress={() => {
+
+                    router.push({
+                      pathname:
+                        "/sessions/[id]",
+
+                      params: {
+                        id:
+                          String(
+                            session.id
+                          ),
+                      },
+                    });
+
+                  }}
                 >
 
                   <View
@@ -541,19 +631,79 @@ const SessionsTimeline = () => {
                     }
                   >
 
-                    <Text
+                    <View
                       style={
-                        styles.sessionTitle
+                        styles.sessionInfo
                       }
                     >
-                      Session #{session.id}
+
+                      <Text
+                        style={
+                          styles.sessionTitle
+                        }
+                      >
+                        Session #{session.id}
+                      </Text>
+
+
+                      <Text
+                        style={
+                          styles.game
+                        }
+                        numberOfLines={
+                          2
+                        }
+                      >
+                        {getGamesText(
+                          session
+                        )}
+                      </Text>
+
+                    </View>
+
+
+                    <ArrowUpRight
+                      size={14}
+                      color="#B0B2C1"
+                    />
+
+                  </View>
+
+
+                  <View
+                    style={
+                      styles.dateRow
+                    }
+                  >
+
+                    <CalendarDays
+                      size={11}
+                      color="#9295A7"
+                    />
+
+
+                    <Text
+                      style={
+                        styles.date
+                      }
+                    >
+                      {formatDate(
+                        dateValue
+                      )}
                     </Text>
 
+                  </View>
+
+
+                  <View
+                    style={
+                      styles.detailsRow
+                    }
+                  >
 
                     <View
                       style={[
                         styles.statusBadge,
-
                         {
                           backgroundColor:
                             statusStyle
@@ -565,7 +715,6 @@ const SessionsTimeline = () => {
                       <Text
                         style={[
                           styles.statusText,
-
                           {
                             color:
                               statusStyle
@@ -578,94 +727,79 @@ const SessionsTimeline = () => {
 
                     </View>
 
-                  </View>
-
-
-                  <Text
-                    style={
-                      styles.game
-                    }
-                  >
-                    {getGamesText(
-                      session
-                    )}
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.date
-                    }
-                  >
-                    {formatDate(
-                      dateValue
-                    )}
-                  </Text>
-
-
-                  <View
-                    style={
-                      styles.detailsRow
-                    }
-                  >
 
                     <View
                       style={
-                        styles.badge
+                        styles.detailsRight
                       }
                     >
 
-                      <Text
-                        style={
-                          styles.badgeText
-                        }
-                      >
-                        {formatDuration(
-                          session.duration_seconds
-                        )}
-                      </Text>
-
-                    </View>
-
-
-                    {session.score !==
-                      null &&
-                      session.score !==
-                        undefined && (
-
                       <View
                         style={
-                          styles.scoreBadge
+                          styles.durationBadge
                         }
                       >
+
+                        <Clock3
+                          size={10}
+                          color="#7566EB"
+                        />
+
 
                         <Text
                           style={
-                            styles.scoreBadgeText
+                            styles.durationText
                           }
                         >
-                          Score{" "}
-                          {Math.round(
-                            Number(
-                              session.score
-                            )
-                          )}%
+                          {formatDuration(
+                            session.duration_seconds
+                          )}
                         </Text>
 
                       </View>
 
-                    )}
+
+                      {session.score !==
+                        null &&
+                        session.score !==
+                          undefined && (
+
+                        <View
+                          style={
+                            styles.scoreBadge
+                          }
+                        >
+
+                          <Text
+                            style={
+                              styles.scoreBadgeText
+                            }
+                          >
+                            {Math.round(
+                              Number(
+                                session.score
+                              )
+                            )}%
+                          </Text>
+
+                        </View>
+
+                      )}
+
+                    </View>
 
                   </View>
 
-                </View>
+                </TouchableOpacity>
 
-              </TouchableOpacity>
+              );
 
-            );
+            }
+          )}
 
-          }
-        )}
+        </View>
+
+      )}
 
     </Card>
 
@@ -677,187 +811,466 @@ const SessionsTimeline = () => {
 const styles =
   StyleSheet.create({
 
+    header: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        10,
+
+    },
+
+
+    headerIcon: {
+
+      width:
+        39,
+
+      height:
+        39,
+
+      borderRadius:
+        12,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    headerCopy: {
+
+      flex:
+        1,
+
+    },
+
+
     title: {
-      fontSize: 22,
-      fontWeight: "700",
-      marginBottom: 25,
-      color: "#172554",
+
+      color:
+        "#333554",
+
+      fontSize:
+        15,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    subtitle: {
+
+      marginTop:
+        3,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        9.5,
+
+    },
+
+
+    divider: {
+
+      height:
+        1,
+
+      marginTop:
+        14,
+
+      backgroundColor:
+        "#F0F0F5",
+
     },
 
 
     loadingBox: {
-      minHeight: 110,
-      alignItems: "center",
+
+      minHeight:
+        150,
+
+      alignItems:
+        "center",
+
       justifyContent:
         "center",
-      gap: 10,
+
+      gap:
+        8,
+
     },
 
 
     loadingText: {
-      color: "#64748B",
-      fontSize: 13,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10,
+
     },
 
 
     errorBox: {
-      padding: 16,
-      borderRadius: 15,
+
+      minHeight:
+        100,
+
+      marginTop:
+        13,
+
+      padding:
+        13,
+
+      borderRadius:
+        13,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
       backgroundColor:
-        "#FEF2F2",
+        "#FFF0F3",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F6D8DF",
+
     },
 
 
     errorText: {
-      color: "#B91C1C",
-      textAlign: "center",
+
+      color:
+        "#B9415E",
+
+      fontSize:
+        9.5,
+
+      textAlign:
+        "center",
+
     },
 
 
     emptyBox: {
-      paddingVertical: 30,
-      alignItems: "center",
+
+      minHeight:
+        150,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
     },
 
 
     emptyTitle: {
-      fontSize: 16,
-      fontWeight: "700",
-      color: "#172554",
+
+      color:
+        "#55586D",
+
+      fontSize:
+        12,
+
+      fontWeight:
+        "700",
+
     },
 
 
     emptyText: {
-      marginTop: 6,
-      color: "#64748B",
-      textAlign: "center",
-      lineHeight: 20,
+
+      marginTop:
+        5,
+
+      maxWidth:
+        230,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        9.5,
+
+      lineHeight:
+        15,
+
+      textAlign:
+        "center",
+
     },
 
 
-    row: {
-      flexDirection: "row",
-      marginBottom: 20,
+    list: {
+
+      marginTop:
+        13,
+
+      gap:
+        9,
+
     },
 
 
-    timeline: {
-      alignItems: "center",
-      marginRight: 15,
-    },
+    sessionCard: {
 
+      padding:
+        12,
 
-    circle: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
+      borderRadius:
+        14,
+
       backgroundColor:
-        "#7B6EF6",
-      marginTop: 4,
-    },
+        "#FCFCFE",
 
+      borderWidth:
+        1,
 
-    line: {
-      width: 2,
-      flex: 1,
-      minHeight: 95,
-      backgroundColor:
-        "#E6E2FF",
-      marginTop: 4,
-    },
+      borderColor:
+        "#EFEFF5",
 
-
-    content: {
-      flex: 1,
-      paddingBottom: 5,
     },
 
 
     topRow: {
-      flexDirection: "row",
-      alignItems: "center",
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "flex-start",
+
       justifyContent:
         "space-between",
-      gap: 10,
+
+      gap:
+        8,
+
+    },
+
+
+    sessionInfo: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     sessionTitle: {
-      fontSize: 13,
-      fontWeight: "700",
-      color: "#94A3B8",
-    },
 
+      color:
+        "#A0A3B4",
 
-    statusBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 20,
-    },
+      fontSize:
+        8.5,
 
+      fontWeight:
+        "600",
 
-    statusText: {
-      fontSize: 10,
-      fontWeight: "800",
     },
 
 
     game: {
-      fontSize: 16,
-      fontWeight: "700",
-      color: "#172554",
-      marginTop: 7,
-      lineHeight: 22,
+
+      marginTop:
+        4,
+
+      color:
+        "#55586D",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        15,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    dateRow: {
+
+      marginTop:
+        8,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        5,
+
     },
 
 
     date: {
-      marginTop: 5,
-      color: "#64748B",
-      fontSize: 13,
+
+      color:
+        "#9295A7",
+
+      fontSize:
+        8.5,
+
     },
 
 
     detailsRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      flexWrap: "wrap",
-      gap: 8,
-      marginTop: 10,
+
+      marginTop:
+        10,
+
+      flexDirection:
+        "row",
+
+      justifyContent:
+        "space-between",
+
+      alignItems:
+        "center",
+
+      gap:
+        8,
+
     },
 
 
-    badge: {
-      alignSelf: "flex-start",
+    statusBadge: {
+
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        4,
+
+      borderRadius:
+        999,
+
+    },
+
+
+    statusText: {
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    detailsRight: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        5,
+
+    },
+
+
+    durationBadge: {
+
+      paddingHorizontal:
+        7,
+
+      paddingVertical:
+        4,
+
+      borderRadius:
+        8,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        4,
+
       backgroundColor:
         "#F3F0FF",
-      borderRadius: 20,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+
     },
 
 
-    badgeText: {
-      color: "#7B6EF6",
-      fontWeight: "600",
-      fontSize: 12,
+    durationText: {
+
+      color:
+        "#7566EB",
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "600",
+
     },
 
 
     scoreBadge: {
-      alignSelf: "flex-start",
+
+      paddingHorizontal:
+        7,
+
+      paddingVertical:
+        4,
+
+      borderRadius:
+        8,
+
       backgroundColor:
-        "#DCFCE7",
-      borderRadius: 20,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+        "#ECFAF4",
+
     },
 
 
     scoreBadgeText: {
-      color: "#15803D",
-      fontWeight: "700",
-      fontSize: 12,
+
+      color:
+        "#3E9E7D",
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "700",
+
     },
 
   });

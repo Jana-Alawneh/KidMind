@@ -21,6 +21,10 @@ import {
 } from "expo-router";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
   ArrowLeft,
   Gamepad2,
   Play,
@@ -80,7 +84,9 @@ export default function ChildProfile() {
 
 
   const childId =
-    Array.isArray(params.id)
+    Array.isArray(
+      params.id
+    )
       ? params.id[0]
       : params.id;
 
@@ -181,7 +187,9 @@ export default function ChildProfile() {
             "Invalid child ID"
           );
 
-          setLoading(false);
+          setLoading(
+            false
+          );
 
           return;
 
@@ -190,9 +198,13 @@ export default function ChildProfile() {
 
         try {
 
-          setLoading(true);
+          setLoading(
+            true
+          );
 
-          setError("");
+          setError(
+            ""
+          );
 
 
           const childData =
@@ -223,7 +235,9 @@ export default function ChildProfile() {
 
         } finally {
 
-          setLoading(false);
+          setLoading(
+            false
+          );
 
         }
 
@@ -627,18 +641,19 @@ export default function ChildProfile() {
 
   return (
 
-    <View
+    <SafeAreaView
       style={
-        styles.container
+        styles.safeArea
       }
+      edges={[
+        "top",
+        "bottom",
+      ]}
     >
 
-      <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
-        showsVerticalScrollIndicator={
-          false
+      <View
+        style={
+          styles.container
         }
       >
 
@@ -651,203 +666,216 @@ export default function ChildProfile() {
         />
 
 
-        <TouchableOpacity
-          style={
-            styles.backButton
+        <ScrollView
+          contentContainerStyle={
+            styles.content
           }
-          onPress={() => {
-            router.push(
-              "/children"
-            );
-          }}
+          showsVerticalScrollIndicator={
+            false
+          }
+          keyboardShouldPersistTaps="handled"
         >
-
-          <ArrowLeft
-            size={20}
-            color="#7B6EF6"
-          />
-
-          <Text
-            style={
-              styles.backText
-            }
-          >
-            Back to Children
-          </Text>
-
-        </TouchableOpacity>
-
-
-        {loading && (
 
           <View
             style={
-              styles.loadingBox
+              styles.pageHeading
             }
           >
 
-            <ActivityIndicator
-              size="large"
-              color="#7B6EF6"
-            />
+            <Text
+              style={
+                styles.eyebrow
+              }
+            >
+              CHILD PROFILE
+            </Text>
+
 
             <Text
               style={
-                styles.loadingText
+                styles.pageTitle
+              }
+              numberOfLines={
+                1
               }
             >
-              Loading child information...
+              {child?.full_name ||
+                "Child Profile"}
+            </Text>
+
+
+            <Text
+              style={
+                styles.pageSubtitle
+              }
+            >
+              Review assessments, progress, sessions and assigned games.
             </Text>
 
           </View>
 
-        )}
 
-
-        {!loading &&
-          error && (
-
-          <View
+          <TouchableOpacity
             style={
-              styles.errorBox
+              styles.backButton
             }
+            activeOpacity={
+              0.75
+            }
+            onPress={() => {
+
+              router.push(
+                "/children"
+              );
+
+            }}
           >
 
+            <ArrowLeft
+              size={15}
+              color="#7566EB"
+            />
+
+
             <Text
               style={
-                styles.errorTitle
+                styles.backText
               }
             >
-              Unable to load child
+              Back to Children
             </Text>
 
-            <Text
+          </TouchableOpacity>
+
+
+          {loading && (
+
+            <View
               style={
-                styles.errorText
+                styles.loadingBox
               }
             >
-              {error}
-            </Text>
+
+              <ActivityIndicator
+                size="small"
+                color="#7B6EF6"
+              />
 
 
-            <TouchableOpacity
+              <Text
+                style={
+                  styles.loadingText
+                }
+              >
+                Loading child information...
+              </Text>
+
+            </View>
+
+          )}
+
+
+          {!loading &&
+            error && (
+
+            <View
               style={
-                styles.returnButton
+                styles.errorBox
               }
-              onPress={() => {
-                router.push(
-                  "/children"
-                );
-              }}
             >
 
               <Text
                 style={
-                  styles.returnButtonText
+                  styles.errorTitle
                 }
               >
-                Return to Children
+                Unable to load child
               </Text>
 
-            </TouchableOpacity>
 
-          </View>
-
-        )}
-
-
-        {!loading &&
-          !error &&
-          child && (
-
-          <>
-
-            <ChildInfoCard
-              child={child}
-              onEdit={() => {
-                setEditModalOpen(
-                  true
-                );
-              }}
-            />
-
-
-            <TouchableOpacity
-              style={
-                styles.startSessionButton
-              }
-              activeOpacity={0.85}
-              onPress={() => {
-                setStartSessionOpen(
-                  true
-                );
-              }}
-            >
-
-              <View
+              <Text
                 style={
-                  styles.startSessionIcon
+                  styles.errorText
                 }
               >
-
-                <Play
-                  size={21}
-                  color="#FFFFFF"
-                  fill="#FFFFFF"
-                />
-
-              </View>
+                {error}
+              </Text>
 
 
-              <View
+              <TouchableOpacity
                 style={
-                  styles.startSessionTextContainer
+                  styles.returnButton
                 }
+                onPress={() => {
+
+                  router.push(
+                    "/children"
+                  );
+
+                }}
               >
 
                 <Text
                   style={
-                    styles.startSessionTitle
+                    styles.returnButtonText
                   }
                 >
-                  Start Assessment Session
+                  Return to Children
                 </Text>
 
-                <Text
-                  style={
-                    styles.startSessionSubtitle
-                  }
-                >
-                  Select one or more games
-                  for {child.full_name}
-                </Text>
+              </TouchableOpacity>
 
-              </View>
+            </View>
 
-            </TouchableOpacity>
+          )}
 
 
-            <View
-              style={
-                styles.assignedGamesCard
-              }
-            >
+          {!loading &&
+            !error &&
+            child && (
 
-              <View
-                style={
-                  styles.assignedGamesHeader
+            <>
+
+              <ChildInfoCard
+                child={
+                  child
                 }
+                onEdit={() => {
+
+                  setEditModalOpen(
+                    true
+                  );
+
+                }}
+              />
+
+
+              <TouchableOpacity
+                style={
+                  styles.startSessionButton
+                }
+                activeOpacity={
+                  0.85
+                }
+                onPress={() => {
+
+                  setStartSessionOpen(
+                    true
+                  );
+
+                }}
               >
 
                 <View
                   style={
-                    styles.assignedGamesHeaderIcon
+                    styles.startSessionIcon
                   }
                 >
 
-                  <Gamepad2
-                    size={22}
-                    color="#7B6EF6"
+                  <Play
+                    size={18}
+                    color="#FFFFFF"
+                    fill="#FFFFFF"
                   />
 
                 </View>
@@ -855,468 +883,563 @@ export default function ChildProfile() {
 
                 <View
                   style={
-                    styles.assignedGamesHeaderText
+                    styles.startSessionTextContainer
                   }
                 >
 
                   <Text
                     style={
-                      styles.assignedGamesTitle
+                      styles.startSessionTitle
                     }
                   >
-                    Assigned Games
+                    Start Assessment Session
                   </Text>
+
 
                   <Text
                     style={
-                      styles.assignedGamesSubtitle
+                      styles.startSessionSubtitle
+                    }
+                    numberOfLines={
+                      2
                     }
                   >
-                    Games assigned directly to {child.full_name}
+                    Select one or more games for {child.full_name}
                   </Text>
 
                 </View>
 
-              </View>
+              </TouchableOpacity>
 
 
-              {assignedGamesLoading && (
-
-                <View
-                  style={
-                    styles.assignedGamesLoading
-                  }
-                >
-
-                  <ActivityIndicator
-                    size="small"
-                    color="#7B6EF6"
-                  />
-
-                  <Text
-                    style={
-                      styles.assignedGamesLoadingText
-                    }
-                  >
-                    Loading assigned games...
-                  </Text>
-
-                </View>
-
-              )}
-
-
-              {!assignedGamesLoading &&
-                assignedGamesError !== "" && (
+              <View
+                style={
+                  styles.assignedGamesCard
+                }
+              >
 
                 <View
                   style={
-                    styles.assignedGamesError
-                  }
-                >
-
-                  <Text
-                    style={
-                      styles.assignedGamesErrorText
-                    }
-                  >
-                    {assignedGamesError}
-                  </Text>
-
-
-                  <TouchableOpacity
-                    style={
-                      styles.assignedGamesRetry
-                    }
-                    onPress={
-                      loadAssignedGames
-                    }
-                  >
-
-                    <Text
-                      style={
-                        styles.assignedGamesRetryText
-                      }
-                    >
-                      Try Again
-                    </Text>
-
-                  </TouchableOpacity>
-
-                </View>
-
-              )}
-
-
-              {!assignedGamesLoading &&
-                !assignedGamesError &&
-                assignedGames.length === 0 && (
-
-                <View
-                  style={
-                    styles.assignedGamesEmpty
+                    styles.assignedGamesHeader
                   }
                 >
 
                   <View
                     style={
-                      styles.assignedGamesEmptyIcon
+                      styles.assignedGamesHeaderIcon
                     }
                   >
 
                     <Gamepad2
-                      size={28}
-                      color="#A59AF8"
+                      size={18}
+                      color="#7566EB"
                     />
 
                   </View>
 
-                  <Text
-                    style={
-                      styles.assignedGamesEmptyTitle
-                    }
-                  >
-                    No assigned games
-                  </Text>
 
-                  <Text
+                  <View
                     style={
-                      styles.assignedGamesEmptyText
+                      styles.assignedGamesHeaderText
                     }
                   >
-                    Games assigned directly to this child will appear here.
-                  </Text>
+
+                    <Text
+                      style={
+                        styles.assignedGamesTitle
+                      }
+                    >
+                      Assigned Games
+                    </Text>
+
+
+                    <Text
+                      style={
+                        styles.assignedGamesSubtitle
+                      }
+                      numberOfLines={
+                        2
+                      }
+                    >
+                      Games assigned directly to {child.full_name}
+                    </Text>
+
+                  </View>
 
                 </View>
 
-              )}
+
+                {assignedGamesLoading && (
+
+                  <View
+                    style={
+                      styles.assignedGamesLoading
+                    }
+                  >
+
+                    <ActivityIndicator
+                      size="small"
+                      color="#7B6EF6"
+                    />
 
 
-              {!assignedGamesLoading &&
-                assignedGames.length >
-                  0 && (
+                    <Text
+                      style={
+                        styles.assignedGamesLoadingText
+                      }
+                    >
+                      Loading assigned games...
+                    </Text>
 
-                <View
-                  style={
-                    styles.assignedGamesList
-                  }
-                >
+                  </View>
 
-                  {assignedGames.map(
-                    (
-                      item
-                    ) => {
-
-                      const starting =
-                        startingGameId ===
-                        item.game.id;
+                )}
 
 
-                      const removing =
-                        removingAssignmentId ===
-                        item.assignmentId;
+                {!assignedGamesLoading &&
+                  assignedGamesError !==
+                    "" && (
+
+                  <View
+                    style={
+                      styles.assignedGamesError
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.assignedGamesErrorText
+                      }
+                    >
+                      {assignedGamesError}
+                    </Text>
 
 
-                      return (
+                    <TouchableOpacity
+                      style={
+                        styles.assignedGamesRetry
+                      }
+                      onPress={
+                        loadAssignedGames
+                      }
+                    >
 
-                        <View
-                          key={
-                            item.assignmentId
-                          }
-                          style={
-                            styles.assignedGameItem
-                          }
-                        >
+                      <Text
+                        style={
+                          styles.assignedGamesRetryText
+                        }
+                      >
+                        Try Again
+                      </Text>
+
+                    </TouchableOpacity>
+
+                  </View>
+
+                )}
+
+
+                {!assignedGamesLoading &&
+                  !assignedGamesError &&
+                  assignedGames.length ===
+                    0 && (
+
+                  <View
+                    style={
+                      styles.assignedGamesEmpty
+                    }
+                  >
+
+                    <View
+                      style={
+                        styles.assignedGamesEmptyIcon
+                      }
+                    >
+
+                      <Gamepad2
+                        size={24}
+                        color="#A59AF8"
+                      />
+
+                    </View>
+
+
+                    <Text
+                      style={
+                        styles.assignedGamesEmptyTitle
+                      }
+                    >
+                      No assigned games
+                    </Text>
+
+
+                    <Text
+                      style={
+                        styles.assignedGamesEmptyText
+                      }
+                    >
+                      Games assigned directly to this child will appear here.
+                    </Text>
+
+                  </View>
+
+                )}
+
+
+                {!assignedGamesLoading &&
+                  assignedGames.length >
+                    0 && (
+
+                  <View
+                    style={
+                      styles.assignedGamesList
+                    }
+                  >
+
+                    {assignedGames.map(
+                      (
+                        item
+                      ) => {
+
+                        const starting =
+                          startingGameId ===
+                          item.game.id;
+
+
+                        const removing =
+                          removingAssignmentId ===
+                          item.assignmentId;
+
+
+                        return (
 
                           <View
+                            key={
+                              item.assignmentId
+                            }
                             style={
-                              styles.assignedGameTop
+                              styles.assignedGameItem
                             }
                           >
 
                             <View
                               style={
-                                styles.assignedGameIcon
+                                styles.assignedGameTop
                               }
                             >
 
-                              <Gamepad2
-                                size={21}
-                                color="#7B6EF6"
-                              />
-
-                            </View>
-
-
-                            <View
-                              style={
-                                styles.assignedGameInfo
-                              }
-                            >
-
-                              <Text
+                              <View
                                 style={
-                                  styles.assignedGameName
+                                  styles.assignedGameIcon
                                 }
-                                numberOfLines={2}
                               >
-                                {item.game.title}
-                              </Text>
+
+                                <Gamepad2
+                                  size={17}
+                                  color="#7566EB"
+                                />
+
+                              </View>
 
 
                               <View
                                 style={
-                                  styles.assignedGameMeta
+                                  styles.assignedGameInfo
                                 }
                               >
 
+                                <Text
+                                  style={
+                                    styles.assignedGameName
+                                  }
+                                  numberOfLines={
+                                    2
+                                  }
+                                >
+                                  {item.game.title}
+                                </Text>
+
+
                                 <View
                                   style={
-                                    styles.difficultyBadge
+                                    styles.assignedGameMeta
                                   }
                                 >
 
-                                  <Text
+                                  <View
                                     style={
-                                      styles.difficultyText
+                                      styles.difficultyBadge
                                     }
                                   >
-                                    {item.game.difficulty ||
-                                      "Easy"}
-                                  </Text>
+
+                                    <Text
+                                      style={
+                                        styles.difficultyText
+                                      }
+                                    >
+                                      {item.game.difficulty ||
+                                        "Easy"}
+                                    </Text>
+
+                                  </View>
+
+
+                                  {!!item.game.domain && (
+
+                                    <Text
+                                      style={
+                                        styles.domainText
+                                      }
+                                      numberOfLines={
+                                        1
+                                      }
+                                    >
+                                      {item.game.domain}
+                                    </Text>
+
+                                  )}
 
                                 </View>
-
-
-                                {!!item.game.domain && (
-
-                                  <Text
-                                    style={
-                                      styles.domainText
-                                    }
-                                  >
-                                    {item.game.domain}
-                                  </Text>
-
-                                )}
 
                               </View>
 
                             </View>
 
-                          </View>
+
+                            {!!item.game.description && (
+
+                              <Text
+                                style={
+                                  styles.assignedGameDescription
+                                }
+                                numberOfLines={
+                                  3
+                                }
+                              >
+                                {item.game.description}
+                              </Text>
+
+                            )}
 
 
-                          {!!item.game.description && (
-
-                            <Text
+                            <View
                               style={
-                                styles.assignedGameDescription
+                                styles.assignedGameActions
                               }
-                              numberOfLines={3}
-                            >
-                              {item.game.description}
-                            </Text>
-
-                          )}
-
-
-                          <View
-                            style={
-                              styles.assignedGameActions
-                            }
-                          >
-
-                            <TouchableOpacity
-                              style={[
-                                styles.playAssignedButton,
-
-                                starting &&
-                                  styles.disabledButton,
-                              ]}
-                              activeOpacity={0.85}
-                              disabled={
-                                starting ||
-                                removing
-                              }
-                              onPress={() => {
-                                void handlePlayAssignedGame(
-                                  item
-                                );
-                              }}
                             >
 
-                              {starting ? (
+                              <TouchableOpacity
+                                style={[
+                                  styles.playAssignedButton,
 
-                                <ActivityIndicator
-                                  size="small"
-                                  color="#FFFFFF"
-                                />
+                                  starting &&
+                                    styles.disabledButton,
+                                ]}
+                                activeOpacity={
+                                  0.85
+                                }
+                                disabled={
+                                  starting ||
+                                  removing
+                                }
+                                onPress={() => {
 
-                              ) : (
+                                  void handlePlayAssignedGame(
+                                    item
+                                  );
 
-                                <>
+                                }}
+                              >
 
-                                  <Play
-                                    size={17}
+                                {starting ? (
+
+                                  <ActivityIndicator
+                                    size="small"
                                     color="#FFFFFF"
-                                    fill="#FFFFFF"
                                   />
 
-                                  <Text
-                                    style={
-                                      styles.playAssignedButtonText
-                                    }
-                                  >
-                                    Play Game
-                                  </Text>
+                                ) : (
 
-                                </>
+                                  <>
 
-                              )}
-
-                            </TouchableOpacity>
+                                    <Play
+                                      size={15}
+                                      color="#FFFFFF"
+                                      fill="#FFFFFF"
+                                    />
 
 
-                            <TouchableOpacity
-                              style={[
-                                styles.removeAssignedButton,
+                                    <Text
+                                      style={
+                                        styles.playAssignedButtonText
+                                      }
+                                    >
+                                      Play Game
+                                    </Text>
 
-                                removing &&
-                                  styles.disabledButton,
-                              ]}
-                              activeOpacity={0.85}
-                              disabled={
-                                removing ||
-                                starting
-                              }
-                              onPress={() => {
-                                handleRemoveAssignedGame(
-                                  item
-                                );
-                              }}
-                            >
+                                  </>
 
-                              {removing ? (
+                                )}
 
-                                <ActivityIndicator
-                                  size="small"
-                                  color="#DC2626"
-                                />
+                              </TouchableOpacity>
 
-                              ) : (
 
-                                <Trash2
-                                  size={18}
-                                  color="#DC2626"
-                                />
+                              <TouchableOpacity
+                                style={[
+                                  styles.removeAssignedButton,
 
-                              )}
+                                  removing &&
+                                    styles.disabledButton,
+                                ]}
+                                activeOpacity={
+                                  0.85
+                                }
+                                disabled={
+                                  removing ||
+                                  starting
+                                }
+                                onPress={() => {
 
-                            </TouchableOpacity>
+                                  handleRemoveAssignedGame(
+                                    item
+                                  );
+
+                                }}
+                              >
+
+                                {removing ? (
+
+                                  <ActivityIndicator
+                                    size="small"
+                                    color="#C95166"
+                                  />
+
+                                ) : (
+
+                                  <Trash2
+                                    size={16}
+                                    color="#C95166"
+                                  />
+
+                                )}
+
+                              </TouchableOpacity>
+
+                            </View>
 
                           </View>
 
-                        </View>
+                        );
 
-                      );
+                      }
+                    )}
 
-                    }
-                  )}
+                  </View>
 
-                </View>
+                )}
 
-              )}
-
-            </View>
+              </View>
 
 
-            <CognitiveScores />
+              <CognitiveScores />
 
-            <AIInsights />
+              <AIInsights />
 
-            <ProgressChart />
+              <ProgressChart />
 
-            <SessionsTimeline />
+              <SessionsTimeline />
 
-            <ReportsTable />
+              <ReportsTable />
 
-          </>
+            </>
+
+          )}
+
+        </ScrollView>
+
+
+        {editModalOpen &&
+          child && (
+
+          <EditChildModal
+            child={
+              child
+            }
+            close={() => {
+
+              setEditModalOpen(
+                false
+              );
+
+            }}
+            onSuccess={
+              loadChild
+            }
+          />
 
         )}
 
-      </ScrollView>
+
+        {startSessionOpen &&
+          child && (
+
+          <StartSessionModal
+            visible={
+              startSessionOpen
+            }
+            child={
+              child
+            }
+            onClose={() => {
+
+              setStartSessionOpen(
+                false
+              );
+
+            }}
+            onStarted={(
+              sessionId
+            ) => {
+
+              setStartSessionOpen(
+                false
+              );
 
 
-      {editModalOpen &&
-        child && (
+              router.push({
+                pathname:
+                  "/sessions/[id]",
 
-        <EditChildModal
-          child={child}
-          close={() => {
-            setEditModalOpen(
-              false
-            );
-          }}
-          onSuccess={
-            loadChild
-          }
-        />
+                params: {
+                  id:
+                    String(
+                      sessionId
+                    ),
+                },
+              });
 
-      )}
+            }}
+          />
+
+        )}
 
 
-      {startSessionOpen &&
-        child && (
-
-        <StartSessionModal
+        <Sidebar
           visible={
-            startSessionOpen
+            sidebarVisible
           }
-          child={child}
           onClose={() => {
-            setStartSessionOpen(
+
+            setSidebarVisible(
               false
             );
-          }}
-          onStarted={(
-            sessionId
-          ) => {
-
-            setStartSessionOpen(
-              false
-            );
-
-
-            router.push({
-              pathname:
-                "/sessions/[id]",
-
-              params: {
-                id: String(
-                  sessionId
-                ),
-              },
-            });
 
           }}
         />
 
-      )}
+      </View>
 
-
-      <Sidebar
-        visible={
-          sidebarVisible
-        }
-        onClose={() => {
-          setSidebarVisible(
-            false
-          );
-        }}
-      />
-
-    </View>
+    </SafeAreaView>
 
   );
 
@@ -1326,43 +1449,173 @@ export default function ChildProfile() {
 const styles =
   StyleSheet.create({
 
+    safeArea: {
+
+      flex: 1,
+
+      backgroundColor:
+        "#FFFFFF",
+
+    },
+
+
     container: {
+
       flex: 1,
 
       backgroundColor:
         "#F7F8FC",
+
     },
 
 
     content: {
-      padding: 20,
 
-      paddingBottom: 40,
+      paddingHorizontal:
+        18,
 
-      gap: 20,
+      paddingTop:
+        20,
+
+      paddingBottom:
+        38,
+
+      gap:
+        18,
+
+    },
+
+
+    pageHeading: {
+
+      paddingHorizontal:
+        1,
+
+    },
+
+
+    eyebrow: {
+
+      color:
+        "#8172EA",
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "800",
+
+      letterSpacing:
+        1,
+
+    },
+
+
+    pageTitle: {
+
+      marginTop:
+        5,
+
+      color:
+        "#303253",
+
+      fontSize:
+        25,
+
+      lineHeight:
+        31,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    pageSubtitle: {
+
+      marginTop:
+        4,
+
+      color:
+        "#9699AC",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
+
     },
 
 
     backButton: {
-      flexDirection: "row",
 
-      alignItems: "center",
+      alignSelf:
+        "flex-start",
 
-      gap: 8,
+      minHeight:
+        40,
 
-      marginTop: 25,
+      paddingHorizontal:
+        11,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      gap:
+        6,
+
+      borderRadius:
+        11,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E7E7F0",
+
     },
 
 
     backText: {
-      color: "#7B6EF6",
 
-      fontWeight: "600",
+      color:
+        "#7566EB",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
     },
 
 
     loadingBox: {
-      minHeight: 350,
+
+      minHeight:
+        330,
+
+      borderRadius:
+        21,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
 
       justifyContent:
         "center",
@@ -1370,513 +1623,821 @@ const styles =
       alignItems:
         "center",
 
-      gap: 14,
+      gap:
+        10,
+
     },
 
 
     loadingText: {
-      color: "#64748B",
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10.5,
+
     },
 
 
     errorBox: {
-      marginTop: 20,
 
-      padding: 22,
+      padding:
+        17,
 
-      borderRadius: 18,
+      borderRadius:
+        17,
 
       backgroundColor:
-        "#FEF2F2",
+        "#FFF0F3",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#FECACA",
+        "#F6D8DF",
+
     },
 
 
     errorTitle: {
-      color: "#B91C1C",
 
-      fontSize: 18,
+      color:
+        "#B9415E",
 
-      fontWeight: "700",
+      fontSize:
+        13,
+
+      fontWeight:
+        "700",
+
     },
 
 
     errorText: {
-      color: "#B91C1C",
 
-      marginTop: 8,
+      marginTop:
+        6,
+
+      color:
+        "#C55A70",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
+
     },
 
 
     returnButton: {
-      marginTop: 18,
+
+      minHeight:
+        40,
+
+      marginTop:
+        14,
+
+      paddingHorizontal:
+        13,
 
       alignSelf:
         "flex-start",
 
+      justifyContent:
+        "center",
+
+      borderRadius:
+        11,
+
       backgroundColor:
-        "#DC2626",
+        "#C95166",
 
-      paddingHorizontal: 18,
-
-      paddingVertical: 11,
-
-      borderRadius: 10,
     },
 
 
     returnButtonText: {
-      color: "#FFFFFF",
 
-      fontWeight: "600",
+      color:
+        "#FFFFFF",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
     },
 
 
     startSessionButton: {
-      minHeight: 84,
 
-      padding: 16,
+      minHeight:
+        78,
 
-      borderRadius: 20,
+      padding:
+        14,
+
+      borderRadius:
+        19,
 
       backgroundColor:
-        "#7B6EF6",
+        "#7969EA",
 
-      flexDirection: "row",
+      flexDirection:
+        "row",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
-      gap: 14,
+      gap:
+        12,
 
-      shadowColor: "#7B6EF6",
+      shadowColor:
+        "#7969EA",
 
       shadowOffset: {
         width: 0,
         height: 5,
       },
 
-      shadowOpacity: 0.2,
+      shadowOpacity:
+        0.16,
 
-      shadowRadius: 8,
+      shadowRadius:
+        9,
 
-      elevation: 4,
+      elevation:
+        3,
+
     },
 
 
     startSessionIcon: {
-      width: 48,
 
-      height: 48,
+      width:
+        43,
 
-      borderRadius: 16,
+      height:
+        43,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        13,
 
       backgroundColor:
-        "rgba(255, 255, 255, 0.18)",
+        "rgba(255,255,255,0.17)",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
+
     },
 
 
     startSessionTextContainer: {
+
       flex: 1,
+
+      minWidth:
+        0,
+
     },
 
 
     startSessionTitle: {
-      color: "#FFFFFF",
 
-      fontSize: 17,
+      color:
+        "#FFFFFF",
 
-      fontWeight: "800",
+      fontSize:
+        13,
+
+      fontWeight:
+        "800",
+
     },
 
 
     startSessionSubtitle: {
-      color: "#EDE9FE",
 
-      lineHeight: 19,
+      marginTop:
+        4,
 
-      marginTop: 4,
+      color:
+        "#EDE9FE",
+
+      fontSize:
+        9.5,
+
+      lineHeight:
+        14,
+
     },
 
 
     assignedGamesCard: {
-      padding: 17,
 
-      borderRadius: 22,
+      padding:
+        17,
+
+      borderRadius:
+        21,
 
       backgroundColor:
         "#FFFFFF",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#E8E4FF",
+        "#ECECF4",
+
+      shadowColor:
+        "#44446E",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.035,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        2,
+
     },
 
 
     assignedGamesHeader: {
-      flexDirection: "row",
 
-      alignItems: "center",
+      flexDirection:
+        "row",
 
-      gap: 12,
+      alignItems:
+        "center",
+
+      gap:
+        10,
+
+      paddingBottom:
+        14,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#F0F0F5",
+
     },
 
 
     assignedGamesHeaderIcon: {
-      width: 46,
 
-      height: 46,
+      width:
+        39,
 
-      borderRadius: 15,
+      height:
+        39,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        12,
 
       backgroundColor:
         "#F0EDFF",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
+
     },
 
 
     assignedGamesHeaderText: {
-      flex: 1,
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     assignedGamesTitle: {
-      fontSize: 18,
 
-      fontWeight: "800",
+      color:
+        "#333554",
 
-      color: "#1E293B",
+      fontSize:
+        15,
+
+      fontWeight:
+        "700",
+
     },
 
 
     assignedGamesSubtitle: {
-      marginTop: 3,
 
-      fontSize: 12,
+      marginTop:
+        3,
 
-      lineHeight: 17,
+      color:
+        "#A0A3B4",
 
-      color: "#94A3B8",
+      fontSize:
+        9.5,
+
+      lineHeight:
+        14,
+
     },
 
 
     assignedGamesLoading: {
-      minHeight: 120,
 
-      alignItems: "center",
+      minHeight:
+        120,
+
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      gap: 10,
+      gap:
+        8,
+
     },
 
 
     assignedGamesLoadingText: {
-      color: "#64748B",
 
-      fontSize: 13,
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10,
+
     },
 
 
     assignedGamesError: {
-      marginTop: 16,
 
-      padding: 14,
+      marginTop:
+        14,
 
-      borderRadius: 14,
+      padding:
+        13,
+
+      borderRadius:
+        13,
 
       backgroundColor:
-        "#FEF2F2",
+        "#FFF0F3",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#FECACA",
+        "#F6D8DF",
+
     },
 
 
     assignedGamesErrorText: {
-      color: "#B91C1C",
 
-      fontSize: 13,
+      color:
+        "#B9415E",
+
+      fontSize:
+        10,
+
+      lineHeight:
+        15,
+
     },
 
 
     assignedGamesRetry: {
-      marginTop: 10,
+
+      minHeight:
+        36,
+
+      marginTop:
+        9,
+
+      paddingHorizontal:
+        12,
 
       alignSelf:
         "flex-start",
 
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        10,
+
       backgroundColor:
-        "#7B6EF6",
+        "#7969EA",
 
-      paddingHorizontal: 14,
-
-      paddingVertical: 8,
-
-      borderRadius: 9,
     },
 
 
     assignedGamesRetryText: {
-      color: "#FFFFFF",
 
-      fontWeight: "700",
+      color:
+        "#FFFFFF",
 
-      fontSize: 12,
+      fontSize:
+        9.5,
+
+      fontWeight:
+        "700",
+
     },
 
 
     assignedGamesEmpty: {
-      marginTop: 16,
 
-      minHeight: 150,
+      minHeight:
+        145,
 
-      borderRadius: 17,
+      marginTop:
+        14,
 
-      backgroundColor:
-        "#F9F8FF",
+      padding:
+        16,
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      padding: 18,
+      borderRadius:
+        15,
+
+      backgroundColor:
+        "#FBFAFE",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#EFEAFD",
+
     },
 
 
     assignedGamesEmptyIcon: {
-      width: 54,
 
-      height: 54,
+      width:
+        48,
 
-      borderRadius: 18,
+      height:
+        48,
+
+      borderRadius:
+        15,
 
       backgroundColor:
-        "#EEE9FF",
+        "#F0EDFF",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
+
     },
 
 
     assignedGamesEmptyTitle: {
-      marginTop: 11,
 
-      color: "#334155",
+      marginTop:
+        10,
 
-      fontSize: 15,
+      color:
+        "#55586B",
 
-      fontWeight: "800",
+      fontSize:
+        12,
+
+      fontWeight:
+        "700",
+
     },
 
 
     assignedGamesEmptyText: {
-      marginTop: 5,
 
-      color: "#94A3B8",
+      marginTop:
+        5,
 
-      textAlign: "center",
+      color:
+        "#A0A3B4",
 
-      lineHeight: 18,
+      textAlign:
+        "center",
 
-      fontSize: 12,
+      lineHeight:
+        15,
+
+      fontSize:
+        9.5,
+
     },
 
 
     assignedGamesList: {
-      marginTop: 16,
 
-      gap: 12,
+      marginTop:
+        13,
+
+      gap:
+        10,
+
     },
 
 
     assignedGameItem: {
-      padding: 14,
 
-      borderRadius: 17,
+      padding:
+        13,
 
-      borderWidth: 1,
+      borderRadius:
+        15,
+
+      borderWidth:
+        1,
 
       borderColor:
-        "#EDE9FE",
+        "#EFEFF5",
 
       backgroundColor:
-        "#FCFBFF",
+        "#FCFCFE",
+
     },
 
 
     assignedGameTop: {
-      flexDirection: "row",
 
-      alignItems: "center",
+      flexDirection:
+        "row",
 
-      gap: 11,
+      alignItems:
+        "center",
+
+      gap:
+        10,
+
     },
 
 
     assignedGameIcon: {
-      width: 43,
 
-      height: 43,
+      width:
+        39,
 
-      borderRadius: 14,
+      height:
+        39,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        12,
 
       backgroundColor:
-        "#EEE9FF",
+        "#F0EDFF",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
+
     },
 
 
     assignedGameInfo: {
-      flex: 1,
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     assignedGameName: {
-      color: "#1E293B",
 
-      fontSize: 15,
+      color:
+        "#454762",
 
-      fontWeight: "800",
+      fontSize:
+        11.5,
+
+      lineHeight:
+        16,
+
+      fontWeight:
+        "700",
+
     },
 
 
     assignedGameMeta: {
-      marginTop: 6,
 
-      flexDirection: "row",
+      marginTop:
+        5,
 
-      alignItems: "center",
+      flexDirection:
+        "row",
 
-      gap: 8,
+      alignItems:
+        "center",
+
+      gap:
+        7,
+
     },
 
 
     difficultyBadge: {
-      paddingHorizontal: 9,
 
-      paddingVertical: 4,
+      paddingHorizontal:
+        8,
 
-      borderRadius: 999,
+      paddingVertical:
+        4,
+
+      borderRadius:
+        999,
 
       backgroundColor:
-        "#EEE9FF",
+        "#F3F0FF",
+
     },
 
 
     difficultyText: {
-      color: "#6D5CE7",
 
-      fontSize: 10,
+      color:
+        "#7566EB",
 
-      fontWeight: "700",
+      fontSize:
+        8,
+
+      fontWeight:
+        "700",
+
     },
 
 
     domainText: {
-      color: "#94A3B8",
 
-      fontSize: 11,
+      flex:
+        1,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        8.5,
+
     },
 
 
     assignedGameDescription: {
-      marginTop: 11,
 
-      color: "#64748B",
+      marginTop:
+        10,
 
-      fontSize: 12,
+      color:
+        "#8E91A4",
 
-      lineHeight: 18,
+      fontSize:
+        9.5,
+
+      lineHeight:
+        15,
+
     },
 
 
     assignedGameActions: {
-      marginTop: 14,
 
-      flexDirection: "row",
+      marginTop:
+        12,
 
-      gap: 9,
+      flexDirection:
+        "row",
+
+      gap:
+        8,
+
     },
 
 
     playAssignedButton: {
-      flex: 1,
 
-      minHeight: 45,
+      flex:
+        1,
 
-      borderRadius: 13,
+      minHeight:
+        44,
+
+      borderRadius:
+        12,
 
       backgroundColor:
-        "#7B6EF6",
+        "#7969EA",
 
-      flexDirection: "row",
+      flexDirection:
+        "row",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      gap: 7,
+      gap:
+        6,
+
     },
 
 
     playAssignedButtonText: {
-      color: "#FFFFFF",
 
-      fontSize: 13,
+      color:
+        "#FFFFFF",
 
-      fontWeight: "800",
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
     },
 
 
     removeAssignedButton: {
-      width: 48,
 
-      minHeight: 45,
+      width:
+        44,
 
-      borderRadius: 13,
+      minHeight:
+        44,
+
+      borderRadius:
+        12,
 
       backgroundColor:
-        "#FEF2F2",
+        "#FFF4F6",
 
-      alignItems: "center",
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#FECACA",
+        "#F6DDE2",
+
     },
 
 
     disabledButton: {
-      opacity: 0.5,
+
+      opacity:
+        0.5,
+
     },
 
   });

@@ -1,275 +1,265 @@
-
 import {
-    StyleSheet,
-    Text,
-    View,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
-
 import {
-    AlertCircle,
-    Bot,
-    Brain,
-    Gamepad2,
-    TrendingUp,
+  AlertCircle,
+  Bot,
+  Brain,
+  Gamepad2,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react-native";
-
 
 import Card from "../ui/Card";
 
 
-
-
 const games = [
-
   "Memory Match",
   "Attention Focus",
   "Reading Adventure",
   "Executive Puzzle",
-
 ];
 
 
-
-
-
 const AIInsights = () => {
-
 
   return (
 
     <Card>
 
+      <View
+        style={
+          styles.header
+        }
+      >
 
-
-      {/* Header */}
-
-
-      <View style={styles.header}>
-
-
-        <View style={styles.iconBox}>
-
+        <View
+          style={
+            styles.iconBox
+          }
+        >
 
           <Bot
-            size={24}
-            color="#7B6EF6"
+            size={18}
+            color="#7566EB"
           />
-
 
         </View>
 
 
+        <View
+          style={
+            styles.headerCopy
+          }
+        >
 
-        <View>
-
-
-          <Text style={styles.title}>
+          <Text
+            style={
+              styles.title
+            }
+          >
             AI Insights
           </Text>
 
 
-          <Text style={styles.subtitle}>
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
             Smart analysis
           </Text>
 
+        </View>
+
+      </View>
+
+
+      <View
+        style={
+          styles.divider
+        }
+      />
+
+
+      <View
+        style={
+          styles.scoreBox
+        }
+      >
+
+        <View>
+
+          <Text
+            style={
+              styles.label
+            }
+          >
+            AI CONFIDENCE
+          </Text>
+
+
+          <Text
+            style={
+              styles.score
+            }
+          >
+            96%
+          </Text>
 
         </View>
 
 
-      </View>
-
-
-
-
-
-
-      {/* AI Score */}
-
-
-
-      <View style={styles.scoreBox}>
-
-
-        <Text style={styles.label}>
-          AI Confidence
-        </Text>
-
-
-
-        <Text style={styles.score}>
-          96%
-        </Text>
-
-
-      </View>
-
-
-
-
-
-
-      {/* Recommendation */}
-
-
-
-      <View style={styles.row}>
-
-
-        <Brain
-          size={24}
-          color="#48BB78"
-        />
-
-
-
-        <View style={styles.content}>
-
-
-          <Text style={styles.itemTitle}>
-            Recommendation
-          </Text>
-
-
-          <Text style={styles.text}>
-            Increase memory difficulty by one level during the next assessment.
-          </Text>
-
-
-        </View>
-
-
-      </View>
-
-
-
-
-
-
-
-      {/* Risk */}
-
-
-
-      <View style={styles.row}>
-
-
-        <AlertCircle
-          size={24}
-          color="#F6AD55"
-        />
-
-
-
-        <View style={styles.content}>
-
-
-          <Text style={styles.itemTitle}>
-            Risk Level
-          </Text>
-
-
-          <Text style={styles.text}>
-            Low Risk
-          </Text>
-
-
-        </View>
-
-
-      </View>
-
-
-
-
-
-
-
-
-      {/* Progress */}
-
-
-
-      <View style={styles.row}>
-
-
-        <TrendingUp
-          size={24}
-          color="#63B3ED"
-        />
-
-
-
-        <View style={styles.content}>
-
-
-          <Text style={styles.itemTitle}>
-            Progress
-          </Text>
-
-
-          <Text style={styles.text}>
-            +14% improvement compared to last month.
-          </Text>
-
-
-        </View>
-
-
-      </View>
-
-
-
-
-
-
-
-
-      {/* Suggested Games */}
-
-
-
-      <View style={styles.gamesBox}>
-
-
-        <View style={styles.gamesHeader}>
-
-
-          <Gamepad2
-            size={24}
-            color="#F6AD55"
+        <View
+          style={
+            styles.sparkleBox
+          }
+        >
+
+          <Sparkles
+            size={18}
+            color="#7566EB"
           />
 
+        </View>
 
-          <Text style={styles.itemTitle}>
+      </View>
+
+
+      <InsightItem
+        icon={
+
+          <Brain
+            size={16}
+            color="#48A784"
+          />
+
+        }
+        iconBackground="#ECFAF4"
+        background="#F7FCF9"
+        border="#E7F2EC"
+        title="Recommendation"
+        text="Increase memory difficulty by one level during the next assessment."
+      />
+
+
+      <InsightItem
+        icon={
+
+          <AlertCircle
+            size={16}
+            color="#D99949"
+          />
+
+        }
+        iconBackground="#FFF3DA"
+        background="#FFFBF3"
+        border="#F4EAD5"
+        title="Risk Level"
+        text="Low Risk"
+      />
+
+
+      <InsightItem
+        icon={
+
+          <TrendingUp
+            size={16}
+            color="#5595DD"
+          />
+
+        }
+        iconBackground="#EDF6FF"
+        background="#F6FAFD"
+        border="#DDEBF6"
+        title="Progress"
+        text="+14% improvement compared to last month."
+      />
+
+
+      <View
+        style={
+          styles.gamesBox
+        }
+      >
+
+        <View
+          style={
+            styles.gamesHeader
+          }
+        >
+
+          <View
+            style={
+              styles.gamesIcon
+            }
+          >
+
+            <Gamepad2
+              size={15}
+              color="#D99949"
+            />
+
+          </View>
+
+
+          <Text
+            style={
+              styles.itemTitle
+            }
+          >
             Suggested Games
           </Text>
 
-
         </View>
 
 
+        <View
+          style={
+            styles.gamesList
+          }
+        >
+
+          {games.map(
+            (
+              game
+            ) => (
+
+              <View
+                key={
+                  game
+                }
+                style={
+                  styles.gameItem
+                }
+              >
+
+                <View
+                  style={
+                    styles.gameDot
+                  }
+                />
 
 
-        {
-          games.map((game)=>(
-            
-            <Text
-              key={game}
-              style={styles.gameItem}
-            >
-              • {game}
-            </Text>
+                <Text
+                  style={
+                    styles.gameText
+                  }
+                >
+                  {game}
+                </Text>
 
-          ))
-        }
+              </View>
 
+            )
+          )}
 
+        </View>
 
       </View>
-
-
-
 
     </Card>
 
@@ -278,194 +268,497 @@ const AIInsights = () => {
 };
 
 
+type InsightItemProps = {
+  icon: React.ReactNode;
+  iconBackground: string;
+  background: string;
+  border: string;
+  title: string;
+  text: string;
+};
 
 
+const InsightItem = ({
+  icon,
+  iconBackground,
+  background,
+  border,
+  title,
+  text,
+}: InsightItemProps) => {
 
+  return (
 
-const styles = StyleSheet.create({
+    <View
+      style={[
+        styles.insightItem,
+        {
+          backgroundColor:
+            background,
 
+          borderColor:
+            border,
+        },
+      ]}
+    >
 
+      <View
+        style={[
+          styles.insightIcon,
+          {
+            backgroundColor:
+              iconBackground,
+          },
+        ]}
+      >
 
-header:{
+        {icon}
 
-  flexDirection:"row",
+      </View>
 
-  alignItems:"center",
 
-  gap:12,
+      <View
+        style={
+          styles.insightContent
+        }
+      >
 
-  marginBottom:32,
+        <Text
+          style={
+            styles.itemTitle
+          }
+        >
+          {title}
+        </Text>
 
-},
 
+        <Text
+          style={
+            styles.text
+          }
+        >
+          {text}
+        </Text>
 
+      </View>
 
+    </View>
 
-iconBox:{
+  );
 
-  width:48,
+};
 
-  height:48,
 
-  borderRadius:16,
+const styles =
+  StyleSheet.create({
 
-  backgroundColor:"#EEE9FF",
+    header: {
 
-  justifyContent:"center",
+      flexDirection:
+        "row",
 
-  alignItems:"center",
+      alignItems:
+        "center",
 
-},
+      gap:
+        10,
 
+    },
 
 
+    iconBox: {
 
-title:{
+      width:
+        39,
 
-  fontSize:20,
+      height:
+        39,
 
-  fontWeight:"700",
+      borderRadius:
+        12,
 
-},
+      backgroundColor:
+        "#F0EDFF",
 
+      justifyContent:
+        "center",
 
+      alignItems:
+        "center",
 
-subtitle:{
+    },
 
-  color:"#64748B",
 
-  fontSize:14,
+    headerCopy: {
 
-},
+      flex:
+        1,
 
+    },
 
 
+    title: {
 
-scoreBox:{
+      color:
+        "#333554",
 
-  backgroundColor:"#F6F3FF",
+      fontSize:
+        15,
 
-  borderRadius:16,
+      fontWeight:
+        "700",
 
-  padding:20,
+    },
 
-  marginBottom:20,
 
-},
+    subtitle: {
 
+      marginTop:
+        3,
 
+      color:
+        "#A0A3B4",
 
-label:{
+      fontSize:
+        9.5,
 
-  color:"#64748B",
+    },
 
-  fontSize:14,
 
-},
+    divider: {
 
+      height:
+        1,
 
+      marginTop:
+        14,
 
-score:{
+      backgroundColor:
+        "#F0F0F5",
 
-  fontSize:40,
+    },
 
-  fontWeight:"700",
 
-  color:"#7B6EF6",
+    scoreBox: {
 
-  marginTop:8,
+      marginTop:
+        13,
 
-},
+      padding:
+        14,
 
+      borderRadius:
+        15,
 
+      flexDirection:
+        "row",
 
+      justifyContent:
+        "space-between",
 
-row:{
+      alignItems:
+        "center",
 
-  flexDirection:"row",
+      backgroundColor:
+        "#F8F5FF",
 
-  gap:12,
+      borderWidth:
+        1,
 
-  marginBottom:20,
+      borderColor:
+        "#E8E3FF",
 
-},
+    },
 
 
+    label: {
 
-content:{
+      color:
+        "#9A95B7",
 
-  flex:1,
+      fontSize:
+        8,
 
-},
+      fontWeight:
+        "800",
 
+      letterSpacing:
+        0.6,
 
+    },
 
-itemTitle:{
 
-  fontSize:16,
+    score: {
 
-  fontWeight:"600",
+      marginTop:
+        3,
 
-},
+      color:
+        "#7566EB",
 
+      fontSize:
+        26,
 
+      lineHeight:
+        32,
 
-text:{
+      fontWeight:
+        "800",
 
-  fontSize:14,
+    },
 
-  color:"#64748B",
 
-  marginTop:4,
+    sparkleBox: {
 
-},
+      width:
+        42,
 
+      height:
+        42,
 
+      borderRadius:
+        13,
 
+      backgroundColor:
+        "#FFFFFF",
 
-gamesBox:{
+      borderWidth:
+        1,
 
-  backgroundColor:"#FFF7E8",
+      borderColor:
+        "#E8E3FF",
 
-  borderRadius:16,
+      alignItems:
+        "center",
 
-  padding:20,
+      justifyContent:
+        "center",
 
-},
+    },
 
 
+    insightItem: {
 
+      marginTop:
+        9,
 
-gamesHeader:{
+      padding:
+        12,
 
-  flexDirection:"row",
+      borderRadius:
+        14,
 
-  alignItems:"center",
+      borderWidth:
+        1,
 
-  gap:12,
+      flexDirection:
+        "row",
 
-  marginBottom:12,
+      gap:
+        9,
 
-},
+    },
 
 
+    insightIcon: {
 
+      width:
+        35,
 
-gameItem:{
+      height:
+        35,
 
-  fontSize:14,
+      flexShrink:
+        0,
 
-  color:"#475569",
+      borderRadius:
+        11,
 
-  marginBottom:8,
+      justifyContent:
+        "center",
 
-},
+      alignItems:
+        "center",
 
+    },
 
 
-});
+    insightContent: {
 
+      flex:
+        1,
 
+      minWidth:
+        0,
+
+    },
+
+
+    itemTitle: {
+
+      color:
+        "#55586D",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    text: {
+
+      marginTop:
+        3,
+
+      color:
+        "#8E91A4",
+
+      fontSize:
+        9,
+
+      lineHeight:
+        14,
+
+    },
+
+
+    gamesBox: {
+
+      marginTop:
+        10,
+
+      padding:
+        13,
+
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FFFBF4",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F2E7D5",
+
+    },
+
+
+    gamesHeader: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        8,
+
+    },
+
+
+    gamesIcon: {
+
+      width:
+        31,
+
+      height:
+        31,
+
+      borderRadius:
+        10,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#FFF3DA",
+
+    },
+
+
+    gamesList: {
+
+      marginTop:
+        9,
+
+      gap:
+        5,
+
+    },
+
+
+    gameItem: {
+
+      minHeight:
+        31,
+
+      paddingHorizontal:
+        10,
+
+      borderRadius:
+        9,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        7,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F1E8D9",
+
+    },
+
+
+    gameDot: {
+
+      width:
+        5,
+
+      height:
+        5,
+
+      borderRadius:
+        3,
+
+      backgroundColor:
+        "#D99949",
+
+    },
+
+
+    gameText: {
+
+      color:
+        "#6E7183",
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "500",
+
+    },
+
+  });
 
 
 export default AIInsights;

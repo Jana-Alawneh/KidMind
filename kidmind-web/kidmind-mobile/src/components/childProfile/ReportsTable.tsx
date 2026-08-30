@@ -18,6 +18,7 @@ import {
 } from "expo-router";
 
 import {
+  ArrowUpRight,
   CheckCircle,
   Eye,
   FileText,
@@ -42,6 +43,7 @@ const formatDate = (
     return "—";
   }
 
+
   const date =
     new Date(
       String(value).replace(
@@ -49,6 +51,7 @@ const formatDate = (
         "T"
       )
     );
+
 
   if (
     Number.isNaN(
@@ -58,12 +61,18 @@ const formatDate = (
     return "—";
   }
 
+
   return date.toLocaleDateString(
     "en-US",
     {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric",
     }
   );
 
@@ -78,7 +87,8 @@ const getReportTitle = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "Assessment Report";
   }
@@ -90,18 +100,22 @@ const getReportTitle = (
         (game) =>
           game.game_name
       )
-      .filter(Boolean);
+      .filter(
+        Boolean
+      );
 
 
   if (
-    names.length === 0
+    names.length ===
+    0
   ) {
     return "Assessment Report";
   }
 
 
   if (
-    names.length === 1
+    names.length ===
+    1
   ) {
     return `${names[0]} Assessment`;
   }
@@ -120,7 +134,8 @@ const getGamesText = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "No game details";
   }
@@ -131,7 +146,9 @@ const getGamesText = (
       (game) =>
         game.game_name
     )
-    .filter(Boolean)
+    .filter(
+      Boolean
+    )
     .join(" • ");
 
 };
@@ -162,21 +179,24 @@ const ReportsTable = () => {
   const [
     reports,
     setReports,
-  ] = useState<Session[]>(
-    []
-  );
+  ] =
+    useState<Session[]>(
+      []
+    );
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const loadReports =
@@ -187,11 +207,17 @@ const ReportsTable = () => {
           !Number.isInteger(
             childId
           ) ||
-          childId <= 0
+          childId <=
+            0
         ) {
 
-          setReports([]);
-          setLoading(false);
+          setReports(
+            []
+          );
+
+          setLoading(
+            false
+          );
 
           return;
 
@@ -200,9 +226,13 @@ const ReportsTable = () => {
 
         try {
 
-          setLoading(true);
+          setLoading(
+            true
+          );
 
-          setError("");
+          setError(
+            ""
+          );
 
 
           const sessions =
@@ -279,7 +309,9 @@ const ReportsTable = () => {
             completedReports
           );
 
-        } catch (loadError) {
+        } catch (
+          loadError
+        ) {
 
           console.error(
             "Failed to load reports:",
@@ -295,7 +327,9 @@ const ReportsTable = () => {
 
         } finally {
 
-          setLoading(false);
+          setLoading(
+            false
+          );
 
         }
 
@@ -332,25 +366,48 @@ const ReportsTable = () => {
 
         <View
           style={
-            styles.headerText
+            styles.headingGroup
           }
         >
 
-          <Text
+          <View
             style={
-              styles.title
+              styles.headerIcon
             }
           >
-            Assessment Reports
-          </Text>
 
-          <Text
+            <FileText
+              size={18}
+              color="#7566EB"
+            />
+
+          </View>
+
+
+          <View
             style={
-              styles.subtitle
+              styles.headerText
             }
           >
-            Completed assessment history
-          </Text>
+
+            <Text
+              style={
+                styles.title
+              }
+            >
+              Assessment Reports
+            </Text>
+
+
+            <Text
+              style={
+                styles.subtitle
+              }
+            >
+              Completed assessment history
+            </Text>
+
+          </View>
 
         </View>
 
@@ -359,7 +416,9 @@ const ReportsTable = () => {
           style={
             styles.button
           }
-          activeOpacity={0.85}
+          activeOpacity={
+            0.8
+          }
           onPress={() => {
 
             router.push(
@@ -374,12 +433,25 @@ const ReportsTable = () => {
               styles.buttonText
             }
           >
-            View All Sessions
+            View All
           </Text>
+
+
+          <ArrowUpRight
+            size={12}
+            color="#7566EB"
+          />
 
         </TouchableOpacity>
 
       </View>
+
+
+      <View
+        style={
+          styles.divider
+        }
+      />
 
 
       {loading && (
@@ -391,9 +463,10 @@ const ReportsTable = () => {
         >
 
           <ActivityIndicator
-            size="large"
+            size="small"
             color="#7B6EF6"
           />
+
 
           <Text
             style={
@@ -425,6 +498,7 @@ const ReportsTable = () => {
             Unable to load reports
           </Text>
 
+
           <Text
             style={
               styles.errorText
@@ -440,7 +514,8 @@ const ReportsTable = () => {
 
       {!loading &&
         !error &&
-        reports.length === 0 && (
+        reports.length ===
+          0 && (
 
         <View
           style={
@@ -455,11 +530,12 @@ const ReportsTable = () => {
           >
 
             <FileText
-              size={25}
-              color="#7B6EF6"
+              size={20}
+              color="#7566EB"
             />
 
           </View>
+
 
           <Text
             style={
@@ -469,13 +545,13 @@ const ReportsTable = () => {
             No reports yet
           </Text>
 
+
           <Text
             style={
               styles.emptyText
             }
           >
-            Completed assessment sessions
-            will appear here.
+            Completed assessment sessions will appear here.
           </Text>
 
         </View>
@@ -485,74 +561,117 @@ const ReportsTable = () => {
 
       {!loading &&
         !error &&
-        reports.map(
-          (report) => {
+        reports.length >
+          0 && (
 
-            const reportDate =
-              report.ended_at ||
-              report.started_at ||
-              report.created_at;
+        <View
+          style={
+            styles.list
+          }
+        >
+
+          {reports.map(
+            (
+              report
+            ) => {
+
+              const reportDate =
+                report.ended_at ||
+                report.started_at ||
+                report.created_at;
 
 
-            return (
-
-              <View
-                key={
-                  report.id
-                }
-                style={
-                  styles.card
-                }
-              >
+              return (
 
                 <View
+                  key={
+                    report.id
+                  }
                   style={
-                    styles.topRow
+                    styles.reportCard
                   }
                 >
 
                   <View
                     style={
-                      styles.left
+                      styles.topRow
                     }
                   >
 
                     <View
                       style={
-                        styles.iconBox
+                        styles.left
                       }
                     >
 
-                      <FileText
-                        size={22}
-                        color="#7B6EF6"
-                      />
+                      <View
+                        style={
+                          styles.iconBox
+                        }
+                      >
+
+                        <FileText
+                          size={15}
+                          color="#7566EB"
+                        />
+
+                      </View>
+
+
+                      <View
+                        style={
+                          styles.reportInfo
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.reportTitle
+                          }
+                          numberOfLines={
+                            2
+                          }
+                        >
+                          {getReportTitle(
+                            report
+                          )}
+                        </Text>
+
+
+                        <Text
+                          style={
+                            styles.reportId
+                          }
+                        >
+                          Session #{report.id}
+                        </Text>
+
+                      </View>
 
                     </View>
 
 
                     <View
                       style={
-                        styles.reportInfo
+                        styles.scoreBox
                       }
                     >
 
                       <Text
                         style={
-                          styles.reportTitle
+                          styles.score
                         }
                       >
-                        {getReportTitle(
-                          report
-                        )}
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.reportId
-                        }
-                      >
-                        Session #{report.id}
+                        {report.score !==
+                          null &&
+                        report.score !==
+                          undefined
+                          ? `${Math.round(
+                              Number(
+                                report.score
+                              )
+                            )}%`
+                          : "—"}
                       </Text>
 
                     </View>
@@ -562,110 +681,101 @@ const ReportsTable = () => {
 
                   <Text
                     style={
-                      styles.score
+                      styles.games
+                    }
+                    numberOfLines={
+                      2
                     }
                   >
-                    {report.score !==
-                      null &&
-                    report.score !==
-                      undefined
-                      ? `${Math.round(
-                          Number(
-                            report.score
-                          )
-                        )}%`
-                      : "—"}
+                    {getGamesText(
+                      report
+                    )}
                   </Text>
 
-                </View>
 
+                  <Text
+                    style={
+                      styles.date
+                    }
+                  >
+                    {formatDate(
+                      reportDate
+                    )}
+                  </Text>
 
-                <Text
-                  style={
-                    styles.games
-                  }
-                >
-                  {getGamesText(
-                    report
-                  )}
-                </Text>
-
-
-                <Text
-                  style={
-                    styles.date
-                  }
-                >
-                  {formatDate(
-                    reportDate
-                  )}
-                </Text>
-
-
-                <View
-                  style={
-                    styles.bottom
-                  }
-                >
 
                   <View
                     style={
-                      styles.status
+                      styles.bottom
                     }
                   >
 
-                    <CheckCircle
-                      size={14}
-                      color="#15803D"
-                    />
-
-                    <Text
+                    <View
                       style={
-                        styles.statusText
+                        styles.status
                       }
                     >
-                      Completed
-                    </Text>
+
+                      <CheckCircle
+                        size={11}
+                        color="#3E9E7D"
+                      />
+
+
+                      <Text
+                        style={
+                          styles.statusText
+                        }
+                      >
+                        Completed
+                      </Text>
+
+                    </View>
+
+
+                    <TouchableOpacity
+                      style={
+                        styles.view
+                      }
+                      activeOpacity={
+                        0.8
+                      }
+                      onPress={() => {
+
+                        router.push({
+                          pathname:
+                            "/sessions/[id]",
+
+                          params: {
+                            id:
+                              String(
+                                report.id
+                              ),
+                          },
+                        });
+
+                      }}
+                    >
+
+                      <Eye
+                        size={15}
+                        color="#7565E6"
+                      />
+
+                    </TouchableOpacity>
 
                   </View>
 
-
-                  <TouchableOpacity
-                    style={
-                      styles.view
-                    }
-                    activeOpacity={0.8}
-                    onPress={() => {
-
-                      router.push({
-                        pathname:
-                          "/sessions/[id]",
-
-                        params: {
-                          id: String(
-                            report.id
-                          ),
-                        },
-                      });
-
-                    }}
-                  >
-
-                    <Eye
-                      size={18}
-                      color="#2563EB"
-                    />
-
-                  </TouchableOpacity>
-
                 </View>
 
-              </View>
+              );
 
-            );
+            }
+          )}
 
-          }
-        )}
+        </View>
+
+      )}
 
     </Card>
 
@@ -678,188 +788,376 @@ const styles =
   StyleSheet.create({
 
     header: {
-      flexDirection: "row",
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "flex-start",
 
       justifyContent:
         "space-between",
 
+      gap:
+        8,
+
+    },
+
+
+    headingGroup: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
+
       alignItems:
         "center",
 
-      gap: 12,
+      gap:
+        10,
 
-      marginBottom: 20,
+    },
+
+
+    headerIcon: {
+
+      width:
+        39,
+
+      height:
+        39,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        12,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
     },
 
 
     headerText: {
-      flex: 1,
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     title: {
-      fontSize: 22,
 
-      fontWeight: "700",
+      color:
+        "#333554",
 
-      color: "#172554",
+      fontSize:
+        15,
+
+      fontWeight:
+        "700",
+
     },
 
 
     subtitle: {
-      color: "#64748B",
 
-      marginTop: 5,
+      marginTop:
+        3,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        9.5,
+
     },
 
 
     button: {
+
+      minHeight:
+        34,
+
+      paddingHorizontal:
+        9,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      gap:
+        4,
+
+      borderRadius:
+        10,
+
       backgroundColor:
-        "#7B6EF6",
+        "#F7F4FF",
 
-      paddingHorizontal: 13,
+      borderWidth:
+        1,
 
-      paddingVertical: 10,
+      borderColor:
+        "#E4DFFF",
 
-      borderRadius: 12,
     },
 
 
     buttonText: {
-      color: "#FFFFFF",
 
-      fontWeight: "600",
+      color:
+        "#7566EB",
 
-      fontSize: 12,
+      fontSize:
+        8.5,
 
-      textAlign: "center",
+      fontWeight:
+        "700",
+
+    },
+
+
+    divider: {
+
+      height:
+        1,
+
+      marginTop:
+        14,
+
+      backgroundColor:
+        "#F0F0F5",
+
     },
 
 
     loadingBox: {
-      minHeight: 160,
 
-      justifyContent:
-        "center",
+      minHeight:
+        150,
 
       alignItems:
         "center",
 
-      gap: 12,
+      justifyContent:
+        "center",
+
+      gap:
+        8,
+
     },
 
 
     loadingText: {
-      color: "#64748B",
 
-      fontSize: 13,
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10,
+
     },
 
 
     errorBox: {
-      padding: 18,
 
-      borderRadius: 16,
+      minHeight:
+        120,
+
+      marginTop:
+        13,
+
+      padding:
+        13,
+
+      borderRadius:
+        13,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
 
       backgroundColor:
-        "#FEF2F2",
+        "#FFF0F3",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#FECACA",
+        "#F6D8DF",
+
     },
 
 
     errorTitle: {
-      color: "#B91C1C",
 
-      fontWeight: "700",
+      color:
+        "#B9415E",
 
-      textAlign: "center",
+      fontSize:
+        11,
+
+      fontWeight:
+        "700",
+
+      textAlign:
+        "center",
+
     },
 
 
     errorText: {
-      color: "#DC2626",
 
-      fontSize: 13,
+      marginTop:
+        4,
 
-      textAlign: "center",
+      color:
+        "#C55A70",
 
-      marginTop: 5,
+      fontSize:
+        9.5,
+
+      textAlign:
+        "center",
+
     },
 
 
     emptyBox: {
-      paddingVertical: 30,
+
+      minHeight:
+        180,
 
       alignItems:
         "center",
+
+      justifyContent:
+        "center",
+
     },
 
 
     emptyIcon: {
-      width: 54,
 
-      height: 54,
+      width:
+        46,
 
-      borderRadius: 18,
+      height:
+        46,
+
+      borderRadius:
+        14,
 
       backgroundColor:
-        "#F2EEFF",
+        "#F0EDFF",
 
       justifyContent:
         "center",
 
       alignItems:
         "center",
+
     },
 
 
     emptyTitle: {
-      color: "#172554",
 
-      fontWeight: "700",
+      marginTop:
+        10,
 
-      fontSize: 16,
+      color:
+        "#55586D",
 
-      marginTop: 12,
+      fontWeight:
+        "700",
+
+      fontSize:
+        12,
+
     },
 
 
     emptyText: {
-      color: "#64748B",
 
-      fontSize: 13,
+      marginTop:
+        4,
 
-      textAlign: "center",
+      maxWidth:
+        230,
 
-      marginTop: 5,
+      color:
+        "#A0A3B4",
 
-      lineHeight: 19,
+      fontSize:
+        9.5,
+
+      textAlign:
+        "center",
+
+      lineHeight:
+        15,
+
     },
 
 
-    card: {
+    list: {
+
+      marginTop:
+        13,
+
+      gap:
+        9,
+
+    },
+
+
+    reportCard: {
+
+      padding:
+        12,
+
+      borderRadius:
+        14,
+
       backgroundColor:
-        "#FAFAFD",
+        "#FCFCFE",
 
-      borderRadius: 18,
-
-      padding: 16,
-
-      marginBottom: 15,
-
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#F1F5F9",
+        "#EFEFF5",
+
     },
 
 
     topRow: {
-      flexDirection: "row",
+
+      flexDirection:
+        "row",
 
       justifyContent:
         "space-between",
@@ -867,148 +1165,260 @@ const styles =
       alignItems:
         "flex-start",
 
-      gap: 10,
+      gap:
+        8,
+
     },
 
 
     left: {
-      flex: 1,
 
-      flexDirection: "row",
+      flex:
+        1,
 
-      gap: 12,
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
+
+      gap:
+        9,
 
       alignItems:
         "center",
+
     },
 
 
     iconBox: {
-      width: 48,
 
-      height: 48,
+      width:
+        37,
 
-      borderRadius: 14,
+      height:
+        37,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        11,
 
       backgroundColor:
-        "#F2EEFF",
+        "#F0EDFF",
 
       justifyContent:
         "center",
 
       alignItems:
         "center",
+
     },
 
 
     reportInfo: {
-      flex: 1,
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     reportTitle: {
-      fontWeight: "700",
 
-      fontSize: 16,
+      color:
+        "#454762",
 
-      color: "#172554",
+      fontSize:
+        10.5,
+
+      lineHeight:
+        14,
+
+      fontWeight:
+        "700",
+
     },
 
 
     reportId: {
-      color: "#94A3B8",
 
-      fontSize: 12,
+      marginTop:
+        3,
 
-      marginTop: 3,
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        8,
+
+    },
+
+
+    scoreBox: {
+
+      minWidth:
+        46,
+
+      paddingHorizontal:
+        7,
+
+      paddingVertical:
+        6,
+
+      borderRadius:
+        9,
+
+      alignItems:
+        "center",
+
+      backgroundColor:
+        "#F3F0FF",
+
     },
 
 
     score: {
-      color: "#7B6EF6",
 
-      fontWeight: "800",
+      color:
+        "#7566EB",
 
-      fontSize: 22,
+      fontWeight:
+        "800",
+
+      fontSize:
+        10,
+
     },
 
 
     games: {
-      color: "#64748B",
 
-      fontSize: 12,
+      marginTop:
+        10,
 
-      lineHeight: 18,
+      color:
+        "#8E91A4",
 
-      marginTop: 13,
+      fontSize:
+        9,
+
+      lineHeight:
+        14,
+
     },
 
 
     date: {
-      marginTop: 8,
 
-      color: "#64748B",
+      marginTop:
+        6,
 
-      fontSize: 13,
+      color:
+        "#9295A7",
+
+      fontSize:
+        8.5,
+
     },
 
 
     bottom: {
-      marginTop: 15,
 
-      flexDirection: "row",
+      marginTop:
+        10,
+
+      paddingTop:
+        9,
+
+      flexDirection:
+        "row",
 
       justifyContent:
         "space-between",
 
       alignItems:
         "center",
+
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#F1F1F6",
+
     },
 
 
     status: {
-      flexDirection: "row",
+
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
-      gap: 6,
+      gap:
+        5,
+
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        4,
+
+      borderRadius:
+        999,
 
       backgroundColor:
-        "#DCFCE7",
+        "#ECFAF4",
 
-      paddingHorizontal: 10,
-
-      paddingVertical: 6,
-
-      borderRadius: 20,
     },
 
 
     statusText: {
-      color: "#15803D",
 
-      fontSize: 12,
+      color:
+        "#3E9E7D",
 
-      fontWeight: "600",
+      fontSize:
+        8,
+
+      fontWeight:
+        "700",
+
     },
 
 
     view: {
-      width: 40,
 
-      height: 40,
+      width:
+        37,
 
-      borderRadius: 12,
+      height:
+        37,
+
+      borderRadius:
+        10,
 
       backgroundColor:
-        "#DBEAFE",
+        "#F7F4FF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E5E0FF",
 
       justifyContent:
         "center",
 
       alignItems:
         "center",
+
     },
 
   });

@@ -342,9 +342,10 @@ const Children = () => {
 
         <div
             className="
-            flex
-            bg-[#F7F8FC]
-            min-h-screen
+                therapist-children-page
+                flex
+                bg-[#F7F8FC]
+                min-h-screen
             "
         >
 
@@ -353,47 +354,55 @@ const Children = () => {
 
             <main
                 className="
-                flex-1
-                p-10
-                overflow-y-auto
+                    therapist-children-main
+                    flex-1
+                    min-w-0
                 "
             >
 
                 <Navbar />
 
 
-                <ChildrenHeader
-                    onAdd={() => {
-                        setOpenModal(
-                            true
-                        );
-                    }}
-                    searchQuery={
-                        searchQuery
-                    }
-                    onSearchChange={
-                        setSearchQuery
-                    }
-                />
-
-
                 <div
                     className="
-                    mt-8
+                        therapist-children-content
                     "
                 >
 
-                    <ChildrenTable
-                        children={
-                            filteredChildren
+                    <ChildrenHeader
+                        onAdd={() => {
+                            setOpenModal(
+                                true
+                            );
+                        }}
+                        searchQuery={
+                            searchQuery
                         }
-                        onDelete={
-                            handleDelete
-                        }
-                        onEdit={
-                            handleEdit
+                        onSearchChange={
+                            setSearchQuery
                         }
                     />
+
+
+                    <div
+                        className="
+                            mt-[18px]
+                        "
+                    >
+
+                        <ChildrenTable
+                            children={
+                                filteredChildren
+                            }
+                            onDelete={
+                                handleDelete
+                            }
+                            onEdit={
+                                handleEdit
+                            }
+                        />
+
+                    </div>
 
                 </div>
 
@@ -433,6 +442,54 @@ const Children = () => {
                 )}
 
             </main>
+
+
+            <style>
+                {`
+
+                .therapist-children-page {
+                    color: #252852;
+                    font-family:
+                        Inter,
+                        system-ui,
+                        -apple-system,
+                        BlinkMacSystemFont,
+                        "Segoe UI",
+                        sans-serif;
+                }
+
+                .therapist-children-main {
+                    overflow-x: hidden;
+                    background: #F7F8FC;
+                }
+
+                .therapist-children-content {
+                    width: 100%;
+                    padding: 30px 34px 45px;
+                }
+
+                @media (max-width: 1150px) {
+
+                    .therapist-children-content {
+                        padding-left: 25px;
+                        padding-right: 25px;
+                    }
+
+                }
+
+                @media (max-width: 900px) {
+
+                    .therapist-children-content {
+                        padding:
+                            22px
+                            18px
+                            35px;
+                    }
+
+                }
+
+                `}
+            </style>
 
         </div>
 

@@ -1,7 +1,6 @@
 import React from "react";
 
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,7 +12,6 @@ import {
   Calendar,
   FileText,
   Pencil,
-  Play,
   User,
   Users,
 } from "lucide-react-native";
@@ -31,50 +29,112 @@ type Props = {
 };
 
 
+const getChildInitial = (
+  child: Child
+) => {
+
+  return String(
+    child.full_name ||
+    "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+};
+
+
 const ChildInfoCard = ({
   child,
   onEdit,
 }: Props) => {
 
-  const childImage =
-    child.image ||
-    `https://i.pravatar.cc/200?u=kidmind-${child.id}`;
-
-
   return (
 
     <Card>
 
-      {/* Profile */}
+      <View
+        style={
+          styles.profileHeader
+        }
+      >
 
-      <View style={styles.profile}>
+        <View
+          style={
+            styles.avatar
+          }
+        >
 
-        <Image
-          source={{
-            uri: childImage,
-          }}
-          style={styles.avatar}
-        />
+          <Text
+            style={
+              styles.avatarText
+            }
+          >
+            {getChildInitial(
+              child
+            )}
+          </Text>
 
-        <Text style={styles.name}>
-          {child.full_name}
-        </Text>
+        </View>
 
-        <Text style={styles.id}>
-          Child ID #{child.id}
-        </Text>
+
+        <View
+          style={
+            styles.profileText
+          }
+        >
+
+          <Text
+            style={
+              styles.eyebrow
+            }
+          >
+            CHILD PROFILE
+          </Text>
+
+
+          <Text
+            style={
+              styles.name
+            }
+            numberOfLines={
+              1
+            }
+          >
+            {child.full_name}
+          </Text>
+
+
+          <Text
+            style={
+              styles.id
+            }
+          >
+            Child ID #{child.id}
+          </Text>
+
+        </View>
 
       </View>
 
 
-      {/* Information */}
+      <View
+        style={
+          styles.divider
+        }
+      />
 
-      <View style={styles.infoContainer}>
 
-        <InfoRow
+      <View
+        style={
+          styles.infoGrid
+        }
+      >
+
+        <InfoBox
           icon={
             <Calendar
-              size={18}
+              size={15}
               color="#7B6EF6"
             />
           }
@@ -83,23 +143,26 @@ const ChildInfoCard = ({
         />
 
 
-        <InfoRow
+        <InfoBox
           icon={
             <User
-              size={18}
-              color="#63B3ED"
+              size={15}
+              color="#5595DD"
             />
           }
           title="Gender"
-          value={child.gender}
+          value={
+            child.gender ||
+            "—"
+          }
         />
 
 
-        <InfoRow
+        <InfoBox
           icon={
             <Users
-              size={18}
-              color="#48BB78"
+              size={15}
+              color="#48A784"
             />
           }
           title="Parent"
@@ -110,11 +173,11 @@ const ChildInfoCard = ({
         />
 
 
-        <InfoRow
+        <InfoBox
           icon={
             <Activity
-              size={18}
-              color="#F6AD55"
+              size={15}
+              color="#D99949"
             />
           }
           title="Status"
@@ -122,29 +185,54 @@ const ChildInfoCard = ({
             child.status ||
             "Active"
           }
+          valueColor="#3E9E7D"
         />
 
       </View>
 
 
-      {/* Notes */}
+      <View
+        style={
+          styles.notesBox
+        }
+      >
 
-      <View style={styles.notesBox}>
+        <View
+          style={
+            styles.notesTitleRow
+          }
+        >
 
-        <View style={styles.notesTitleRow}>
+          <View
+            style={
+              styles.notesIcon
+            }
+          >
 
-          <FileText
-            size={18}
-            color="#7B6EF6"
-          />
+            <FileText
+              size={15}
+              color="#7566EB"
+            />
 
-          <Text style={styles.notesTitle}>
+          </View>
+
+
+          <Text
+            style={
+              styles.notesTitle
+            }
+          >
             Notes
           </Text>
 
         </View>
 
-        <Text style={styles.notesText}>
+
+        <Text
+          style={
+            styles.notesText
+          }
+        >
           {child.notes ||
             "No notes available."}
         </Text>
@@ -152,36 +240,32 @@ const ChildInfoCard = ({
       </View>
 
 
-      {/* Buttons */}
-
-      <View style={styles.buttons}>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-        >
-
-          <Play
-            size={18}
-            color="#FFFFFF"
-          />
-
-          <Text style={styles.primaryText}>
-            Start Session
-          </Text>
-
-        </TouchableOpacity>
-
+      <View
+        style={
+          styles.buttons
+        }
+      >
 
         <TouchableOpacity
-          style={styles.secondaryButton}
+          activeOpacity={
+            0.8
+          }
+          style={
+            styles.reportButton
+          }
         >
 
           <FileText
-            size={18}
-            color="#7B6EF6"
+            size={15}
+            color="#7566EB"
           />
 
-          <Text style={styles.secondaryText}>
+
+          <Text
+            style={
+              styles.reportButtonText
+            }
+          >
             Generate Report
           </Text>
 
@@ -189,16 +273,28 @@ const ChildInfoCard = ({
 
 
         <TouchableOpacity
-  style={styles.editButton}
-  onPress={onEdit}
->
+          activeOpacity={
+            0.8
+          }
+          style={
+            styles.editButton
+          }
+          onPress={
+            onEdit
+          }
+        >
 
           <Pencil
-            size={18}
-            color="#000000"
+            size={15}
+            color="#777A8F"
           />
 
-          <Text style={styles.editText}>
+
+          <Text
+            style={
+              styles.editText
+            }
+          >
             Edit Information
           </Text>
 
@@ -213,34 +309,64 @@ const ChildInfoCard = ({
 };
 
 
-type InfoRowProps = {
+type InfoBoxProps = {
   icon: React.ReactNode;
   title: string;
   value: string;
+  valueColor?: string;
 };
 
 
-const InfoRow = ({
+const InfoBox = ({
   icon,
   title,
   value,
-}: InfoRowProps) => {
+  valueColor,
+}: InfoBoxProps) => {
 
   return (
 
-    <View style={styles.row}>
+    <View
+      style={
+        styles.infoBox
+      }
+    >
 
-      <View style={styles.left}>
+      <View
+        style={
+          styles.infoLabelRow
+        }
+      >
 
         {icon}
 
-        <Text style={styles.rowTitle}>
+
+        <Text
+          style={
+            styles.infoLabel
+          }
+        >
           {title}
         </Text>
 
       </View>
 
-      <Text style={styles.value}>
+
+      <Text
+        style={[
+          styles.infoValue,
+
+          valueColor
+            ? {
+                color:
+                  valueColor,
+              }
+            : null,
+        ]}
+        numberOfLines={
+          2
+        }
+      >
         {value}
       </Text>
 
@@ -251,135 +377,433 @@ const InfoRow = ({
 };
 
 
-const styles = StyleSheet.create({
+const styles =
+  StyleSheet.create({
 
-  profile: {
-    alignItems: "center",
-  },
+    profileHeader: {
 
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: "#EEE9FF",
-  },
+      flexDirection:
+        "row",
 
-  name: {
-    fontSize: 26,
-    fontWeight: "700",
-    marginTop: 20,
-    textAlign: "center",
-  },
+      alignItems:
+        "center",
 
-  id: {
-    color: "#64748B",
-    marginTop: 4,
-  },
+      gap:
+        13,
 
-  infoContainer: {
-    marginTop: 32,
-    gap: 20,
-  },
+    },
 
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
-  },
 
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
+    avatar: {
 
-  rowTitle: {
-    color: "#334155",
-  },
+      width:
+        58,
 
-  value: {
-    flex: 1,
-    fontWeight: "600",
-    textAlign: "right",
-  },
+      height:
+        58,
 
-  notesBox: {
-    marginTop: 28,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 14,
-    padding: 16,
-  },
+      flexShrink:
+        0,
 
-  notesTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+      borderRadius:
+        18,
 
-  notesTitle: {
-    fontWeight: "700",
-    color: "#334155",
-  },
+      alignItems:
+        "center",
 
-  notesText: {
-    marginTop: 10,
-    color: "#64748B",
-    lineHeight: 21,
-  },
+      justifyContent:
+        "center",
 
-  buttons: {
-    marginTop: 40,
-    gap: 12,
-  },
+      backgroundColor:
+        "#F3EEFF",
 
-  primaryButton: {
-    backgroundColor: "#7B6EF6",
-    borderRadius: 12,
-    paddingVertical: 15,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
+      borderWidth:
+        1,
 
-  primaryText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
+      borderColor:
+        "#E9E3FF",
 
-  secondaryButton: {
-    backgroundColor: "#F3F0FF",
-    borderRadius: 12,
-    paddingVertical: 15,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
+    },
 
-  secondaryText: {
-    color: "#7B6EF6",
-    fontWeight: "600",
-  },
 
-  editButton: {
-    borderWidth: 1,
-    borderColor: "#DDDDDD",
-    borderRadius: 12,
-    paddingVertical: 15,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
+    avatarText: {
 
-  editText: {
-    fontWeight: "600",
-  },
+      color:
+        "#7968E9",
 
-});
+      fontSize:
+        19,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    profileText: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    eyebrow: {
+
+      color:
+        "#8172EA",
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "800",
+
+      letterSpacing:
+        0.9,
+
+    },
+
+
+    name: {
+
+      marginTop:
+        4,
+
+      color:
+        "#343654",
+
+      fontSize:
+        17,
+
+      lineHeight:
+        22,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    id: {
+
+      marginTop:
+        3,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        9.5,
+
+    },
+
+
+    divider: {
+
+      height:
+        1,
+
+      marginTop:
+        16,
+
+      backgroundColor:
+        "#F0F0F5",
+
+    },
+
+
+    infoGrid: {
+
+      marginTop:
+        14,
+
+      flexDirection:
+        "row",
+
+      flexWrap:
+        "wrap",
+
+      gap:
+        8,
+
+    },
+
+
+    infoBox: {
+
+      width:
+        "48.5%",
+
+      minHeight:
+        70,
+
+      padding:
+        11,
+
+      borderRadius:
+        13,
+
+      justifyContent:
+        "space-between",
+
+      backgroundColor:
+        "#FAFAFC",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#F0F0F5",
+
+    },
+
+
+    infoLabelRow: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        6,
+
+    },
+
+
+    infoLabel: {
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        8.5,
+
+      fontWeight:
+        "600",
+
+    },
+
+
+    infoValue: {
+
+      marginTop:
+        8,
+
+      color:
+        "#55586E",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        14,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    notesBox: {
+
+      marginTop:
+        14,
+
+      padding:
+        13,
+
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FCFCFE",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#EFEFF5",
+
+    },
+
+
+    notesTitleRow: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        8,
+
+    },
+
+
+    notesIcon: {
+
+      width:
+        31,
+
+      height:
+        31,
+
+      borderRadius:
+        10,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    notesTitle: {
+
+      color:
+        "#55586D",
+
+      fontSize:
+        10.5,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    notesText: {
+
+      marginTop:
+        9,
+
+      color:
+        "#8E91A4",
+
+      fontSize:
+        9.5,
+
+      lineHeight:
+        15,
+
+    },
+
+
+    buttons: {
+
+      marginTop:
+        14,
+
+      gap:
+        8,
+
+    },
+
+
+    reportButton: {
+
+      minHeight:
+        43,
+
+      flexDirection:
+        "row",
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      gap:
+        7,
+
+      borderRadius:
+        12,
+
+      backgroundColor:
+        "#F7F4FF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E4DFFF",
+
+    },
+
+
+    reportButtonText: {
+
+      color:
+        "#7566EB",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    editButton: {
+
+      minHeight:
+        43,
+
+      flexDirection:
+        "row",
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      gap:
+        7,
+
+      borderRadius:
+        12,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E7E7EF",
+
+    },
+
+
+    editText: {
+
+      color:
+        "#777A8F",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
+    },
+
+  });
 
 
 export default ChildInfoCard;

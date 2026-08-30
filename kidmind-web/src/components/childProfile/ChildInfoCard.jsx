@@ -11,179 +11,99 @@ import {
 } from "lucide-react";
 
 
+const getChildInitial = (
+  child
+) => {
+
+  return String(
+    child?.full_name ||
+    "C"
+  )
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+};
+
+
 const ChildInfoCard = ({
   child,
   onEdit,
   onStartSession,
 }) => {
 
-  const childImage =
-    child.image ||
-    `https://i.pravatar.cc/200?u=kidmind-${child.id}`;
-
-
   return (
 
-    <Card className="col-span-1">
+    <Card className="h-full">
 
-      <div className="flex flex-col items-center">
+      <div
+        className="
+          flex
+          items-center
+          gap-4
+          pb-5
+          border-b
+          border-[#F0F0F5]
+        "
+      >
 
-        <img
-          src={childImage}
-          alt={child.full_name}
+        <div
           className="
-            w-28
-            h-28
-            rounded-full
-            border-4
-            border-[#EEE9FF]
-            object-cover
+            w-[58px]
+            h-[58px]
+            shrink-0
+            rounded-[18px]
+            flex
+            items-center
+            justify-center
+            bg-gradient-to-br
+            from-[#F0EDFF]
+            to-[#FCEEFF]
+            text-[#7968E9]
+            text-xl
+            font-extrabold
           "
-        />
-
-        <h2 className="text-2xl font-bold mt-5 text-center">
-
-          {child.full_name}
-
-        </h2>
-
-        <p className="text-slate-500">
-
-          Child ID #{child.id}
-
-        </p>
-
-      </div>
-
-
-      <div className="space-y-5 mt-8">
-
-        <div className="flex justify-between gap-4">
-
-          <div className="flex gap-3 items-center">
-
-            <Calendar
-              size={18}
-              className="text-[#7B6EF6]"
-            />
-
-            <span>Age</span>
-
-          </div>
-
-          <span className="font-semibold text-right">
-
-            {child.age} Years
-
-          </span>
-
+        >
+          {getChildInitial(child)}
         </div>
 
 
-        <div className="flex justify-between gap-4">
+        <div className="min-w-0">
 
-          <div className="flex gap-3 items-center">
-
-            <User
-              size={18}
-              className="text-[#63B3ED]"
-            />
-
-            <span>Gender</span>
-
-          </div>
-
-          <span className="font-semibold text-right">
-
-            {child.gender}
-
+          <span
+            className="
+              text-[9px]
+              font-extrabold
+              tracking-[0.09em]
+              text-[#8172EA]
+            "
+          >
+            CHILD PROFILE
           </span>
 
-        </div>
+
+          <h2
+            className="
+              text-[18px]
+              leading-6
+              font-bold
+              text-[#343654]
+              mt-1
+              truncate
+            "
+          >
+            {child.full_name}
+          </h2>
 
 
-        <div className="flex justify-between gap-4">
-
-          <div className="flex gap-3 items-center">
-
-            <Users
-              size={18}
-              className="text-[#48BB78]"
-            />
-
-            <span>Parent</span>
-
-          </div>
-
-          <span className="
-            font-semibold
-            text-right
-            max-w-[160px]
-          ">
-
-            {child.parent_name || "Not provided"}
-
-          </span>
-
-        </div>
-
-
-        <div className="flex justify-between gap-4">
-
-          <div className="flex gap-3 items-center">
-
-            <Activity
-              size={18}
-              className="text-[#F6AD55]"
-            />
-
-            <span>Status</span>
-
-          </div>
-
-          <span className="
-            font-semibold
-            text-green-600
-          ">
-
-            {child.status || "Active"}
-
-          </span>
-
-        </div>
-
-
-        <div className="
-          bg-[#F8FAFC]
-          rounded-xl
-          p-4
-        ">
-
-          <div className="flex gap-2 items-center">
-
-            <FileText
-              size={18}
-              className="text-[#7B6EF6]"
-            />
-
-            <span className="font-semibold">
-
-              Notes
-
-            </span>
-
-          </div>
-
-          <p className="
-            text-slate-500
-            text-sm
-            mt-2
-            leading-6
-            break-words
-          ">
-
-            {child.notes || "No notes available."}
-
+          <p
+            className="
+              text-[10px]
+              text-[#A0A3B4]
+              mt-1
+            "
+          >
+            Child ID #{child.id}
           </p>
 
         </div>
@@ -191,26 +111,312 @@ const ChildInfoCard = ({
       </div>
 
 
-      <div className="grid grid-cols-1 gap-3 mt-10">
+      <div
+        className="
+          grid
+          grid-cols-2
+          gap-2.5
+          mt-5
+        "
+      >
+
+        <div
+          className="
+            rounded-[14px]
+            bg-[#FAFAFC]
+            border
+            border-[#F0F0F5]
+            p-3
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+              text-[#7B6EF6]
+            "
+          >
+            <Calendar size={15} />
+
+            <span
+              className="
+                text-[9px]
+                font-semibold
+                text-[#A0A3B4]
+              "
+            >
+              Age
+            </span>
+          </div>
+
+          <p
+            className="
+              text-[12px]
+              font-bold
+              text-[#55586E]
+              mt-2
+            "
+          >
+            {child.age} Years
+          </p>
+
+        </div>
+
+
+        <div
+          className="
+            rounded-[14px]
+            bg-[#FAFAFC]
+            border
+            border-[#F0F0F5]
+            p-3
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+
+            <User
+              size={15}
+              className="text-[#5595DD]"
+            />
+
+            <span
+              className="
+                text-[9px]
+                font-semibold
+                text-[#A0A3B4]
+              "
+            >
+              Gender
+            </span>
+
+          </div>
+
+          <p
+            className="
+              text-[12px]
+              font-bold
+              text-[#55586E]
+              mt-2
+            "
+          >
+            {child.gender || "—"}
+          </p>
+
+        </div>
+
+
+        <div
+          className="
+            rounded-[14px]
+            bg-[#FAFAFC]
+            border
+            border-[#F0F0F5]
+            p-3
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+
+            <Users
+              size={15}
+              className="text-[#48A784]"
+            />
+
+            <span
+              className="
+                text-[9px]
+                font-semibold
+                text-[#A0A3B4]
+              "
+            >
+              Parent
+            </span>
+
+          </div>
+
+          <p
+            className="
+              text-[11px]
+              font-bold
+              text-[#55586E]
+              mt-2
+              truncate
+            "
+            title={
+              child.parent_name ||
+              "Not provided"
+            }
+          >
+            {child.parent_name || "Not provided"}
+          </p>
+
+        </div>
+
+
+        <div
+          className="
+            rounded-[14px]
+            bg-[#FAFAFC]
+            border
+            border-[#F0F0F5]
+            p-3
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+
+            <Activity
+              size={15}
+              className="text-[#D99949]"
+            />
+
+            <span
+              className="
+                text-[9px]
+                font-semibold
+                text-[#A0A3B4]
+              "
+            >
+              Status
+            </span>
+
+          </div>
+
+          <p
+            className="
+              text-[11px]
+              font-bold
+              text-[#3E9E7D]
+              mt-2
+            "
+          >
+            {child.status || "Active"}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        className="
+          mt-4
+          rounded-[15px]
+          border
+          border-[#EFEFF5]
+          bg-[#FCFCFE]
+          p-4
+        "
+      >
+
+        <div
+          className="
+            flex
+            items-center
+            gap-2
+          "
+        >
+
+          <div
+            className="
+              w-8
+              h-8
+              rounded-[10px]
+              bg-[#F0EDFF]
+              flex
+              items-center
+              justify-center
+            "
+          >
+
+            <FileText
+              size={15}
+              className="text-[#7566EB]"
+            />
+
+          </div>
+
+
+          <span
+            className="
+              text-[11px]
+              font-bold
+              text-[#55586D]
+            "
+          >
+            Notes
+          </span>
+
+        </div>
+
+
+        <p
+          className="
+            text-[#8E91A4]
+            text-[10.5px]
+            mt-3
+            leading-[17px]
+            break-words
+          "
+        >
+          {child.notes || "No notes available."}
+        </p>
+
+      </div>
+
+
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-2
+          mt-5
+        "
+      >
 
         <button
-  type="button"
-  onClick={onStartSession}
-  className="
-    bg-[#7B6EF6]
-    hover:bg-[#6959F5]
-    text-white
-    rounded-xl
-    py-3
-    flex
-    justify-center
-    items-center
-    gap-2
-    transition
-  "
->
+          type="button"
+          onClick={
+            onStartSession
+          }
+          className="
+            h-[42px]
+            bg-[#7969EA]
+            hover:bg-[#6959F5]
+            text-white
+            rounded-[12px]
+            flex
+            justify-center
+            items-center
+            gap-2
+            text-[11px]
+            font-semibold
+            transition
+          "
+        >
 
-          <Play size={18} />
+          <Play size={15} />
 
           Start Session
 
@@ -218,44 +424,56 @@ const ChildInfoCard = ({
 
 
         <button
+          type="button"
           className="
-            bg-[#F3F0FF]
-            text-[#7B6EF6]
-            rounded-xl
-            py-3
+            h-[42px]
+            bg-[#F6F3FF]
+            border
+            border-[#E4DFFF]
+            text-[#7566EB]
+            rounded-[12px]
             flex
             justify-center
             items-center
             gap-2
-            hover:bg-[#ECE7FF]
+            text-[11px]
+            font-semibold
+            hover:bg-[#F0ECFF]
             transition
           "
         >
 
-          <FileText size={18} />
+          <FileText size={15} />
 
           Generate Report
 
         </button>
 
 
-<button
-  type="button"
-  onClick={onEdit}
-  className="
-    border
-    rounded-xl
-    py-3
-    flex
-    justify-center
-    items-center
-    gap-2
-    hover:bg-gray-50
-    transition
-  "
->
+        <button
+          type="button"
+          onClick={
+            onEdit
+          }
+          className="
+            h-[42px]
+            border
+            border-[#E7E7EF]
+            text-[#777A8F]
+            bg-white
+            rounded-[12px]
+            flex
+            justify-center
+            items-center
+            gap-2
+            text-[11px]
+            font-semibold
+            hover:bg-[#F9F9FC]
+            transition
+          "
+        >
 
-          <Pencil size={18} />
+          <Pencil size={15} />
 
           Edit Information
 

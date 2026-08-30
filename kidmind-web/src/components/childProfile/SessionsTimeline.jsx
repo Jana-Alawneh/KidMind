@@ -8,6 +8,12 @@ import {
   useParams,
 } from "react-router-dom";
 
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Clock3,
+} from "lucide-react";
+
 import Card from "../ui/Card";
 
 import {
@@ -25,17 +31,24 @@ const formatDuration = (
       Number(seconds) || 0
     );
 
+
   const minutes =
     Math.floor(
       totalSeconds / 60
     );
 
+
   const remainingSeconds =
     totalSeconds % 60;
 
-  if (minutes === 0) {
+
+  if (
+    minutes ===
+    0
+  ) {
     return `${remainingSeconds}s`;
   }
+
 
   return `${minutes}m ${remainingSeconds}s`;
 
@@ -50,6 +63,7 @@ const formatDate = (
     return "No date";
   }
 
+
   const date =
     new Date(
       String(value).replace(
@@ -57,6 +71,7 @@ const formatDate = (
         "T"
       )
     );
+
 
   if (
     Number.isNaN(
@@ -66,12 +81,18 @@ const formatDate = (
     return "No date";
   }
 
+
   return date.toLocaleDateString(
     "en-US",
     {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric",
     }
   );
 
@@ -86,17 +107,21 @@ const getGamesText = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "No games";
   }
 
+
   return session.games
     .map(
-      (game) =>
+      game =>
         game.game_name
     )
-    .filter(Boolean)
+    .filter(
+      Boolean
+    )
     .join(" • ");
 
 };
@@ -107,65 +132,81 @@ const getStatusStyle = (
 ) => {
 
   if (
-    status === "Completed"
+    status ===
+    "Completed"
   ) {
     return {
       background:
-        "bg-green-100",
+        "bg-[#ECFAF4]",
+
       text:
-        "text-green-700",
+        "text-[#3E9E7D]",
     };
   }
 
+
   if (
-    status === "In Progress"
+    status ===
+    "In Progress"
   ) {
     return {
       background:
-        "bg-violet-100",
+        "bg-[#F0EDFF]",
+
       text:
-        "text-violet-700",
+        "text-[#7566EB]",
     };
   }
 
+
   if (
-    status === "Paused"
+    status ===
+    "Paused"
   ) {
     return {
       background:
-        "bg-amber-100",
+        "bg-[#FFF7E8]",
+
       text:
-        "text-amber-700",
+        "text-[#C48432]",
     };
   }
 
+
   if (
-    status === "Ended"
+    status ===
+    "Ended"
   ) {
     return {
       background:
-        "bg-red-100",
+        "bg-[#FFF0F3]",
+
       text:
-        "text-red-700",
+        "text-[#C4556C]",
     };
   }
 
+
   if (
-    status === "Cancelled"
+    status ===
+    "Cancelled"
   ) {
     return {
       background:
-        "bg-slate-100",
+        "bg-[#F5F5F8]",
+
       text:
-        "text-slate-600",
+        "text-[#777A8F]",
     };
   }
+
 
   return {
     background:
-      "bg-sky-100",
+      "bg-[#EDF6FF]",
+
     text:
-      "text-sky-700",
+      "text-[#5595DD]",
   };
 
 };
@@ -175,187 +216,258 @@ const SessionsTimeline = () => {
 
   const {
     id,
-  } = useParams();
+  } =
+    useParams();
+
 
   const navigate =
     useNavigate();
 
 
   const childId =
-    Number(id);
+    Number(
+      id
+    );
 
 
   const [
     sessions,
     setSessions,
-  ] = useState([]);
+  ] =
+    useState([]);
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadSessions =
-      async () => {
+      const loadSessions =
+        async () => {
 
-        if (
-          !Number.isInteger(
-            childId
-          ) ||
-          childId <= 0
-        ) {
+          if (
+            !Number.isInteger(
+              childId
+            ) ||
+            childId <=
+              0
+          ) {
 
-          setSessions([]);
-          setLoading(false);
+            setSessions(
+              []
+            );
 
-          return;
+            setLoading(
+              false
+            );
 
-        }
+            return;
 
-
-        try {
-
-          setLoading(true);
-
-          setError("");
-
-
-          const allSessions =
-            await getSessions();
+          }
 
 
-          const childSessions =
-            allSessions
-              .filter(
-                (session) =>
-                  Number(
-                    session.child_id
-                  ) ===
-                  childId
-              )
-              .sort(
-                (
-                  first,
-                  second
-                ) => {
+          try {
 
-                  const firstDate =
-                    new Date(
-                      String(
-                        first.started_at ||
-                        first.scheduled_at ||
-                        first.created_at ||
-                        ""
-                      ).replace(
-                        " ",
-                        "T"
+            setLoading(
+              true
+            );
+
+            setError(
+              ""
+            );
+
+
+            const allSessions =
+              await getSessions();
+
+
+            const childSessions =
+              allSessions
+                .filter(
+                  session =>
+                    Number(
+                      session.child_id
+                    ) ===
+                    childId
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) => {
+
+                    const firstDate =
+                      new Date(
+                        String(
+                          first.started_at ||
+                          first.scheduled_at ||
+                          first.created_at ||
+                          ""
+                        ).replace(
+                          " ",
+                          "T"
+                        )
+                      ).getTime();
+
+
+                    const secondDate =
+                      new Date(
+                        String(
+                          second.started_at ||
+                          second.scheduled_at ||
+                          second.created_at ||
+                          ""
+                        ).replace(
+                          " ",
+                          "T"
+                        )
+                      ).getTime();
+
+
+                    return (
+                      (
+                        Number.isFinite(
+                          secondDate
+                        )
+                          ? secondDate
+                          : 0
+                      ) -
+                      (
+                        Number.isFinite(
+                          firstDate
+                        )
+                          ? firstDate
+                          : 0
                       )
-                    ).getTime();
+                    );
+
+                  }
+                )
+                .slice(
+                  0,
+                  3
+                );
 
 
-                  const secondDate =
-                    new Date(
-                      String(
-                        second.started_at ||
-                        second.scheduled_at ||
-                        second.created_at ||
-                        ""
-                      ).replace(
-                        " ",
-                        "T"
-                      )
-                    ).getTime();
+            setSessions(
+              childSessions
+            );
 
-
-                  return (
-                    (
-                      Number.isFinite(
-                        secondDate
-                      )
-                        ? secondDate
-                        : 0
-                    ) -
-                    (
-                      Number.isFinite(
-                        firstDate
-                      )
-                        ? firstDate
-                        : 0
-                    )
-                  );
-
-                }
-              )
-              .slice(
-                0,
-                3
-              );
-
-
-          setSessions(
-            childSessions
-          );
-
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load child sessions:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load child sessions:",
+              loadError
+            );
 
 
-          setError(
-            loadError?.message ||
-            "Failed to load sessions"
-          );
+            setError(
+              loadError?.message ||
+              "Failed to load sessions"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadSessions();
+      loadSessions();
 
-  }, [
-    childId,
-  ]);
+    },
+    [
+      childId,
+    ]
+  );
 
 
   return (
 
-    <Card>
+    <Card className="h-full">
 
-      <h2
+      <div
         className="
-          text-xl
-          font-bold
-          mb-8
-          text-[#172554]
+          flex
+          items-center
+          gap-3
+          pb-4
+          border-b
+          border-[#F0F0F5]
         "
       >
-        Recent Sessions
-      </h2>
+
+        <div
+          className="
+            w-10
+            h-10
+            rounded-[13px]
+            bg-[#F0EDFF]
+            text-[#7566EB]
+            flex
+            items-center
+            justify-center
+          "
+        >
+
+          <CalendarDays
+            size={18}
+          />
+
+        </div>
+
+
+        <div>
+
+          <h2
+            className="
+              text-[16px]
+              font-bold
+              text-[#333554]
+            "
+          >
+            Recent Sessions
+          </h2>
+
+
+          <p
+            className="
+              text-[10.5px]
+              text-[#A0A3B4]
+              mt-1
+            "
+          >
+            Latest child assessment activity
+          </p>
+
+        </div>
+
+      </div>
 
 
       {loading && (
 
         <div
           className="
-            min-h-[140px]
+            min-h-[180px]
             flex
             items-center
             justify-center
@@ -373,7 +485,7 @@ const SessionsTimeline = () => {
                 w-9
                 h-9
                 rounded-full
-                border-4
+                border-[3px]
                 border-[#E6E2FF]
                 border-t-[#7B6EF6]
                 animate-spin
@@ -381,10 +493,11 @@ const SessionsTimeline = () => {
               "
             />
 
+
             <p
               className="
-                text-sm
-                text-slate-500
+                text-[10.5px]
+                text-[#A0A3B4]
                 mt-3
               "
             >
@@ -403,18 +516,23 @@ const SessionsTimeline = () => {
 
         <div
           className="
-            rounded-xl
-            bg-red-50
+            min-h-[130px]
+            mt-4
+            rounded-[14px]
+            bg-[#FFF0F3]
             border
-            border-red-100
+            border-[#F6D8DF]
             p-4
+            flex
+            items-center
+            justify-center
           "
         >
 
           <p
             className="
-              text-sm
-              text-red-700
+              text-[10.5px]
+              text-[#B9415E]
               text-center
             "
           >
@@ -428,11 +546,16 @@ const SessionsTimeline = () => {
 
       {!loading &&
         !error &&
-        sessions.length === 0 && (
+        sessions.length ===
+          0 && (
 
         <div
           className="
-            py-8
+            min-h-[180px]
+            flex
+            flex-col
+            items-center
+            justify-center
             text-center
           "
         >
@@ -440,17 +563,21 @@ const SessionsTimeline = () => {
           <p
             className="
               font-semibold
-              text-[#172554]
+              text-[13px]
+              text-[#55586D]
             "
           >
             No sessions yet
           </p>
 
+
           <p
             className="
-              text-sm
-              text-slate-500
+              text-[10.5px]
+              text-[#A0A3B4]
               mt-2
+              max-w-[220px]
+              leading-[16px]
             "
           >
             This child does not have any assessment sessions yet.
@@ -463,19 +590,18 @@ const SessionsTimeline = () => {
 
       {!loading &&
         !error &&
-        sessions.length > 0 && (
+        sessions.length >
+          0 && (
 
         <div
           className="
-            space-y-6
+            mt-4
+            space-y-2.5
           "
         >
 
           {sessions.map(
-            (
-              session,
-              index
-            ) => {
+            session => {
 
               const statusStyle =
                 getStatusStyle(
@@ -504,10 +630,16 @@ const SessionsTimeline = () => {
 
                   }}
                   className="
-                    flex
-                    gap-4
                     w-full
                     text-left
+                    rounded-[15px]
+                    border
+                    border-[#EFEFF5]
+                    bg-[#FCFCFE]
+                    p-3.5
+                    hover:border-[#DED9FA]
+                    hover:bg-[#FBFAFF]
+                    transition
                     group
                   "
                 >
@@ -515,114 +647,119 @@ const SessionsTimeline = () => {
                   <div
                     className="
                       flex
-                      flex-col
-                      items-center
+                      items-start
+                      justify-between
+                      gap-3
                     "
                   >
 
                     <div
                       className="
-                        w-4
-                        h-4
-                        rounded-full
-                        bg-[#7B6EF6]
-                        group-hover:scale-110
-                        transition
-                      "
-                    />
-
-
-                    {index !==
-                      sessions.length -
-                        1 && (
-
-                      <div
-                        className="
-                          w-1
-                          flex-1
-                          min-h-24
-                          bg-[#E6E2FF]
-                        "
-                      />
-
-                    )}
-
-                  </div>
-
-
-                  <div
-                    className="
-                      flex-1
-                      min-w-0
-                      pb-2
-                    "
-                  >
-
-                    <div
-                      className="
-                        flex
-                        items-start
-                        justify-between
-                        gap-3
+                        min-w-0
                       "
                     >
 
                       <span
                         className="
-                          text-xs
+                          text-[9px]
                           font-semibold
-                          text-slate-400
+                          text-[#A0A3B4]
                         "
                       >
                         Session #{session.id}
                       </span>
 
 
-                      <span
-                        className={`
+                      <h3
+                        className="
                           text-[11px]
-                          font-semibold
-                          px-3
-                          py-1
-                          rounded-full
-                          whitespace-nowrap
-                          ${statusStyle.background}
-                          ${statusStyle.text}
-                        `}
+                          font-bold
+                          text-[#55586D]
+                          mt-1.5
+                          truncate
+                          group-hover:text-[#7566EB]
+                          transition
+                        "
+                        title={
+                          getGamesText(
+                            session
+                          )
+                        }
                       >
-                        {session.status}
-                      </span>
+                        {getGamesText(
+                          session
+                        )}
+                      </h3>
 
                     </div>
 
 
-                    <h3
+                    <ArrowUpRight
+                      size={14}
                       className="
-                        font-semibold
-                        text-[#172554]
-                        mt-2
-                        leading-6
-                        group-hover:text-[#7B6EF6]
+                        shrink-0
+                        text-[#B0B2C1]
+                        group-hover:text-[#7566EB]
                         transition
                       "
-                    >
-                      {getGamesText(
-                        session
-                      )}
-                    </h3>
+                    />
+
+                  </div>
 
 
-                    <p
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-1.5
+                      mt-2.5
+                      text-[#9295A7]
+                    "
+                  >
+
+                    <CalendarDays
+                      size={12}
+                    />
+
+
+                    <span
                       className="
-                        text-sm
-                        text-slate-500
-                        mt-1
+                        text-[9.5px]
                       "
                     >
                       {formatDate(
                         dateValue
                       )}
-                    </p>
+                    </span>
+
+                  </div>
+
+
+                  <div
+                    className="
+                      flex
+                      items-center
+                      justify-between
+                      flex-wrap
+                      gap-2
+                      mt-3
+                    "
+                  >
+
+                    <span
+                      className={`
+                        px-2.5
+                        py-1
+                        rounded-full
+                        text-[8.5px]
+                        font-bold
+                        whitespace-nowrap
+                        ${statusStyle.background}
+                        ${statusStyle.text}
+                      `}
+                    >
+                      {session.status}
+                    </span>
 
 
                     <div
@@ -630,26 +767,34 @@ const SessionsTimeline = () => {
                         flex
                         items-center
                         flex-wrap
-                        gap-2
-                        mt-3
+                        justify-end
+                        gap-1.5
                       "
                     >
 
                       <span
                         className="
-                          text-xs
+                          px-2
+                          py-1
+                          rounded-[8px]
                           bg-[#F3F0FF]
-                          text-[#7B6EF6]
-                          px-3
-                          py-1.5
-                          rounded-full
-                          inline-block
+                          text-[#7566EB]
+                          text-[8.5px]
                           font-semibold
+                          flex
+                          items-center
+                          gap-1
                         "
                       >
+
+                        <Clock3
+                          size={10}
+                        />
+
                         {formatDuration(
                           session.duration_seconds
                         )}
+
                       </span>
 
 
@@ -660,17 +805,15 @@ const SessionsTimeline = () => {
 
                         <span
                           className="
-                            text-xs
-                            bg-green-100
-                            text-green-700
-                            px-3
-                            py-1.5
-                            rounded-full
-                            inline-block
-                            font-semibold
+                            px-2
+                            py-1
+                            rounded-[8px]
+                            bg-[#ECFAF4]
+                            text-[#3E9E7D]
+                            text-[8.5px]
+                            font-bold
                           "
                         >
-                          Score{" "}
                           {Math.round(
                             Number(
                               session.score

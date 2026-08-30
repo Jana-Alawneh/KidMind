@@ -18,6 +18,10 @@ import {
 } from "expo-router";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
   deleteChild,
   getChildren,
 } from "@/api/childrenApi";
@@ -30,6 +34,9 @@ import AddChildModal from "@/components/children/AddChildModal";
 import ChildrenHeader from "@/components/children/ChildrenHeader";
 import ChildrenTable from "@/components/children/ChildrenTable";
 import EditChildModal from "@/components/children/EditChildModal";
+
+import Navbar from "@/components/layout/Navbar";
+import Sidebar from "@/components/layout/Sidebar";
 
 import type {
   Child,
@@ -347,6 +354,7 @@ export default function Children() {
     setOpenModal,
   ] = useState(false);
 
+
   const [
     editingChild,
     setEditingChild,
@@ -354,24 +362,34 @@ export default function Children() {
     null
   );
 
+
   const [
     children,
     setChildren,
   ] = useState<Child[]>([]);
+
 
   const [
     searchQuery,
     setSearchQuery,
   ] = useState("");
 
+
   const [
     loading,
     setLoading,
   ] = useState(true);
 
+
   const [
     refreshing,
     setRefreshing,
+  ] = useState(false);
+
+
+  const [
+    sidebarVisible,
+    setSidebarVisible,
   ] = useState(false);
 
 
@@ -502,12 +520,15 @@ export default function Children() {
         {
           text:
             "Cancel",
+
           style:
             "cancel",
         },
+
         {
           text:
             "Delete",
+
           style:
             "destructive",
 
@@ -519,6 +540,7 @@ export default function Children() {
                 await deleteChild(
                   child.id
                 );
+
 
                 await loadChildren();
 
@@ -579,15 +601,18 @@ export default function Children() {
                 child.id ?? ""
               ).toLowerCase();
 
+
             const childName =
               String(
                 child.full_name ?? ""
               ).toLowerCase();
 
+
             const parentName =
               String(
                 child.parent_name ?? ""
               ).toLowerCase();
+
 
             const region =
               String(
@@ -617,98 +642,127 @@ export default function Children() {
 
   return (
 
-    <View
+    <SafeAreaView
       style={
-        styles.container
+        styles.safeArea
       }
+      edges={[
+        "top",
+        "bottom",
+      ]}
     >
 
-      <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
-        refreshControl={
-
-          <RefreshControl
-            refreshing={
-              refreshing
-            }
-            onRefresh={
-              handleRefresh
-            }
-            colors={[
-              "#7B6EF6"
-            ]}
-          />
-
+      <View
+        style={
+          styles.container
         }
       >
 
-        <ChildrenHeader
-          onAdd={() => {
-            setOpenModal(
+        <Navbar
+          onMenuPress={() => {
+            setSidebarVisible(
               true
             );
           }}
-          searchQuery={
-            searchQuery
-          }
-          onSearchChange={
-            setSearchQuery
-          }
         />
 
 
-        <View
-          style={
-            styles.tableContainer
+        <ScrollView
+          showsVerticalScrollIndicator={
+            false
+          }
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={
+            styles.content
+          }
+          refreshControl={
+
+            <RefreshControl
+              refreshing={
+                refreshing
+              }
+              onRefresh={
+                handleRefresh
+              }
+              colors={[
+                "#7B6EF6",
+              ]}
+              tintColor="#7B6EF6"
+            />
+
           }
         >
 
-          {loading ? (
+          <ChildrenHeader
+            onAdd={() => {
+              setOpenModal(
+                true
+              );
+            }}
+            searchQuery={
+              searchQuery
+            }
+            onSearchChange={
+              setSearchQuery
+            }
+          />
 
-            <View
-              style={
-                styles.loadingBox
-              }
-            >
 
-              <ActivityIndicator
-                size="large"
-                color="#7B6EF6"
-              />
+          <View
+            style={
+              styles.tableContainer
+            }
+          >
 
-              <Text
+            {loading ? (
+
+              <View
                 style={
-                  styles.loadingText
+                  styles.loadingBox
                 }
               >
-                Loading children...
-              </Text>
 
-            </View>
+                <ActivityIndicator
+                  size="small"
+                  color="#7B6EF6"
+                />
 
-          ) : (
 
-            <ChildrenTable
-              children={
-                filteredChildren
-              }
-              onEdit={(
-                child
-              ) => {
-                setEditingChild(
+                <Text
+                  style={
+                    styles.loadingText
+                  }
+                >
+                  Loading children...
+                </Text>
+
+              </View>
+
+            ) : (
+
+              <ChildrenTable
+                children={
+                  filteredChildren
+                }
+                onEdit={(
                   child
-                );
-              }}
-              onDelete={
-                handleDelete
-              }
-            />
+                ) => {
 
-          )}
+                  setEditingChild(
+                    child
+                  );
 
-        </View>
+                }}
+                onDelete={
+                  handleDelete
+                }
+              />
+
+            )}
+
+          </View>
+
+        </ScrollView>
 
 
         {openModal && (
@@ -745,9 +799,21 @@ export default function Children() {
 
         )}
 
-      </ScrollView>
 
-    </View>
+        <Sidebar
+          visible={
+            sidebarVisible
+          }
+          onClose={() => {
+            setSidebarVisible(
+              false
+            );
+          }}
+        />
+
+      </View>
+
+    </SafeAreaView>
 
   );
 
@@ -757,32 +823,85 @@ export default function Children() {
 const styles =
   StyleSheet.create({
 
-    container: {
+    safeArea: {
+
       flex: 1,
+
+      backgroundColor:
+        "#FFFFFF",
+
+    },
+
+
+    container: {
+
+      flex: 1,
+
       backgroundColor:
         "#F7F8FC",
+
     },
+
 
     content: {
-      padding: 20,
-      paddingTop: 100,
-      paddingBottom: 50,
+
+      paddingHorizontal:
+        18,
+
+      paddingTop:
+        20,
+
+      paddingBottom:
+        36,
+
     },
+
 
     tableContainer: {
-      marginTop: 30,
+
+      marginTop:
+        18,
+
     },
+
 
     loadingBox: {
+
+      minHeight:
+        240,
+
       alignItems:
         "center",
-      paddingVertical: 50,
-      gap: 12,
+
+      justifyContent:
+        "center",
+
+      gap:
+        10,
+
+      borderRadius:
+        21,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
     },
 
+
     loadingText: {
+
       color:
-        "#64748B",
+        "#A0A3B4",
+
+      fontSize:
+        11,
+
     },
 
   });

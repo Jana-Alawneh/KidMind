@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import {
+  ArrowUpRight,
   CheckCircle,
   Eye,
   FileText,
@@ -29,6 +30,7 @@ const formatDate = (
     return "—";
   }
 
+
   const date =
     new Date(
       String(value).replace(
@@ -36,6 +38,7 @@ const formatDate = (
         "T"
       )
     );
+
 
   if (
     Number.isNaN(
@@ -45,12 +48,18 @@ const formatDate = (
     return "—";
   }
 
+
   return date.toLocaleDateString(
     "en-US",
     {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric",
     }
   );
 
@@ -65,30 +74,39 @@ const getReportTitle = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "Assessment Report";
   }
+
 
   const names =
     session.games
       .map(
-        (game) =>
+        game =>
           game.game_name
       )
-      .filter(Boolean);
+      .filter(
+        Boolean
+      );
+
 
   if (
-    names.length === 0
+    names.length ===
+    0
   ) {
     return "Assessment Report";
   }
 
+
   if (
-    names.length === 1
+    names.length ===
+    1
   ) {
     return `${names[0]} Assessment`;
   }
+
 
   return "Multi-Game Assessment";
 
@@ -103,17 +121,21 @@ const getGamesText = (
     !Array.isArray(
       session.games
     ) ||
-    session.games.length === 0
+    session.games.length ===
+      0
   ) {
     return "No game details";
   }
 
+
   return session.games
     .map(
-      (game) =>
+      game =>
         game.game_name
     )
-    .filter(Boolean)
+    .filter(
+      Boolean
+    )
     .join(" • ");
 
 };
@@ -123,163 +145,187 @@ const ReportsTable = () => {
 
   const {
     id,
-  } = useParams();
+  } =
+    useParams();
+
 
   const navigate =
     useNavigate();
 
 
   const childId =
-    Number(id);
+    Number(
+      id
+    );
 
 
   const [
     reports,
     setReports,
-  ] = useState([]);
+  ] =
+    useState([]);
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    const loadReports =
-      async () => {
+      const loadReports =
+        async () => {
 
-        if (
-          !Number.isInteger(
-            childId
-          ) ||
-          childId <= 0
-        ) {
+          if (
+            !Number.isInteger(
+              childId
+            ) ||
+            childId <=
+              0
+          ) {
 
-          setReports([]);
-          setLoading(false);
+            setReports(
+              []
+            );
 
-          return;
+            setLoading(
+              false
+            );
 
-        }
+            return;
 
-
-        try {
-
-          setLoading(true);
-
-          setError("");
-
-
-          const sessions =
-            await getSessions();
+          }
 
 
-          const completedReports =
-            sessions
-              .filter(
-                (session) =>
-                  Number(
-                    session.child_id
-                  ) ===
-                    childId &&
-                  session.status ===
-                    "Completed"
-              )
-              .sort(
-                (
-                  first,
-                  second
-                ) => {
+          try {
 
-                  const firstDate =
-                    new Date(
-                      String(
-                        first.ended_at ||
-                        first.started_at ||
-                        first.created_at ||
-                        ""
-                      ).replace(
-                        " ",
-                        "T"
+            setLoading(
+              true
+            );
+
+            setError(
+              ""
+            );
+
+
+            const sessions =
+              await getSessions();
+
+
+            const completedReports =
+              sessions
+                .filter(
+                  session =>
+                    Number(
+                      session.child_id
+                    ) ===
+                      childId &&
+                    session.status ===
+                      "Completed"
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) => {
+
+                    const firstDate =
+                      new Date(
+                        String(
+                          first.ended_at ||
+                          first.started_at ||
+                          first.created_at ||
+                          ""
+                        ).replace(
+                          " ",
+                          "T"
+                        )
+                      ).getTime();
+
+
+                    const secondDate =
+                      new Date(
+                        String(
+                          second.ended_at ||
+                          second.started_at ||
+                          second.created_at ||
+                          ""
+                        ).replace(
+                          " ",
+                          "T"
+                        )
+                      ).getTime();
+
+
+                    return (
+                      (
+                        Number.isFinite(
+                          secondDate
+                        )
+                          ? secondDate
+                          : 0
+                      ) -
+                      (
+                        Number.isFinite(
+                          firstDate
+                        )
+                          ? firstDate
+                          : 0
                       )
-                    ).getTime();
+                    );
+
+                  }
+                );
 
 
-                  const secondDate =
-                    new Date(
-                      String(
-                        second.ended_at ||
-                        second.started_at ||
-                        second.created_at ||
-                        ""
-                      ).replace(
-                        " ",
-                        "T"
-                      )
-                    ).getTime();
+            setReports(
+              completedReports
+            );
 
-
-                  return (
-                    (
-                      Number.isFinite(
-                        secondDate
-                      )
-                        ? secondDate
-                        : 0
-                    ) -
-                    (
-                      Number.isFinite(
-                        firstDate
-                      )
-                        ? firstDate
-                        : 0
-                    )
-                  );
-
-                }
-              );
-
-
-          setReports(
-            completedReports
-          );
-
-        } catch (loadError) {
-
-          console.error(
-            "Failed to load reports:",
+          } catch (
             loadError
-          );
+          ) {
+
+            console.error(
+              "Failed to load reports:",
+              loadError
+            );
 
 
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load assessment reports"
-          );
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Failed to load assessment reports"
+            );
 
-        } finally {
+          } finally {
 
-          setLoading(false);
+            setLoading(
+              false
+            );
 
-        }
+          }
 
-      };
+        };
 
 
-    loadReports();
+      loadReports();
 
-  }, [
-    childId,
-  ]);
+    },
+    [
+      childId,
+    ]
+  );
 
 
   return (
@@ -291,33 +337,68 @@ const ReportsTable = () => {
           flex
           flex-col
           sm:flex-row
-          sm:justify-between
           sm:items-center
+          sm:justify-between
           gap-4
-          mb-8
+          pb-4
+          border-b
+          border-[#F0F0F5]
         "
       >
 
-        <div>
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+          "
+        >
 
-          <h2
+          <div
             className="
-              text-2xl
-              font-bold
-              text-[#172554]
+              w-10
+              h-10
+              shrink-0
+              rounded-[13px]
+              bg-[#F0EDFF]
+              text-[#7566EB]
+              flex
+              items-center
+              justify-center
             "
           >
-            Assessment Reports
-          </h2>
 
-          <p
-            className="
-              text-slate-500
-              mt-1
-            "
-          >
-            Completed assessment history
-          </p>
+            <FileText
+              size={18}
+            />
+
+          </div>
+
+
+          <div>
+
+            <h2
+              className="
+                text-[16px]
+                font-bold
+                text-[#333554]
+              "
+            >
+              Assessment Reports
+            </h2>
+
+
+            <p
+              className="
+                text-[10.5px]
+                text-[#A0A3B4]
+                mt-1
+              "
+            >
+              Completed assessment history
+            </p>
+
+          </div>
 
         </div>
 
@@ -325,22 +406,37 @@ const ReportsTable = () => {
         <button
           type="button"
           onClick={() => {
+
             navigate(
               "/sessions"
             );
+
           }}
           className="
-            bg-[#7B6EF6]
-            text-white
-            px-5
-            py-3
-            rounded-xl
-            hover:bg-[#6B5AF2]
+            h-9
+            px-3.5
+            rounded-[11px]
+            border
+            border-[#E4DFFF]
+            bg-[#F7F4FF]
+            text-[#7566EB]
+            flex
+            items-center
+            justify-center
+            gap-1.5
+            text-[10px]
+            font-bold
+            hover:bg-[#F0ECFF]
             transition
-            font-semibold
           "
         >
+
           View All Sessions
+
+          <ArrowUpRight
+            size={13}
+          />
+
         </button>
 
       </div>
@@ -350,7 +446,7 @@ const ReportsTable = () => {
 
         <div
           className="
-            min-h-[180px]
+            min-h-[210px]
             flex
             items-center
             justify-center
@@ -365,10 +461,10 @@ const ReportsTable = () => {
 
             <div
               className="
-                w-10
-                h-10
+                w-9
+                h-9
                 rounded-full
-                border-4
+                border-[3px]
                 border-[#E6E2FF]
                 border-t-[#7B6EF6]
                 animate-spin
@@ -376,10 +472,11 @@ const ReportsTable = () => {
               "
             />
 
+
             <p
               className="
-                text-sm
-                text-slate-500
+                text-[10.5px]
+                text-[#A0A3B4]
                 mt-3
               "
             >
@@ -398,11 +495,17 @@ const ReportsTable = () => {
 
         <div
           className="
-            rounded-xl
-            bg-red-50
+            min-h-[150px]
+            mt-4
+            rounded-[14px]
+            bg-[#FFF0F3]
             border
-            border-red-100
+            border-[#F6D8DF]
             p-5
+            flex
+            flex-col
+            items-center
+            justify-center
             text-center
           "
         >
@@ -410,16 +513,18 @@ const ReportsTable = () => {
           <p
             className="
               font-semibold
-              text-red-700
+              text-[12px]
+              text-[#B9415E]
             "
           >
             Unable to load reports
           </p>
 
+
           <p
             className="
-              text-sm
-              text-red-600
+              text-[10.5px]
+              text-[#C55A70]
               mt-1
             "
           >
@@ -433,51 +538,57 @@ const ReportsTable = () => {
 
       {!loading &&
         !error &&
-        reports.length === 0 && (
+        reports.length ===
+          0 && (
 
         <div
           className="
-            py-10
+            min-h-[220px]
+            flex
+            flex-col
+            items-center
+            justify-center
             text-center
           "
         >
 
           <div
             className="
-              w-14
-              h-14
-              rounded-2xl
-              bg-[#F2EEFF]
+              w-12
+              h-12
+              rounded-[15px]
+              bg-[#F0EDFF]
+              text-[#7566EB]
               flex
               justify-center
               items-center
-              mx-auto
             "
           >
 
             <FileText
-              className="
-                text-[#7B6EF6]
-              "
+              size={20}
             />
 
           </div>
 
+
           <h3
             className="
               font-bold
-              text-[#172554]
-              mt-4
+              text-[13px]
+              text-[#55586D]
+              mt-3
             "
           >
             No reports yet
           </h3>
 
+
           <p
             className="
-              text-sm
-              text-slate-500
-              mt-2
+              text-[10.5px]
+              text-[#A0A3B4]
+              mt-1.5
             "
           >
             Completed assessment sessions will appear here.
@@ -490,310 +601,388 @@ const ReportsTable = () => {
 
       {!loading &&
         !error &&
-        reports.length > 0 && (
+        reports.length >
+          0 && (
 
         <div
           className="
-            overflow-x-auto
+            mt-4
+            rounded-[16px]
+            border
+            border-[#EFEFF5]
+            overflow-hidden
           "
         >
 
-          <table
+          <div
             className="
-              w-full
-              min-w-[760px]
+              overflow-x-auto
             "
           >
 
-            <thead>
+            <table
+              className="
+                w-full
+                min-w-[760px]
+                border-collapse
+              "
+            >
 
-              <tr
+              <thead
                 className="
-                  border-b
-                  text-left
-                  text-slate-500
+                  bg-[#FAFAFC]
                 "
               >
 
-                <th
-                  className="
-                    pb-4
-                    font-semibold
-                  "
-                >
-                  Report
-                </th>
+                <tr>
 
-                <th
-                  className="
-                    pb-4
-                    font-semibold
-                  "
-                >
-                  Date
-                </th>
-
-                <th
-                  className="
-                    pb-4
-                    font-semibold
-                  "
-                >
-                  Score
-                </th>
-
-                <th
-                  className="
-                    pb-4
-                    font-semibold
-                  "
-                >
-                  Status
-                </th>
-
-                <th
-                  className="
-                    pb-4
-                    font-semibold
-                    text-center
-                  "
-                >
-                  Actions
-                </th>
-
-              </tr>
-
-            </thead>
+                  <th
+                    className="
+                      h-[44px]
+                      px-4
+                      text-left
+                      text-[10px]
+                      font-semibold
+                      text-[#999CAD]
+                      border-b
+                      border-[#EFEFF5]
+                    "
+                  >
+                    Report
+                  </th>
 
 
-            <tbody>
+                  <th
+                    className="
+                      h-[44px]
+                      px-4
+                      text-left
+                      text-[10px]
+                      font-semibold
+                      text-[#999CAD]
+                      border-b
+                      border-[#EFEFF5]
+                    "
+                  >
+                    Date
+                  </th>
 
-              {reports.map(
-                (report) => {
 
-                  const reportDate =
-                    report.ended_at ||
-                    report.started_at ||
-                    report.created_at;
+                  <th
+                    className="
+                      h-[44px]
+                      px-4
+                      text-left
+                      text-[10px]
+                      font-semibold
+                      text-[#999CAD]
+                      border-b
+                      border-[#EFEFF5]
+                    "
+                  >
+                    Score
+                  </th>
 
 
-                  return (
+                  <th
+                    className="
+                      h-[44px]
+                      px-4
+                      text-left
+                      text-[10px]
+                      font-semibold
+                      text-[#999CAD]
+                      border-b
+                      border-[#EFEFF5]
+                    "
+                  >
+                    Status
+                  </th>
 
-                    <tr
-                      key={
-                        report.id
-                      }
-                      className="
-                        border-b
-                        last:border-b-0
-                        hover:bg-[#FAFAFD]
-                        transition
-                      "
-                    >
 
-                      <td
+                  <th
+                    className="
+                      h-[44px]
+                      px-4
+                      text-center
+                      text-[10px]
+                      font-semibold
+                      text-[#999CAD]
+                      border-b
+                      border-[#EFEFF5]
+                    "
+                  >
+                    Action
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {reports.map(
+                  report => {
+
+                    const reportDate =
+                      report.ended_at ||
+                      report.started_at ||
+                      report.created_at;
+
+
+                    return (
+
+                      <tr
+                        key={
+                          report.id
+                        }
                         className="
-                          py-5
-                          pr-4
+                          bg-white
+                          hover:bg-[#FCFBFF]
+                          transition
+                          border-b
+                          last:border-b-0
+                          border-[#F1F1F6]
                         "
                       >
 
-                        <div
+                        <td
                           className="
-                            flex
-                            items-center
-                            gap-3
+                            px-4
+                            py-3
                           "
                         >
 
                           <div
                             className="
-                              w-12
-                              h-12
-                              rounded-2xl
-                              bg-[#F2EEFF]
                               flex
-                              justify-center
                               items-center
-                              shrink-0
+                              gap-3
                             "
                           >
 
-                            <FileText
+                            <div
                               className="
-                                text-[#7B6EF6]
+                                w-10
+                                h-10
+                                shrink-0
+                                rounded-[12px]
+                                bg-[#F0EDFF]
+                                text-[#7566EB]
+                                flex
+                                justify-center
+                                items-center
                               "
-                            />
+                            >
+
+                              <FileText
+                                size={16}
+                              />
+
+                            </div>
+
+
+                            <div
+                              className="
+                                min-w-0
+                              "
+                            >
+
+                              <h3
+                                className="
+                                  text-[11px]
+                                  font-bold
+                                  text-[#454762]
+                                "
+                              >
+                                {getReportTitle(
+                                  report
+                                )}
+                              </h3>
+
+
+                              <p
+                                className="
+                                  text-[9px]
+                                  text-[#A0A3B4]
+                                  mt-1
+                                "
+                              >
+                                Session #{report.id}
+                              </p>
+
+
+                              <p
+                                className="
+                                  max-w-[260px]
+                                  text-[9px]
+                                  text-[#A0A3B4]
+                                  mt-1
+                                  truncate
+                                "
+                                title={
+                                  getGamesText(
+                                    report
+                                  )
+                                }
+                              >
+                                {getGamesText(
+                                  report
+                                )}
+                              </p>
+
+                            </div>
 
                           </div>
 
-
-                          <div>
-
-                            <h3
-                              className="
-                                font-semibold
-                                text-[#172554]
-                              "
-                            >
-                              {getReportTitle(
-                                report
-                              )}
-                            </h3>
-
-                            <p
-                              className="
-                                text-sm
-                                text-slate-400
-                                mt-1
-                              "
-                            >
-                              Session #{report.id}
-                            </p>
-
-                            <p
-                              className="
-                                text-xs
-                                text-slate-400
-                                mt-1
-                                max-w-[280px]
-                              "
-                            >
-                              {getGamesText(
-                                report
-                              )}
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                      </td>
+                        </td>
 
 
-                      <td
-                        className="
-                          pr-4
-                          text-slate-600
-                        "
-                      >
-                        {formatDate(
-                          reportDate
-                        )}
-                      </td>
-
-
-                      <td
-                        className="
-                          pr-4
-                        "
-                      >
-
-                        <span
+                        <td
                           className="
-                            font-bold
-                            text-[#7B6EF6]
+                            px-4
+                            text-[10.5px]
+                            text-[#74778B]
+                            whitespace-nowrap
                           "
                         >
-                          {report.score !==
-                            null &&
-                          report.score !==
-                            undefined
-                            ? `${Math.round(
-                                Number(
-                                  report.score
-                                )
-                              )}%`
-                            : "—"}
-                        </span>
-
-                      </td>
+                          {formatDate(
+                            reportDate
+                          )}
+                        </td>
 
 
-                      <td
-                        className="
-                          pr-4
-                        "
-                      >
-
-                        <span
+                        <td
                           className="
-                            bg-green-100
-                            text-green-700
-                            px-3
-                            py-1.5
-                            rounded-full
-                            text-xs
-                            flex
-                            items-center
-                            gap-2
-                            w-fit
-                            font-semibold
+                            px-4
                           "
                         >
 
-                          <CheckCircle
-                            size={14}
-                          />
-
-                          Completed
-
-                        </span>
-
-                      </td>
-
-
-                      <td>
-
-                        <div
-                          className="
-                            flex
-                            justify-center
-                          "
-                        >
-
-                          <button
-                            type="button"
-                            title="View Report"
-                            onClick={() => {
-                              navigate(
-                                `/sessions/${report.id}`
-                              );
-                            }}
+                          <span
                             className="
-                              w-10
-                              h-10
-                              rounded-xl
-                              bg-blue-100
-                              text-blue-600
-                              flex
-                              justify-center
+                              min-w-[48px]
+                              px-2.5
+                              py-1.5
+                              rounded-[9px]
+                              inline-flex
                               items-center
-                              hover:bg-blue-200
-                              transition
+                              justify-center
+                              bg-[#F3F0FF]
+                              text-[#7566EB]
+                              text-[10px]
+                              font-extrabold
+                            "
+                          >
+                            {report.score !==
+                              null &&
+                            report.score !==
+                              undefined
+                              ? `${Math.round(
+                                  Number(
+                                    report.score
+                                  )
+                                )}%`
+                              : "—"}
+                          </span>
+
+                        </td>
+
+
+                        <td
+                          className="
+                            px-4
+                          "
+                        >
+
+                          <span
+                            className="
+                              px-2.5
+                              py-1.5
+                              rounded-full
+                              inline-flex
+                              items-center
+                              gap-1.5
+                              bg-[#ECFAF4]
+                              text-[#3E9E7D]
+                              text-[9px]
+                              font-bold
+                              whitespace-nowrap
                             "
                           >
 
-                            <Eye
-                              size={18}
+                            <CheckCircle
+                              size={12}
                             />
 
-                          </button>
+                            Completed
 
-                        </div>
+                          </span>
 
-                      </td>
+                        </td>
 
-                    </tr>
 
-                  );
+                        <td
+                          className="
+                            px-4
+                          "
+                        >
 
-                }
-              )}
+                          <div
+                            className="
+                              flex
+                              justify-center
+                            "
+                          >
 
-            </tbody>
+                            <button
+                              type="button"
+                              title="View Report"
+                              onClick={() => {
 
-          </table>
+                                navigate(
+                                  `/sessions/${report.id}`
+                                );
+
+                              }}
+                              className="
+                                w-9
+                                h-9
+                                rounded-[10px]
+                                border
+                                border-[#E5E0FF]
+                                bg-[#F7F4FF]
+                                text-[#7565E6]
+                                flex
+                                justify-center
+                                items-center
+                                hover:bg-[#EEE9FF]
+                                transition
+                              "
+                            >
+
+                              <Eye
+                                size={15}
+                              />
+
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+
+                    );
+
+                  }
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
 
         </div>
 

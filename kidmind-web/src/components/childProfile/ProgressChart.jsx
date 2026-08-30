@@ -19,6 +19,10 @@ import {
   YAxis,
 } from "recharts";
 
+import {
+  TrendingUp,
+} from "lucide-react";
+
 import Card from "../ui/Card";
 
 import {
@@ -309,7 +313,7 @@ const getTrend = (
         "Not enough data",
 
       className:
-        "bg-slate-100 text-slate-600",
+        "bg-[#F5F5F8] text-[#777A8F]",
     };
   }
 
@@ -336,7 +340,7 @@ const getTrend = (
         "Improving",
 
       className:
-        "bg-green-100 text-green-700",
+        "bg-[#ECFAF4] text-[#3E9E7D]",
     };
   }
 
@@ -349,7 +353,7 @@ const getTrend = (
         "Declining",
 
       className:
-        "bg-red-100 text-red-700",
+        "bg-[#FFF0F3] text-[#C4556C]",
     };
   }
 
@@ -359,7 +363,7 @@ const getTrend = (
       "Stable",
 
     className:
-      "bg-[#F4F1FF] text-[#7B6EF6]",
+      "bg-[#F3F0FF] text-[#7566EB]",
   };
 
 };
@@ -513,32 +517,62 @@ const ProgressChart = () => {
           flex-col
           sm:flex-row
           sm:justify-between
-          sm:items-center
+          sm:items-start
           gap-4
-          mb-8
+          pb-4
+          border-b
+          border-[#F0F0F5]
         "
       >
 
-        <div>
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+          "
+        >
 
-          <h2
+          <div
             className="
-              text-2xl
-              font-bold
-              text-[#172554]
+              w-10
+              h-10
+              rounded-[13px]
+              bg-[#F0EDFF]
+              text-[#7566EB]
+              flex
+              items-center
+              justify-center
+              shrink-0
             "
           >
-            Cognitive Progress
-          </h2>
+            <TrendingUp size={18} />
+          </div>
 
-          <p
-            className="
-              text-slate-500
-              mt-1
-            "
-          >
-            Last 6 completed assessment sessions
-          </p>
+
+          <div>
+
+            <h2
+              className="
+                text-[16px]
+                font-bold
+                text-[#333554]
+              "
+            >
+              Cognitive Progress
+            </h2>
+
+            <p
+              className="
+                text-[10.5px]
+                text-[#A0A3B4]
+                mt-1
+              "
+            >
+              Last 6 completed assessment sessions
+            </p>
+
+          </div>
 
         </div>
 
@@ -549,11 +583,13 @@ const ProgressChart = () => {
 
           <div
             className={`
-              px-4
-              py-2
-              rounded-xl
-              text-sm
-              font-medium
+              px-3
+              h-8
+              rounded-[10px]
+              text-[10px]
+              font-bold
+              flex
+              items-center
               w-fit
               ${trend.className}
             `}
@@ -570,25 +606,21 @@ const ProgressChart = () => {
 
         <div
           className="
-            h-[300px]
+            h-[290px]
             flex
             items-center
             justify-center
           "
         >
 
-          <div
-            className="
-              text-center
-            "
-          >
+          <div className="text-center">
 
             <div
               className="
-                w-10
-                h-10
+                w-9
+                h-9
                 rounded-full
-                border-4
+                border-[3px]
                 border-[#E6E2FF]
                 border-t-[#7B6EF6]
                 animate-spin
@@ -598,8 +630,8 @@ const ProgressChart = () => {
 
             <p
               className="
-                text-sm
-                text-slate-500
+                text-[10.5px]
+                text-[#A0A3B4]
                 mt-3
               "
             >
@@ -627,10 +659,10 @@ const ProgressChart = () => {
 
           <div
             className="
-              bg-red-50
+              bg-[#FFF0F3]
               border
-              border-red-100
-              rounded-xl
+              border-[#F6D8DF]
+              rounded-[14px]
               p-5
               text-center
               w-full
@@ -640,7 +672,8 @@ const ProgressChart = () => {
             <p
               className="
                 font-semibold
-                text-red-700
+                text-[12px]
+                text-[#B9415E]
               "
             >
               Unable to load progress
@@ -648,8 +681,8 @@ const ProgressChart = () => {
 
             <p
               className="
-                text-sm
-                text-red-600
+                text-[10.5px]
+                text-[#C55A70]
                 mt-1
               "
             >
@@ -669,7 +702,7 @@ const ProgressChart = () => {
 
         <div
           className="
-            h-[260px]
+            h-[250px]
             flex
             items-center
             justify-center
@@ -682,7 +715,8 @@ const ProgressChart = () => {
             <p
               className="
                 font-semibold
-                text-[#172554]
+                text-[13px]
+                text-[#55586D]
               "
             >
               No progress data yet
@@ -690,8 +724,8 @@ const ProgressChart = () => {
 
             <p
               className="
-                text-sm
-                text-slate-500
+                text-[10.5px]
+                text-[#A0A3B4]
                 mt-2
               "
             >
@@ -711,7 +745,15 @@ const ProgressChart = () => {
 
         <div
           className="
-            h-[380px]
+            h-[340px]
+            mt-5
+            rounded-[15px]
+            border
+            border-[#EFEFF5]
+            bg-[#FCFCFE]
+            pt-4
+            pr-3
+            pb-2
           "
         >
 
@@ -734,14 +776,18 @@ const ProgressChart = () => {
 
               <CartesianGrid
                 strokeDasharray="4 4"
-                stroke="#ECECEC"
+                stroke="#ECECF3"
+                vertical={false}
               />
 
 
               <XAxis
                 dataKey="session"
+                axisLine={false}
+                tickLine={false}
                 tick={{
-                  fontSize: 12,
+                  fontSize: 10,
+                  fill: "#9295A7",
                 }}
               />
 
@@ -751,8 +797,11 @@ const ProgressChart = () => {
                   0,
                   100,
                 ]}
+                axisLine={false}
+                tickLine={false}
                 tick={{
-                  fontSize: 12,
+                  fontSize: 10,
+                  fill: "#9295A7",
                 }}
               />
 
@@ -768,10 +817,27 @@ const ProgressChart = () => {
                     ? "No data"
                     : `${value}%`
                 }
+                contentStyle={{
+                  borderRadius:
+                    "12px",
+                  border:
+                    "1px solid #ECECF4",
+                  boxShadow:
+                    "0 8px 26px rgba(68,68,110,.08)",
+                  fontSize:
+                    "11px",
+                }}
               />
 
 
-              <Legend />
+              <Legend
+                wrapperStyle={{
+                  fontSize:
+                    "10px",
+                  paddingTop:
+                    "12px",
+                }}
+              />
 
 
               <Line
@@ -779,7 +845,8 @@ const ProgressChart = () => {
                 dataKey="attention"
                 name="Attention"
                 stroke="#63B3ED"
-                strokeWidth={3}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
                 connectNulls
               />
 
@@ -789,7 +856,8 @@ const ProgressChart = () => {
                 dataKey="memory"
                 name="Working Memory"
                 stroke="#48BB78"
-                strokeWidth={3}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
                 connectNulls
               />
 
@@ -799,7 +867,8 @@ const ProgressChart = () => {
                 dataKey="visualSpatial"
                 name="Visual-Spatial"
                 stroke="#F6AD55"
-                strokeWidth={3}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
                 connectNulls
               />
 
@@ -809,7 +878,8 @@ const ProgressChart = () => {
                 dataKey="reading"
                 name="Reading"
                 stroke="#F56565"
-                strokeWidth={3}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
                 connectNulls
               />
 
@@ -819,7 +889,8 @@ const ProgressChart = () => {
                 dataKey="processingSpeed"
                 name="Processing Speed"
                 stroke="#38BDF8"
-                strokeWidth={3}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
                 connectNulls
               />
 

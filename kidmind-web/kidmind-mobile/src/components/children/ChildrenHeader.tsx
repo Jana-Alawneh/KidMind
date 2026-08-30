@@ -14,7 +14,9 @@ import {
 
 type Props = {
   onAdd: () => void;
+
   searchQuery: string;
+
   onSearchChange: (
     value: string
   ) => void;
@@ -29,72 +31,53 @@ const ChildrenHeader = ({
 
   return (
 
-    <View
-      style={
-        styles.container
-      }
-    >
-
-      <View>
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Children
-        </Text>
-
-
-        <Text
-          style={
-            styles.subtitle
-          }
-        >
-          Manage children's profiles and assessments
-        </Text>
-
-      </View>
-
+    <View>
 
       <View
         style={
-          styles.actions
+          styles.heading
         }
       >
 
         <View
           style={
-            styles.searchBox
+            styles.headingCopy
           }
         >
 
-          <Search
-            size={18}
-            color="#94A3B8"
-          />
-
-
-          <TextInput
-            value={
-              searchQuery
-            }
-            onChangeText={
-              onSearchChange
-            }
-            placeholder="Search by ID, child, parent or region..."
-            placeholderTextColor="#94A3B8"
+          <Text
             style={
-              styles.input
+              styles.eyebrow
             }
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          >
+            CHILD MANAGEMENT
+          </Text>
+
+
+          <Text
+            style={
+              styles.title
+            }
+          >
+            Children
+          </Text>
+
+
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
+            Manage children&apos;s profiles, assessments and progress.
+          </Text>
 
         </View>
 
 
         <TouchableOpacity
+          activeOpacity={
+            0.8
+          }
           onPress={
             onAdd
           }
@@ -104,7 +87,7 @@ const ChildrenHeader = ({
         >
 
           <Plus
-            size={20}
+            size={16}
             color="#FFFFFF"
           />
 
@@ -121,6 +104,46 @@ const ChildrenHeader = ({
 
       </View>
 
+
+      <View
+        style={
+          styles.searchPanel
+        }
+      >
+
+        <View
+          style={
+            styles.searchBox
+          }
+        >
+
+          <Search
+            size={16}
+            color="#A0A3B6"
+          />
+
+
+          <TextInput
+            value={
+              searchQuery
+            }
+            onChangeText={
+              onSearchChange
+            }
+            placeholder="Search by ID, child, parent or region..."
+            placeholderTextColor="#A9ACBC"
+            style={
+              styles.input
+            }
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+
+        </View>
+
+      </View>
+
     </View>
 
   );
@@ -131,68 +154,222 @@ const ChildrenHeader = ({
 const styles =
   StyleSheet.create({
 
-    container: {
-      marginTop: 30,
+    heading: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "flex-start",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        12,
+
     },
+
+
+    headingCopy: {
+
+      flex: 1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    eyebrow: {
+
+      color:
+        "#8172EA",
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "800",
+
+      letterSpacing:
+        1,
+
+    },
+
 
     title: {
-      fontSize: 30,
-      fontWeight: "700",
+
+      marginTop:
+        5,
+
+      color:
+        "#303253",
+
+      fontSize:
+        25,
+
+      lineHeight:
+        31,
+
+      fontWeight:
+        "800",
+
     },
+
 
     subtitle: {
-      fontSize: 15,
-      color: "#64748B",
-      marginTop: 8,
-    },
 
-    actions: {
-      marginTop: 20,
-      gap: 12,
-    },
+      marginTop:
+        4,
 
-    searchBox: {
-      height: 48,
-      backgroundColor:
-        "#FFFFFF",
-      borderWidth: 1,
-      borderColor:
-        "#ECECF5",
-      borderRadius: 16,
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      paddingHorizontal: 15,
-      gap: 10,
-    },
+      maxWidth:
+        245,
 
-    input: {
-      flex: 1,
       color:
-        "#0F172A",
+        "#9699AC",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        16,
+
     },
+
 
     addButton: {
-      height: 48,
-      backgroundColor:
-        "#7B6EF6",
-      borderRadius: 16,
+
+      minHeight:
+        44,
+
+      paddingHorizontal:
+        13,
+
       flexDirection:
         "row",
+
       alignItems:
         "center",
+
       justifyContent:
         "center",
-      gap: 8,
+
+      gap:
+        6,
+
+      borderRadius:
+        13,
+
+      backgroundColor:
+        "#7969EA",
+
+      shadowColor:
+        "#7969EA",
+
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+
+      shadowOpacity:
+        0.15,
+
+      shadowRadius:
+        8,
+
+      elevation:
+        2,
+
     },
 
+
     addText: {
+
       color:
         "#FFFFFF",
-      fontSize: 15,
+
+      fontSize:
+        10,
+
       fontWeight:
-        "600",
+        "700",
+
+    },
+
+
+    searchPanel: {
+
+      marginTop:
+        19,
+
+      padding:
+        11,
+
+      borderRadius:
+        17,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+    },
+
+
+    searchBox: {
+
+      minHeight:
+        45,
+
+      paddingHorizontal:
+        13,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        9,
+
+      borderRadius:
+        12,
+
+      backgroundColor:
+        "#FBFBFD",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E7E7F0",
+
+    },
+
+
+    input: {
+
+      flex:
+        1,
+
+      minHeight:
+        43,
+
+      paddingVertical:
+        0,
+
+      color:
+        "#343654",
+
+      fontSize:
+        11.5,
+
     },
 
   });

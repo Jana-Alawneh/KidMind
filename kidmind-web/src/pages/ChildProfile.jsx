@@ -1988,102 +1988,94 @@ const ChildProfile = () => {
   ]);
 
 
-  return (
+    return (
 
-    <div className="flex bg-[#F7F8FC] min-h-screen">
+    <div
+      className="
+        flex
+        bg-[#F7F8FC]
+        min-h-screen
+        text-[#252852]
+      "
+    >
 
       <Sidebar />
 
-      <main className="flex-1 p-10 overflow-y-auto">
+
+      <main
+        className="
+          flex-1
+          min-w-0
+          overflow-x-hidden
+          bg-[#F7F8FC]
+        "
+      >
 
         <Navbar />
 
 
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              "/children"
-            )
-          }
+        <div
           className="
-            flex
-            items-center
-            gap-2
-            text-[#7B6EF6]
-            font-medium
-            mt-8
-            hover:gap-3
-            transition-all
+            px-[34px]
+            pt-[30px]
+            pb-[45px]
+            max-[1150px]:px-[25px]
+            max-[900px]:px-[18px]
+            max-[900px]:pt-[22px]
           "
         >
-
-          <ArrowLeft size={20} />
-
-          Back to Children
-
-        </button>
-
-
-        {loading && (
 
           <div
             className="
               flex
-              justify-center
-              items-center
-              min-h-[400px]
+              flex-col
+              sm:flex-row
+              sm:items-start
+              sm:justify-between
+              gap-5
             "
           >
 
-            <div className="text-center">
+            <div>
 
-              <div
+              <span
                 className="
-                  w-12
-                  h-12
-                  border-4
-                  border-[#E9E5FF]
-                  border-t-[#7B6EF6]
-                  rounded-full
-                  animate-spin
-                  mx-auto
+                  text-[10px]
+                  font-extrabold
+                  tracking-[0.1em]
+                  text-[#8172EA]
                 "
-              />
+              >
+                CHILD PROFILE
+              </span>
 
-              <p className="text-slate-500 mt-4">
-                Loading child information...
+
+              <h1
+                className="
+                  mt-[6px]
+                  text-[28px]
+                  leading-[34px]
+                  font-bold
+                  text-[#303253]
+                "
+              >
+                {child?.full_name || "Child Profile"}
+              </h1>
+
+
+              <p
+                className="
+                  mt-[5px]
+                  text-[13px]
+                  text-[#9699AC]
+                "
+              >
+                Review cognitive progress, sessions, reports,
+                parent access and assigned games.
               </p>
 
             </div>
 
-          </div>
-
-        )}
-
-
-        {!loading &&
-          error && (
-
-          <div
-            className="
-              bg-red-50
-              border
-              border-red-200
-              text-red-700
-              rounded-2xl
-              p-6
-              mt-8
-            "
-          >
-
-            <h2 className="font-bold text-lg">
-              Unable to load child
-            </h2>
-
-            <p className="mt-2">
-              {error}
-            </p>
 
             <button
               type="button"
@@ -2093,166 +2085,325 @@ const ChildProfile = () => {
                 )
               }
               className="
-                mt-5
-                bg-red-600
-                text-white
-                px-5
-                py-2
-                rounded-xl
-                hover:bg-red-700
+                h-10
+                px-4
+                shrink-0
+                rounded-[13px]
+                border
+                border-[#E7E7F0]
+                bg-white
+                text-[#7566EB]
+                flex
+                items-center
+                justify-center
+                gap-2
+                text-[11px]
+                font-semibold
+                hover:bg-[#F8F7FF]
                 transition
               "
             >
-              Return to Children
+
+              <ArrowLeft size={16} />
+
+              Back to Children
+
             </button>
 
           </div>
 
-        )}
 
-
-        {!loading &&
-          !error &&
-          child && (
-
-          <>
+          {loading && (
 
             <div
               className="
-                grid
-                grid-cols-1
-                xl:grid-cols-3
-                gap-6
-                mt-8
+                min-h-[400px]
+                mt-[20px]
+                border
+                border-[#ECECF4]
+                rounded-[22px]
+                bg-white
+                flex
+                justify-center
+                items-center
               "
             >
 
-              <ChildInfoCard
-                child={
-                  child
-                }
-                onEdit={() => {
-                  setEditModalOpen(
-                    true
-                  );
-                }}
-                onStartSession={() => {
-                  setStartSessionModalOpen(
-                    true
-                  );
-                }}
-              />
+              <div className="text-center">
 
-              <CognitiveScores />
+                <div
+                  className="
+                    w-10
+                    h-10
+                    border-[3px]
+                    border-[#E9E5FF]
+                    border-t-[#7B6EF6]
+                    rounded-full
+                    animate-spin
+                    mx-auto
+                  "
+                />
+
+                <p
+                  className="
+                    text-[11px]
+                    text-[#999CAD]
+                    mt-4
+                  "
+                >
+                  Loading child information...
+                </p>
+
+              </div>
+
+            </div>
+
+          )}
+
+
+          {!loading &&
+            error && (
+
+            <div
+              className="
+                bg-[#FFF0F3]
+                border
+                border-[#F5D5DD]
+                text-[#B8445D]
+                rounded-[18px]
+                p-5
+                mt-[20px]
+              "
+            >
+
+              <h2
+                className="
+                  font-bold
+                  text-[14px]
+                "
+              >
+                Unable to load child
+              </h2>
+
+              <p
+                className="
+                  mt-2
+                  text-[11px]
+                "
+              >
+                {error}
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/children"
+                  )
+                }
+                className="
+                  mt-4
+                  bg-[#C95166]
+                  text-white
+                  px-4
+                  h-10
+                  rounded-[12px]
+                  text-[11px]
+                  font-semibold
+                  hover:bg-[#B8465B]
+                  transition
+                "
+              >
+                Return to Children
+              </button>
+
+            </div>
+
+          )}
+
+
+          {!loading &&
+            !error &&
+            child && (
+
+            <>
+
+              <div
+                className={`
+                  grid
+                  grid-cols-1
+                  gap-[18px]
+                  mt-[20px]
+                  ${
+                    isTherapist
+                      ? "2xl:grid-cols-3"
+                      : "xl:grid-cols-2"
+                  }
+                `}
+              >
+
+                <ChildInfoCard
+                  child={
+                    child
+                  }
+                  onEdit={() => {
+                    setEditModalOpen(
+                      true
+                    );
+                  }}
+                  onStartSession={() => {
+                    setStartSessionModalOpen(
+                      true
+                    );
+                  }}
+                />
+
+
+                <CognitiveScores />
+
+
+                {isTherapist && (
+
+                  <ParentAssignmentCard
+                    childId={
+                      child.id
+                    }
+                    childName={
+                      child.full_name ||
+                      "this child"
+                    }
+                    onChanged={
+                      loadChild
+                    }
+                  />
+
+                )}
+
+              </div>
+
 
               {isTherapist && (
 
-                <ParentAssignmentCard
-                  childId={
-                    child.id
-                  }
-                  childName={
-                    child.full_name ||
-                    "this child"
-                  }
-                  onChanged={
-                    loadChild
-                  }
-                />
+                <div className="mt-[18px]">
+
+                  <AssignedGamesCard
+                    childId={
+                      child.id
+                    }
+                    navigate={
+                      navigate
+                    }
+                  />
+
+                </div>
 
               )}
 
-            </div>
+
+              <div
+                className="
+                  grid
+                  grid-cols-1
+                  xl:grid-cols-3
+                  gap-[18px]
+                  mt-[18px]
+                "
+              >
+
+                <div
+                  className="
+                    xl:col-span-2
+                    min-w-0
+                  "
+                >
+                  <ProgressChart />
+                </div>
 
 
-            {isTherapist && (
-
-              <div className="mt-8">
-
-                <AssignedGamesCard
-                  childId={
-                    child.id
-                  }
-                  navigate={
-                    navigate
-                  }
-                />
+                <div className="min-w-0">
+                  <AIInsights />
+                </div>
 
               </div>
 
-            )}
+
+              <div
+                className="
+                  grid
+                  grid-cols-1
+                  xl:grid-cols-3
+                  gap-[18px]
+                  mt-[18px]
+                "
+              >
+
+                <div
+                  className="
+                    xl:col-span-2
+                    min-w-0
+                  "
+                >
+                  <ReportsTable />
+                </div>
 
 
-            <div className="grid grid-cols-3 gap-6 mt-8">
+                <div className="min-w-0">
+                  <SessionsTimeline />
+                </div>
 
-              <div className="col-span-2">
-                <ProgressChart />
               </div>
 
-              <AIInsights />
+            </>
 
-            </div>
-
-
-            <div className="grid grid-cols-3 gap-6 mt-8">
-
-              <div className="col-span-2">
-                <ReportsTable />
-              </div>
-
-              <SessionsTimeline />
-
-            </div>
-
-          </>
-
-        )}
+          )}
 
 
-        {editModalOpen &&
-          child && (
+          {editModalOpen &&
+            child && (
 
-          <EditChildModal
-            child={
-              child
-            }
-            close={() => {
-              setEditModalOpen(
-                false
-              );
-            }}
-            onSuccess={
-              loadChild
-            }
-          />
-
-        )}
-
-
-        {startSessionModalOpen &&
-          child && (
-
-          <StartSessionModal
-            child={
-              child
-            }
-            close={() => {
-              setStartSessionModalOpen(
-                false
-              );
-            }}
-            onStarted={
-              (session) => {
-
-                navigate(
-                  `/sessions/${session.id}`
-                );
-
+            <EditChildModal
+              child={
+                child
               }
-            }
-          />
+              close={() => {
+                setEditModalOpen(
+                  false
+                );
+              }}
+              onSuccess={
+                loadChild
+              }
+            />
 
-        )}
+          )}
+
+
+          {startSessionModalOpen &&
+            child && (
+
+            <StartSessionModal
+              child={
+                child
+              }
+              close={() => {
+                setStartSessionModalOpen(
+                  false
+                );
+              }}
+              onStarted={
+                (session) => {
+
+                  navigate(
+                    `/sessions/${session.id}`
+                  );
+
+                }
+              }
+            />
+
+          )}
+
+        </div>
 
       </main>
 

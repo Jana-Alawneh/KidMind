@@ -326,7 +326,8 @@ export default function CognitiveScores() {
               (session) =>
                 Number(
                   session.child_id
-                ) === childId
+                ) ===
+                childId
             );
 
 
@@ -388,20 +389,28 @@ export default function CognitiveScores() {
 
           setScores([
             {
-              key: "overall",
+              key:
+                "overall",
+
               title:
                 "Overall Score",
+
               value:
                 overallScore,
+
               color:
                 "#7B6EF6",
+
               icon:
                 Brain,
             },
+
             ...domainScores,
           ]);
 
-        } catch (loadError) {
+        } catch (
+          loadError
+        ) {
 
           console.error(
             "Failed to load cognitive scores:",
@@ -417,7 +426,9 @@ export default function CognitiveScores() {
 
         } finally {
 
-          setLoading(false);
+          setLoading(
+            false
+          );
 
         }
 
@@ -446,22 +457,59 @@ export default function CognitiveScores() {
 
     <Card>
 
-      <Text
+      <View
         style={
-          styles.title
+          styles.sectionHeader
         }
       >
-        Cognitive Assessment
-      </Text>
+
+        <View
+          style={
+            styles.headerIcon
+          }
+        >
+
+          <Brain
+            size={18}
+            color="#7566EB"
+          />
+
+        </View>
 
 
-      <Text
+        <View
+          style={
+            styles.headerCopy
+          }
+        >
+
+          <Text
+            style={
+              styles.title
+            }
+          >
+            Cognitive Assessment
+          </Text>
+
+
+          <Text
+            style={
+              styles.subtitle
+            }
+          >
+            Latest available score for each cognitive domain
+          </Text>
+
+        </View>
+
+      </View>
+
+
+      <View
         style={
-          styles.subtitle
+          styles.divider
         }
-      >
-        Latest available score for each cognitive domain
-      </Text>
+      />
 
 
       {loading && (
@@ -473,9 +521,10 @@ export default function CognitiveScores() {
         >
 
           <ActivityIndicator
-            size="large"
+            size="small"
             color="#7B6EF6"
           />
+
 
           <Text
             style={
@@ -507,6 +556,7 @@ export default function CognitiveScores() {
             Unable to load cognitive scores
           </Text>
 
+
           <Text
             style={
               styles.errorText
@@ -521,149 +571,168 @@ export default function CognitiveScores() {
 
 
       {!loading &&
-        !error &&
-        scores.map(
-          (item) => {
+        !error && (
 
-            const Icon =
-              item.icon;
+        <View
+          style={
+            styles.list
+          }
+        >
+
+          {scores.map(
+            (item) => {
+
+              const Icon =
+                item.icon;
 
 
-            const hasScore =
-              typeof item.value ===
-                "number" &&
-              Number.isFinite(
-                item.value
-              );
+              const hasScore =
+                typeof item.value ===
+                  "number" &&
+                Number.isFinite(
+                  item.value
+                );
 
 
-            const progressValue =
-              hasScore
-                ? Math.max(
-                    0,
-                    Math.min(
-                      100,
-                      item.value as number
+              const progressValue =
+                hasScore
+                  ? Math.max(
+                      0,
+                      Math.min(
+                        100,
+                        item.value as number
+                      )
                     )
-                  )
-                : 0;
+                  : 0;
 
 
-            return (
-
-              <View
-                key={
-                  item.key
-                }
-                style={
-                  styles.item
-                }
-              >
+              return (
 
                 <View
-                  style={
-                    styles.header
+                  key={
+                    item.key
                   }
+                  style={[
+                    styles.item,
+
+                    item.key ===
+                      "overall"
+                      ? styles.overallItem
+                      : null,
+                  ]}
                 >
 
                   <View
                     style={
-                      styles.left
+                      styles.itemHeader
+                    }
+                  >
+
+                    <View
+                      style={
+                        styles.left
+                      }
+                    >
+
+                      <View
+                        style={[
+                          styles.iconBox,
+                          {
+                            backgroundColor:
+                              item.color,
+                          },
+                        ]}
+                      >
+
+                        <Icon
+                          size={15}
+                          color="#FFFFFF"
+                        />
+
+                      </View>
+
+
+                      <View
+                        style={
+                          styles.textBox
+                        }
+                      >
+
+                        <Text
+                          style={
+                            styles.name
+                          }
+                          numberOfLines={
+                            1
+                          }
+                        >
+                          {item.title}
+                        </Text>
+
+
+                        {!hasScore && (
+
+                          <Text
+                            style={
+                              styles.noData
+                            }
+                          >
+                            No assessment data yet
+                          </Text>
+
+                        )}
+
+                      </View>
+
+                    </View>
+
+
+                    <Text
+                      style={
+                        styles.score
+                      }
+                    >
+                      {hasScore
+                        ? `${Math.round(
+                            item.value as number
+                          )}%`
+                        : "—"}
+                    </Text>
+
+                  </View>
+
+
+                  <View
+                    style={
+                      styles.progressBackground
                     }
                   >
 
                     <View
                       style={[
-                        styles.iconBox,
+                        styles.progress,
                         {
+                          width:
+                            `${progressValue}%`,
+
                           backgroundColor:
                             item.color,
                         },
                       ]}
-                    >
-
-                      <Icon
-                        size={18}
-                        color="#FFFFFF"
-                      />
-
-                    </View>
-
-
-                    <View
-                      style={
-                        styles.textBox
-                      }
-                    >
-
-                      <Text
-                        style={
-                          styles.name
-                        }
-                      >
-                        {item.title}
-                      </Text>
-
-
-                      {!hasScore && (
-
-                        <Text
-                          style={
-                            styles.noData
-                          }
-                        >
-                          No assessment data yet
-                        </Text>
-
-                      )}
-
-                    </View>
+                    />
 
                   </View>
 
-
-                  <Text
-                    style={
-                      styles.score
-                    }
-                  >
-                    {hasScore
-                      ? `${Math.round(
-                          item.value as number
-                        )}%`
-                      : "—"}
-                  </Text>
-
                 </View>
 
+              );
 
-                <View
-                  style={
-                    styles.progressBackground
-                  }
-                >
+            }
+          )}
 
-                  <View
-                    style={[
-                      styles.progress,
-                      {
-                        width:
-                          `${progressValue}%`,
+        </View>
 
-                        backgroundColor:
-                          item.color,
-                      },
-                    ]}
-                  />
-
-                </View>
-
-              </View>
-
-            );
-
-          }
-        )}
+      )}
 
     </Card>
 
@@ -675,88 +744,239 @@ export default function CognitiveScores() {
 const styles =
   StyleSheet.create({
 
-    title: {
-      fontSize: 24,
+    sectionHeader: {
 
-      fontWeight: "700",
-
-      color: "#172554",
-    },
-
-
-    subtitle: {
-      color: "#64748B",
-
-      fontSize: 13,
-
-      marginTop: 5,
-
-      marginBottom: 30,
-    },
-
-
-    loadingBox: {
-      minHeight: 180,
-
-      justifyContent:
-        "center",
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
-      gap: 12,
+      gap:
+        10,
+
+    },
+
+
+    headerIcon: {
+
+      width:
+        39,
+
+      height:
+        39,
+
+      borderRadius:
+        12,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    headerCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    title: {
+
+      color:
+        "#333554",
+
+      fontSize:
+        15,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    subtitle: {
+
+      marginTop:
+        3,
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        9.5,
+
+      lineHeight:
+        14,
+
+    },
+
+
+    divider: {
+
+      height:
+        1,
+
+      marginTop:
+        14,
+
+      backgroundColor:
+        "#F0F0F5",
+
+    },
+
+
+    loadingBox: {
+
+      minHeight:
+        200,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      gap:
+        9,
+
     },
 
 
     loadingText: {
-      color: "#64748B",
 
-      fontSize: 13,
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10,
+
     },
 
 
     errorBox: {
-      padding: 18,
 
-      borderRadius: 16,
+      minHeight:
+        140,
+
+      marginTop:
+        14,
+
+      padding:
+        14,
+
+      borderRadius:
+        14,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
 
       backgroundColor:
-        "#FEF2F2",
+        "#FFF0F3",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#FECACA",
+        "#F6D8DF",
+
     },
 
 
     errorTitle: {
-      color: "#B91C1C",
 
-      fontWeight: "700",
+      color:
+        "#B9415E",
 
-      textAlign: "center",
+      fontSize:
+        11,
+
+      fontWeight:
+        "700",
+
+      textAlign:
+        "center",
+
     },
 
 
     errorText: {
-      color: "#DC2626",
 
-      fontSize: 13,
+      marginTop:
+        4,
 
-      textAlign: "center",
+      color:
+        "#C55A70",
 
-      marginTop: 5,
+      fontSize:
+        9.5,
+
+      textAlign:
+        "center",
+
+    },
+
+
+    list: {
+
+      marginTop:
+        13,
+
+      gap:
+        9,
+
     },
 
 
     item: {
-      marginBottom: 24,
+
+      padding:
+        12,
+
+      borderRadius:
+        14,
+
+      backgroundColor:
+        "#FCFCFE",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#EFEFF5",
+
     },
 
 
-    header: {
-      flexDirection: "row",
+    overallItem: {
+
+      backgroundColor:
+        "#FAF8FF",
+
+      borderColor:
+        "#E5E0FF",
+
+    },
+
+
+    itemHeader: {
+
+      flexDirection:
+        "row",
 
       justifyContent:
         "space-between",
@@ -764,87 +984,136 @@ const styles =
       alignItems:
         "center",
 
-      gap: 12,
+      gap:
+        10,
 
-      marginBottom: 10,
     },
 
 
     left: {
-      flex: 1,
 
-      flexDirection: "row",
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
-      gap: 14,
+      gap:
+        9,
+
     },
 
 
     iconBox: {
-      width: 42,
 
-      height: 42,
+      width:
+        35,
 
-      borderRadius: 12,
+      height:
+        35,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        11,
+
+      alignItems:
+        "center",
 
       justifyContent:
         "center",
 
-      alignItems:
-        "center",
     },
 
 
     textBox: {
-      flex: 1,
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     name: {
-      fontSize: 17,
 
-      fontWeight: "600",
+      color:
+        "#55586D",
 
-      color: "#1E293B",
+      fontSize:
+        10.5,
+
+      fontWeight:
+        "700",
+
     },
 
 
     noData: {
-      color: "#94A3B8",
 
-      fontSize: 11,
+      marginTop:
+        2,
 
-      marginTop: 2,
+      color:
+        "#A7AABB",
+
+      fontSize:
+        8,
+
     },
 
 
     score: {
-      fontSize: 19,
 
-      fontWeight: "700",
+      color:
+        "#454762",
 
-      color: "#0F172A",
+      fontSize:
+        12,
+
+      fontWeight:
+        "800",
+
     },
 
 
     progressBackground: {
-      height: 10,
+
+      height:
+        6,
+
+      marginTop:
+        10,
+
+      overflow:
+        "hidden",
+
+      borderRadius:
+        999,
 
       backgroundColor:
-        "#E5E7EB",
+        "#EEEFF4",
 
-      borderRadius: 20,
-
-      overflow: "hidden",
     },
 
 
     progress: {
-      height: "100%",
 
-      borderRadius: 20,
+      height:
+        "100%",
+
+      borderRadius:
+        999,
+
     },
 
   });

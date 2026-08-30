@@ -386,25 +386,42 @@ const CognitiveScores = () => {
 
   return (
 
-    <Card className="col-span-2">
+    <Card className="h-full">
 
       <div
         className="
           flex
-          items-start
-          justify-between
-          gap-4
-          mb-8
+          items-center
+          gap-3
+          pb-4
+          border-b
+          border-[#F0F0F5]
         "
       >
+
+        <div
+          className="
+            w-10
+            h-10
+            rounded-[13px]
+            bg-[#F0EDFF]
+            text-[#7566EB]
+            flex
+            items-center
+            justify-center
+          "
+        >
+          <Brain size={18} />
+        </div>
+
 
         <div>
 
           <h2
             className="
-              text-2xl
+              text-[16px]
               font-bold
-              text-[#172554]
+              text-[#333554]
             "
           >
             Cognitive Assessment
@@ -412,8 +429,8 @@ const CognitiveScores = () => {
 
           <p
             className="
-              text-sm
-              text-slate-500
+              text-[10.5px]
+              text-[#A0A3B4]
               mt-1
             "
           >
@@ -429,25 +446,21 @@ const CognitiveScores = () => {
 
         <div
           className="
-            min-h-[180px]
+            min-h-[260px]
             flex
             items-center
             justify-center
           "
         >
 
-          <div
-            className="
-              text-center
-            "
-          >
+          <div className="text-center">
 
             <div
               className="
-                w-10
-                h-10
+                w-9
+                h-9
                 rounded-full
-                border-4
+                border-[3px]
                 border-[#E6E2FF]
                 border-t-[#7B6EF6]
                 animate-spin
@@ -457,8 +470,8 @@ const CognitiveScores = () => {
 
             <p
               className="
-                text-sm
-                text-slate-500
+                text-[10.5px]
+                text-[#A0A3B4]
                 mt-3
               "
             >
@@ -477,19 +490,25 @@ const CognitiveScores = () => {
 
         <div
           className="
-            rounded-xl
+            min-h-[180px]
+            rounded-[14px]
             border
-            border-red-100
-            bg-red-50
+            border-[#F6D8DF]
+            bg-[#FFF0F3]
             p-5
+            flex
+            flex-col
+            justify-center
             text-center
+            mt-4
           "
         >
 
           <p
             className="
               font-semibold
-              text-red-700
+              text-[12px]
+              text-[#B9415E]
             "
           >
             Unable to load cognitive scores
@@ -497,8 +516,8 @@ const CognitiveScores = () => {
 
           <p
             className="
-              text-sm
-              text-red-600
+              text-[10.5px]
+              text-[#C55A70]
               mt-1
             "
           >
@@ -515,7 +534,10 @@ const CognitiveScores = () => {
 
         <div
           className="
-            space-y-6
+            grid
+            grid-cols-1
+            gap-2.5
+            mt-4
           "
         >
 
@@ -552,6 +574,17 @@ const CognitiveScores = () => {
                   key={
                     item.key
                   }
+                  className={`
+                    rounded-[15px]
+                    border
+                    p-3.5
+                    ${
+                      item.key ===
+                      "overall"
+                        ? "border-[#E5E0FF] bg-[#FAF8FF]"
+                        : "border-[#EFEFF5] bg-[#FCFCFE]"
+                    }
+                  `}
                 >
 
                   <div
@@ -560,7 +593,6 @@ const CognitiveScores = () => {
                       justify-between
                       items-center
                       gap-4
-                      mb-2
                     "
                   >
 
@@ -577,9 +609,9 @@ const CognitiveScores = () => {
                         className={`
                           ${item.color}
                           text-white
-                          w-10
-                          h-10
-                          rounded-xl
+                          w-9
+                          h-9
+                          rounded-[11px]
                           flex
                           justify-center
                           items-center
@@ -587,23 +619,20 @@ const CognitiveScores = () => {
                         `}
                       >
 
-                        <Icon
-                          size={18}
-                        />
+                        <Icon size={16} />
 
                       </div>
 
 
-                      <div
-                        className="
-                          min-w-0
-                        "
-                      >
+                      <div className="min-w-0">
 
                         <span
                           className="
-                            font-semibold
-                            text-[#172554]
+                            block
+                            text-[11px]
+                            font-bold
+                            text-[#55586D]
+                            truncate
                           "
                         >
                           {item.title}
@@ -614,8 +643,8 @@ const CognitiveScores = () => {
 
                           <p
                             className="
-                              text-xs
-                              text-slate-400
+                              text-[9px]
+                              text-[#A7AABB]
                               mt-0.5
                             "
                           >
@@ -631,9 +660,9 @@ const CognitiveScores = () => {
 
                     <span
                       className="
-                        font-bold
-                        text-lg
-                        text-[#172554]
+                        font-extrabold
+                        text-[13px]
+                        text-[#454762]
                         whitespace-nowrap
                       "
                     >
@@ -650,17 +679,18 @@ const CognitiveScores = () => {
                   <div
                     className="
                       w-full
-                      bg-gray-200
+                      bg-[#EEEFF4]
                       rounded-full
-                      h-3
+                      h-[6px]
                       overflow-hidden
+                      mt-3
                     "
                   >
 
                     <div
                       className={`
                         ${item.color}
-                        h-3
+                        h-full
                         rounded-full
                         transition-all
                         duration-700

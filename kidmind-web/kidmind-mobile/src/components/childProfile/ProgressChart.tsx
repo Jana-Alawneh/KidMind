@@ -16,6 +16,10 @@ import {
   useLocalSearchParams,
 } from "expo-router";
 
+import {
+  TrendingUp,
+} from "lucide-react-native";
+
 import Svg, {
   Circle,
   Line,
@@ -92,11 +96,20 @@ const gameDomainMap: Record<
   string,
   DomainKey
 > = {
-  "focus finder": "attention",
-  "memory match": "memory",
-  "puzzle path": "visualSpatial",
-  "reading adventure": "reading",
-  "quick match": "processingSpeed",
+  "focus finder":
+    "attention",
+
+  "memory match":
+    "memory",
+
+  "puzzle path":
+    "visualSpatial",
+
+  "reading adventure":
+    "reading",
+
+  "quick match":
+    "processingSpeed",
 };
 
 
@@ -151,7 +164,8 @@ const getAverage = (
 ) => {
 
   if (
-    values.length === 0
+    values.length ===
+    0
   ) {
     return null;
   }
@@ -163,7 +177,8 @@ const getAverage = (
         total,
         value
       ) =>
-        total + value,
+        total +
+        value,
       0
     ) /
       values.length
@@ -362,23 +377,25 @@ const getTrend = (
 
 
   if (
-    scored.length < 2
+    scored.length <
+    2
   ) {
     return {
       label:
         "Not enough data",
 
       backgroundColor:
-        "#F1F5F9",
+        "#F5F5F8",
 
       textColor:
-        "#64748B",
+        "#777A8F",
     };
   }
 
 
   const first =
-    scored[0].overall as number;
+    scored[0]
+      .overall as number;
 
 
   const last =
@@ -388,37 +405,40 @@ const getTrend = (
 
 
   const difference =
-    last - first;
+    last -
+    first;
 
 
   if (
-    difference > 2
+    difference >
+    2
   ) {
     return {
       label:
         "Improving",
 
       backgroundColor:
-        "#DCFCE7",
+        "#ECFAF4",
 
       textColor:
-        "#15803D",
+        "#3E9E7D",
     };
   }
 
 
   if (
-    difference < -2
+    difference <
+    -2
   ) {
     return {
       label:
         "Declining",
 
       backgroundColor:
-        "#FEE2E2",
+        "#FFF0F3",
 
       textColor:
-        "#B91C1C",
+        "#C4556C",
     };
   }
 
@@ -428,10 +448,10 @@ const getTrend = (
       "Stable",
 
     backgroundColor:
-      "#F4F1FF",
+      "#F3F0FF",
 
     textColor:
-      "#7B6EF6",
+      "#7566EB",
   };
 
 };
@@ -462,27 +482,31 @@ export default function ProgressChart() {
   const [
     data,
     setData,
-  ] = useState<ProgressPoint[]>(
-    []
-  );
+  ] =
+    useState<ProgressPoint[]>(
+      []
+    );
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const [
     chartWidth,
     setChartWidth,
-  ] = useState(320);
+  ] =
+    useState(320);
 
 
   const loadProgress =
@@ -493,11 +517,17 @@ export default function ProgressChart() {
           !Number.isInteger(
             childId
           ) ||
-          childId <= 0
+          childId <=
+            0
         ) {
 
-          setData([]);
-          setLoading(false);
+          setData(
+            []
+          );
+
+          setLoading(
+            false
+          );
 
           return;
 
@@ -506,9 +536,13 @@ export default function ProgressChart() {
 
         try {
 
-          setLoading(true);
+          setLoading(
+            true
+          );
 
-          setError("");
+          setError(
+            ""
+          );
 
 
           const sessions =
@@ -551,7 +585,9 @@ export default function ProgressChart() {
             progress
           );
 
-        } catch (loadError) {
+        } catch (
+          loadError
+        ) {
 
           console.error(
             "Failed to load progress:",
@@ -567,7 +603,9 @@ export default function ProgressChart() {
 
         } finally {
 
-          setLoading(false);
+          setLoading(
+            false
+          );
 
         }
 
@@ -605,23 +643,23 @@ export default function ProgressChart() {
 
 
   const chartHeight =
-    290;
+    260;
 
 
   const leftPadding =
-    38;
+    34;
 
 
   const rightPadding =
-    12;
+    10;
 
 
   const topPadding =
-    16;
+    15;
 
 
   const bottomPadding =
-    38;
+    34;
 
 
   const plotWidth =
@@ -644,12 +682,15 @@ export default function ProgressChart() {
   ) => {
 
     if (
-      data.length <= 1
+      data.length <=
+      1
     ) {
+
       return (
         leftPadding +
         plotWidth / 2
       );
+
     }
 
 
@@ -658,7 +699,8 @@ export default function ProgressChart() {
       (
         index /
         (
-          data.length - 1
+          data.length -
+          1
         )
       ) *
         plotWidth
@@ -675,7 +717,8 @@ export default function ProgressChart() {
       topPadding +
       (
         (
-          100 - value
+          100 -
+          value
         ) /
         100
       ) *
@@ -733,12 +776,14 @@ export default function ProgressChart() {
             x: number;
             y: number;
           } =>
-            point !== null
+            point !==
+            null
         );
 
 
     if (
-      points.length === 0
+      points.length ===
+      0
     ) {
       return "";
     }
@@ -773,33 +818,56 @@ export default function ProgressChart() {
 
         <View
           style={
-            styles.headerText
+            styles.headingGroup
           }
         >
 
-          <Text
+          <View
             style={
-              styles.title
+              styles.headerIcon
             }
           >
-            Cognitive Progress
-          </Text>
+
+            <TrendingUp
+              size={18}
+              color="#7566EB"
+            />
+
+          </View>
 
 
-          <Text
+          <View
             style={
-              styles.subtitle
+              styles.headerText
             }
           >
-            Last 6 completed assessment sessions
-          </Text>
+
+            <Text
+              style={
+                styles.title
+              }
+            >
+              Cognitive Progress
+            </Text>
+
+
+            <Text
+              style={
+                styles.subtitle
+              }
+            >
+              Last 6 completed assessment sessions
+            </Text>
+
+          </View>
 
         </View>
 
 
         {!loading &&
           !error &&
-          data.length > 0 && (
+          data.length >
+            0 && (
 
           <View
             style={[
@@ -830,6 +898,13 @@ export default function ProgressChart() {
       </View>
 
 
+      <View
+        style={
+          styles.divider
+        }
+      />
+
+
       {loading && (
 
         <View
@@ -839,9 +914,10 @@ export default function ProgressChart() {
         >
 
           <ActivityIndicator
-            size="large"
+            size="small"
             color="#7B6EF6"
           />
+
 
           <Text
             style={
@@ -873,6 +949,7 @@ export default function ProgressChart() {
             Unable to load progress
           </Text>
 
+
           <Text
             style={
               styles.errorText
@@ -888,7 +965,8 @@ export default function ProgressChart() {
 
       {!loading &&
         !error &&
-        data.length === 0 && (
+        data.length ===
+          0 && (
 
         <View
           style={
@@ -904,13 +982,13 @@ export default function ProgressChart() {
             No progress data yet
           </Text>
 
+
           <Text
             style={
               styles.emptyText
             }
           >
-            Completed assessment sessions
-            will appear here.
+            Completed assessment sessions will appear here.
           </Text>
 
         </View>
@@ -920,278 +998,270 @@ export default function ProgressChart() {
 
       {!loading &&
         !error &&
-        data.length > 0 && (
+        data.length >
+          0 && (
 
         <>
 
           <View
             style={
-              styles.chartContainer
+              styles.chartShell
             }
-            onLayout={(
-              event
-            ) => {
-
-              const width =
-                event.nativeEvent
-                  .layout.width;
-
-
-              if (
-                width > 0
-              ) {
-                setChartWidth(
-                  width
-                );
-              }
-
-            }}
           >
 
-            <Svg
-              width={
-                chartWidth
+            <View
+              style={
+                styles.chartContainer
               }
-              height={
-                chartHeight
-              }
+              onLayout={(
+                event
+              ) => {
+
+                const width =
+                  event.nativeEvent
+                    .layout.width;
+
+
+                if (
+                  width >
+                  0
+                ) {
+
+                  setChartWidth(
+                    width
+                  );
+
+                }
+
+              }}
             >
 
-              {[
-                0,
-                25,
-                50,
-                75,
-                100,
-              ].map(
-                (value) => {
+              <Svg
+                width={
+                  chartWidth
+                }
+                height={
+                  chartHeight
+                }
+              >
 
-                  const y =
-                    getY(
-                      value
-                    );
+                {[
+                  0,
+                  25,
+                  50,
+                  75,
+                  100,
+                ].map(
+                  (
+                    value
+                  ) => {
 
-
-                  return (
-
-                    <View
-                      key={
+                    const y =
+                      getY(
                         value
-                      }
-                    />
-
-                  );
-
-                }
-              )}
+                      );
 
 
-              {[
-                0,
-                25,
-                50,
-                75,
-                100,
-              ].map(
-                (value) => {
+                    return (
 
-                  const y =
-                    getY(
-                      value
+                      <Line
+                        key={
+                          `line-${value}`
+                        }
+                        x1={
+                          leftPadding
+                        }
+                        y1={
+                          y
+                        }
+                        x2={
+                          chartWidth -
+                          rightPadding
+                        }
+                        y2={
+                          y
+                        }
+                        stroke="#ECECF3"
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                      />
+
                     );
 
-
-                  return (
-
-                    <Line
-                      key={
-                        `line-${value}`
-                      }
-                      x1={
-                        leftPadding
-                      }
-                      y1={
-                        y
-                      }
-                      x2={
-                        chartWidth -
-                        rightPadding
-                      }
-                      y2={
-                        y
-                      }
-                      stroke="#E5E7EB"
-                      strokeWidth={1}
-                      strokeDasharray="4 4"
-                    />
-
-                  );
-
-                }
-              )}
+                  }
+                )}
 
 
-              {[
-                0,
-                25,
-                50,
-                75,
-                100,
-              ].map(
-                (value) => {
+                {[
+                  0,
+                  25,
+                  50,
+                  75,
+                  100,
+                ].map(
+                  (
+                    value
+                  ) => {
 
-                  const y =
-                    getY(
-                      value
+                    const y =
+                      getY(
+                        value
+                      );
+
+
+                    return (
+
+                      <SvgText
+                        key={
+                          `label-${value}`
+                        }
+                        x={2}
+                        y={
+                          y +
+                          3
+                        }
+                        fontSize="8"
+                        fill="#999CAD"
+                      >
+                        {value}
+                      </SvgText>
+
                     );
 
+                  }
+                )}
 
-                  return (
+
+                {series.map(
+                  (
+                    item
+                  ) => {
+
+                    const path =
+                      getPath(
+                        item.key
+                      );
+
+
+                    if (!path) {
+                      return null;
+                    }
+
+
+                    return (
+
+                      <Path
+                        key={
+                          item.key
+                        }
+                        d={
+                          path
+                        }
+                        fill="none"
+                        stroke={
+                          item.color
+                        }
+                        strokeWidth={2.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+
+                    );
+
+                  }
+                )}
+
+
+                {series.flatMap(
+                  (
+                    item
+                  ) =>
+                    data.map(
+                      (
+                        point,
+                        index
+                      ) => {
+
+                        const value =
+                          point[
+                            item.key
+                          ];
+
+
+                        if (
+                          typeof value !==
+                            "number" ||
+                          !Number.isFinite(
+                            value
+                          )
+                        ) {
+                          return null;
+                        }
+
+
+                        return (
+
+                          <Circle
+                            key={
+                              `${item.key}-${point.sessionId}`
+                            }
+                            cx={
+                              getX(
+                                index
+                              )
+                            }
+                            cy={
+                              getY(
+                                value
+                              )
+                            }
+                            r={3}
+                            fill="#FFFFFF"
+                            stroke={
+                              item.color
+                            }
+                            strokeWidth={2}
+                          />
+
+                        );
+
+                      }
+                    )
+                )}
+
+
+                {data.map(
+                  (
+                    point,
+                    index
+                  ) => (
 
                     <SvgText
                       key={
-                        `label-${value}`
+                        point.sessionId
                       }
-                      x={2}
+                      x={
+                        getX(
+                          index
+                        )
+                      }
                       y={
-                        y + 4
+                        chartHeight -
+                        9
                       }
-                      fontSize="10"
-                      fill="#94A3B8"
+                      fontSize="8"
+                      fill="#8E91A4"
+                      textAnchor="middle"
                     >
-                      {value}
+                      {point.session}
                     </SvgText>
 
-                  );
-
-                }
-              )}
-
-
-              {series.map(
-                (item) => {
-
-                  const path =
-                    getPath(
-                      item.key
-                    );
-
-
-                  if (!path) {
-                    return null;
-                  }
-
-
-                  return (
-
-                    <Path
-                      key={
-                        item.key
-                      }
-                      d={
-                        path
-                      }
-                      fill="none"
-                      stroke={
-                        item.color
-                      }
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-
-                  );
-
-                }
-              )}
-
-
-              {series.flatMap(
-                (item) =>
-                  data.map(
-                    (
-                      point,
-                      index
-                    ) => {
-
-                      const value =
-                        point[
-                          item.key
-                        ];
-
-
-                      if (
-                        typeof value !==
-                          "number" ||
-                        !Number.isFinite(
-                          value
-                        )
-                      ) {
-                        return null;
-                      }
-
-
-                      return (
-
-                        <Circle
-                          key={
-                            `${item.key}-${point.sessionId}`
-                          }
-                          cx={
-                            getX(
-                              index
-                            )
-                          }
-                          cy={
-                            getY(
-                              value
-                            )
-                          }
-                          r={4}
-                          fill="#FFFFFF"
-                          stroke={
-                            item.color
-                          }
-                          strokeWidth={2.5}
-                        />
-
-                      );
-
-                    }
                   )
-              )}
+                )}
 
+              </Svg>
 
-              {data.map(
-                (
-                  point,
-                  index
-                ) => (
-
-                  <SvgText
-                    key={
-                      point.sessionId
-                    }
-                    x={
-                      getX(
-                        index
-                      )
-                    }
-                    y={
-                      chartHeight -
-                      10
-                    }
-                    fontSize="10"
-                    fill="#64748B"
-                    textAnchor="middle"
-                  >
-                    {point.session}
-                  </SvgText>
-
-                )
-              )}
-
-            </Svg>
+            </View>
 
           </View>
 
@@ -1203,11 +1273,15 @@ export default function ProgressChart() {
           >
 
             {series.map(
-              (item) => {
+              (
+                item
+              ) => {
 
                 const hasData =
                   data.some(
-                    (point) =>
+                    (
+                      point
+                    ) =>
                       typeof point[
                         item.key
                       ] ===
@@ -1223,8 +1297,10 @@ export default function ProgressChart() {
                     }
                     style={[
                       styles.legendItem,
-                      !hasData &&
-                        styles.legendItemDisabled,
+
+                      !hasData
+                        ? styles.legendItemDisabled
+                        : null,
                     ]}
                   >
 
@@ -1238,11 +1314,14 @@ export default function ProgressChart() {
                       ]}
                     />
 
+
                     <Text
                       style={[
                         styles.legendText,
-                        !hasData &&
-                          styles.legendTextDisabled,
+
+                        !hasData
+                          ? styles.legendTextDisabled
+                          : null,
                       ]}
                     >
                       {item.label}
@@ -1272,6 +1351,7 @@ const styles =
   StyleSheet.create({
 
     header: {
+
       flexDirection:
         "row",
 
@@ -1281,55 +1361,149 @@ const styles =
       alignItems:
         "flex-start",
 
-      gap: 10,
+      gap:
+        8,
 
-      marginBottom: 20,
+    },
+
+
+    headingGroup: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        10,
+
+    },
+
+
+    headerIcon: {
+
+      width:
+        39,
+
+      height:
+        39,
+
+      flexShrink:
+        0,
+
+      borderRadius:
+        12,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        "#F0EDFF",
+
     },
 
 
     headerText: {
-      flex: 1,
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
     },
 
 
     title: {
-      fontSize: 22,
 
-      fontWeight: "700",
+      color:
+        "#333554",
 
-      color: "#172554",
+      fontSize:
+        15,
+
+      fontWeight:
+        "700",
+
     },
 
 
     subtitle: {
-      color: "#64748B",
 
-      marginTop: 5,
+      marginTop:
+        3,
 
-      fontSize: 13,
+      color:
+        "#A0A3B4",
 
-      lineHeight: 18,
+      fontSize:
+        9.5,
+
+      lineHeight:
+        14,
+
     },
 
 
     badge: {
-      paddingHorizontal: 12,
 
-      paddingVertical: 8,
+      maxWidth:
+        88,
 
-      borderRadius: 12,
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        6,
+
+      borderRadius:
+        9,
+
     },
 
 
     badgeText: {
-      fontWeight: "600",
 
-      fontSize: 12,
+      fontSize:
+        8,
+
+      fontWeight:
+        "700",
+
+      textAlign:
+        "center",
+
+    },
+
+
+    divider: {
+
+      height:
+        1,
+
+      marginTop:
+        14,
+
+      backgroundColor:
+        "#F0F0F5",
+
     },
 
 
     loadingBox: {
-      minHeight: 260,
+
+      minHeight:
+        220,
 
       justifyContent:
         "center",
@@ -1337,19 +1511,30 @@ const styles =
       alignItems:
         "center",
 
-      gap: 12,
+      gap:
+        9,
+
     },
 
 
     loadingText: {
-      color: "#64748B",
 
-      fontSize: 13,
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        10,
+
     },
 
 
     errorBox: {
-      minHeight: 200,
+
+      minHeight:
+        170,
+
+      marginTop:
+        14,
 
       justifyContent:
         "center",
@@ -1357,125 +1542,215 @@ const styles =
       alignItems:
         "center",
 
-      padding: 18,
+      padding:
+        14,
 
-      borderRadius: 16,
+      borderRadius:
+        14,
 
       backgroundColor:
-        "#FEF2F2",
+        "#FFF0F3",
 
-      borderWidth: 1,
+      borderWidth:
+        1,
 
       borderColor:
-        "#FECACA",
+        "#F6D8DF",
+
     },
 
 
     errorTitle: {
-      color: "#B91C1C",
 
-      fontWeight: "700",
+      color:
+        "#B9415E",
 
-      textAlign: "center",
+      fontSize:
+        11,
+
+      fontWeight:
+        "700",
+
+      textAlign:
+        "center",
+
     },
 
 
     errorText: {
-      color: "#DC2626",
 
-      fontSize: 13,
+      marginTop:
+        4,
 
-      marginTop: 6,
+      color:
+        "#C55A70",
 
-      textAlign: "center",
+      fontSize:
+        9.5,
+
+      textAlign:
+        "center",
+
     },
 
 
     emptyBox: {
-      minHeight: 230,
+
+      minHeight:
+        200,
 
       justifyContent:
         "center",
 
       alignItems:
         "center",
+
     },
 
 
     emptyTitle: {
-      color: "#172554",
 
-      fontSize: 16,
+      color:
+        "#55586D",
 
-      fontWeight: "700",
+      fontSize:
+        12,
+
+      fontWeight:
+        "700",
+
     },
 
 
     emptyText: {
-      color: "#64748B",
 
-      fontSize: 13,
+      marginTop:
+        5,
 
-      textAlign: "center",
+      maxWidth:
+        230,
 
-      marginTop: 7,
+      color:
+        "#A0A3B4",
 
-      lineHeight: 19,
+      fontSize:
+        9.5,
+
+      lineHeight:
+        15,
+
+      textAlign:
+        "center",
+
+    },
+
+
+    chartShell: {
+
+      marginTop:
+        14,
+
+      borderRadius:
+        14,
+
+      overflow:
+        "hidden",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#EFEFF5",
+
+      backgroundColor:
+        "#FCFCFE",
+
     },
 
 
     chartContainer: {
-      width: "100%",
 
-      overflow: "hidden",
+      width:
+        "100%",
+
+      overflow:
+        "hidden",
+
     },
 
 
     legend: {
-      flexDirection: "row",
 
-      flexWrap: "wrap",
+      marginTop:
+        11,
 
-      gap: 12,
+      flexDirection:
+        "row",
 
-      marginTop: 12,
+      flexWrap:
+        "wrap",
+
+      gap:
+        8,
+
     },
 
 
     legendItem: {
-      flexDirection: "row",
 
-      alignItems: "center",
+      flexDirection:
+        "row",
 
-      gap: 6,
+      alignItems:
+        "center",
+
+      gap:
+        4,
+
     },
 
 
     legendItemDisabled: {
-      opacity: 0.35,
+
+      opacity:
+        0.35,
+
     },
 
 
     legendDot: {
-      width: 9,
 
-      height: 9,
+      width:
+        7,
 
-      borderRadius: 5,
+      height:
+        7,
+
+      borderRadius:
+        4,
+
     },
 
 
     legendText: {
-      color: "#475569",
 
-      fontSize: 12,
+      color:
+        "#6E7183",
 
-      fontWeight: "500",
+      fontSize:
+        8,
+
+      fontWeight:
+        "500",
+
     },
 
 
     legendTextDisabled: {
-      color: "#94A3B8",
+
+      color:
+        "#A0A3B4",
+
     },
 
   });
