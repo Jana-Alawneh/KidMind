@@ -25,6 +25,10 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import {
+  NotificationsContent,
+} from "./Notifications";
+
 import api from "../services/api";
 import AdminChildren from "../components/admin/AdminChildren";
 import AdminParents from "../components/admin/AdminParents";
@@ -34,6 +38,7 @@ import AdminReports from "../components/admin/AdminReports";
 import AdminSettings from "../components/admin/AdminSettings";
 import AdminAIInsights from "../components/admin/AdminAIInsights";
 import AdminFeedback from "../components/admin/AdminFeedback";
+import UserAvatar from "../components/common/UserAvatar";
 
 
 const menu = [
@@ -115,6 +120,18 @@ const isActiveUser = (
 
 };
 
+const isOnlineUser = (
+  user
+) => {
+
+  return (
+    user?.is_online === true ||
+    Number(
+      user?.is_online
+    ) === 1
+  );
+
+};
 
 export default function AdminDashboard() {
 
@@ -417,6 +434,86 @@ useEffect(
     []
   );
 
+useEffect(
+  () => {
+
+    if (
+      activeSection !==
+      "overview"
+    ) {
+      return;
+    }
+
+
+    let active =
+      true;
+
+
+    const refreshUserPresence =
+      async () => {
+
+        try {
+
+          const response =
+            await api.get(
+              "/users"
+            );
+
+
+          if (
+            active
+          ) {
+
+            setUsers(
+              Array.isArray(
+                response.data
+              )
+                ? response.data
+                : []
+            );
+
+          }
+
+        } catch (
+          requestError
+        ) {
+
+          console.error(
+            "Unable to refresh user presence:",
+            requestError
+          );
+
+        }
+
+      };
+
+
+    refreshUserPresence();
+
+
+    const interval =
+      window.setInterval(
+        refreshUserPresence,
+        30000
+      );
+
+
+    return () => {
+
+      active =
+        false;
+
+      window.clearInterval(
+        interval
+      );
+
+    };
+
+  },
+  [
+    activeSection,
+  ]
+);
 
   useEffect(
     () => {
@@ -986,20 +1083,12 @@ useEffect(
                                 className="admin-user-row"
                               >
 
-                                <div className="user-avatar">
-
-                                  {
-                                    String(
-                                      user.full_name ||
-                                      "U"
-                                    )
-                                      .charAt(
-                                        0
-                                      )
-                                      .toUpperCase()
-                                  }
-
-                                </div>
+                                <UserAvatar
+  user={
+    user
+  }
+  className="user-avatar"
+/>
 
 
                                 <div className="user-main">
@@ -1035,22 +1124,22 @@ useEffect(
                                 </div>
 
 
-                                <span
-                                  className={
-                                    isActiveUser(
-                                      user
-                                    )
-                                      ? "status-dot active"
-                                      : "status-dot inactive"
-                                  }
-                                  title={
-                                    isActiveUser(
-                                      user
-                                    )
-                                      ? "Active"
-                                      : "Inactive"
-                                  }
-                                />
+                               <span
+  className={
+    isOnlineUser(
+      user
+    )
+      ? "status-dot active"
+      : "status-dot inactive"
+  }
+  title={
+    isOnlineUser(
+      user
+    )
+      ? "Online now"
+      : "Offline"
+  }
+/>
 
                               </div>
 
@@ -1506,17 +1595,21 @@ useEffect(
 
 
                       if (
-                        item.key ===
-                        "notifications"
-                      ) {
+  item.key ===
+  "notifications"
+) {
 
-                        navigate(
-                          "/notifications"
-                        );
+  setActiveSection(
+    "notifications"
+  );
 
-                        return;
+  navigate(
+    "/admin?section=notifications"
+  );
 
-                      }
+  return;
+
+}
 
 
                       setActiveSection(
@@ -1605,14 +1698,20 @@ useEffect(
 
 
           <button
-            className="notification-button"
-            onClick={() =>
-              navigate(
-                "/notifications"
-              )
-            }
-            aria-label="Open notifications"
-          >
+  className="notification-button"
+  onClick={() => {
+
+    setActiveSection(
+      "notifications"
+    );
+
+    navigate(
+      "/admin?section=notifications"
+    );
+
+  }}
+  aria-label="Open notifications"
+>
 
             <Bell
               size={20}
@@ -1664,6 +1763,15 @@ useEffect(
               : activeSection ===
                 "ai-insights"
                 ? <AdminAIInsights />
+                : activeSection ===
+    "notifications"
+  ? (
+      <NotificationsContent
+        currentUser={
+          currentUser
+        }
+      />
+    )
                 : activeSection ===
                   "feedback"
                   ? <AdminFeedback />

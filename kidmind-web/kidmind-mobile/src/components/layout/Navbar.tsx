@@ -1,6 +1,7 @@
 import {
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -9,7 +10,7 @@ import {
   Bell,
   ChevronDown,
   Menu,
-  Stethoscope,
+  Search,
 } from "lucide-react-native";
 
 import {
@@ -27,6 +28,14 @@ import {
   getUnreadNotificationCount,
 } from "@/api/notificationsApi";
 
+import {
+  fetchCurrentUser,
+  getCurrentUser,
+  subscribeAuthUser,
+  type AuthUser,
+} from "@/api/authApi";
+
+import UserAvatar from "@/components/common/UserAvatar";
 import ProfileMenu from "./ProfileMenu";
 
 
@@ -45,12 +54,74 @@ export default function Navbar({
   ] =
     useState(false);
 
-
   const [
     unreadCount,
     setUnreadCount,
   ] =
     useState(0);
+
+  const [
+    currentUser,
+    setCurrentUser,
+  ] =
+    useState<AuthUser | null>(
+      getCurrentUser()
+    );
+
+
+  useEffect(
+    () => {
+
+      return subscribeAuthUser(
+        user =>
+          setCurrentUser(
+            user
+          )
+      );
+
+    },
+    []
+  );
+
+
+  const loadCurrentUser =
+    useCallback(
+      async () => {
+
+        const cachedUser =
+          getCurrentUser();
+
+        if (
+          cachedUser
+        ) {
+          setCurrentUser(
+            cachedUser
+          );
+        }
+
+        try {
+
+          const user =
+            await fetchCurrentUser();
+
+          setCurrentUser(
+            user
+          );
+
+        } catch (
+          error
+        ) {
+
+          console.error(
+            "Failed to refresh current user:",
+            error
+          );
+
+        }
+
+      },
+      []
+    );
 
 
   const loadUnreadCount =
@@ -62,14 +133,11 @@ export default function Navbar({
           const count =
             await getUnreadNotificationCount();
 
-
           setUnreadCount(
             count
           );
 
-        } catch (
-          error
-        ) {
+        } catch (error) {
 
           console.error(
             "Failed to load notification count:",
@@ -88,12 +156,13 @@ export default function Navbar({
       () => {
 
         loadUnreadCount();
-
+        loadCurrentUser();
 
         return undefined;
 
       },
       [
+        loadCurrentUser,
         loadUnreadCount,
       ]
     )
@@ -106,20 +175,15 @@ export default function Navbar({
       const timer =
         setInterval(
           () => {
-
             loadUnreadCount();
-
           },
           30000
         );
 
-
       return () => {
-
         clearInterval(
           timer
         );
-
       };
 
     },
@@ -127,6 +191,23 @@ export default function Navbar({
       loadUnreadCount,
     ]
   );
+
+
+  const today =
+    new Date()
+      .toLocaleDateString(
+        "en-US",
+        {
+          weekday:
+            "long",
+          month:
+            "long",
+          day:
+            "numeric",
+          year:
+            "numeric",
+        }
+      );
 
 
   return (
@@ -137,190 +218,205 @@ export default function Navbar({
       }
     >
 
-      <TouchableOpacity
-        onPress={
-          onMenuPress
-        }
-        activeOpacity={
-          0.75
-        }
-        style={
-          styles.menuButton
-        }
-      >
-
-        <Menu
-          size={20}
-          color="#757991"
-        />
-
-      </TouchableOpacity>
-
-
       <View
         style={
-          styles.identity
-        }
-      >
-
-        <Text
-          style={
-            styles.portalLabel
-          }
-          numberOfLines={
-            1
-          }
-        >
-          KidMind Therapist Portal
-        </Text>
-
-
-        <Text
-          style={
-            styles.portalTitle
-          }
-          numberOfLines={
-            1
-          }
-        >
-          Therapist
-        </Text>
-
-      </View>
-
-
-      <View
-        style={
-          styles.actions
+          styles.top
         }
       >
 
         <TouchableOpacity
+          onPress={
+            onMenuPress
+          }
           style={
-            styles.notificationButton
+            styles.menuButton
           }
-          activeOpacity={
-            0.75
+          activeOpacity={0.75}
+        >
+          <Menu
+            size={20}
+            color="#263041"
+          />
+        </TouchableOpacity>
+
+
+        <View
+          style={
+            styles.titleContainer
           }
+        >
+
+          <Text
+            numberOfLines={1}
+            style={
+              styles.date
+            }
+          >
+            {today}
+          </Text>
+
+          <Text
+            numberOfLines={1}
+            style={
+              styles.heading
+            }
+          >
+            Welcome Back
+          </Text>
+
+        </View>
+
+
+        <TouchableOpacity
+          style={
+            styles.iconButton
+          }
+          activeOpacity={0.75}
           onPress={() => {
 
             setShowProfile(
               false
             );
 
-
             router.push(
-              "/notifications" as never
+              "/notifications"
             );
 
           }}
         >
 
           <Bell
-            size={19}
-            color="#757991"
+            size={18}
+            color="#263041"
           />
 
-
-          {
-            unreadCount >
-              0 && (
-
-              <View
+          {unreadCount >
+            0 && (
+            <View
+              style={
+                styles.badge
+              }
+            >
+              <Text
                 style={
-                  styles.badge
+                  styles.badgeText
                 }
               >
-
-                <Text
-                  style={
-                    styles.badgeText
-                  }
-                >
-
-                  {
-                    unreadCount >
-                    99
-                      ? "99+"
-                      : unreadCount
-                  }
-
-                </Text>
-
-              </View>
-
-            )
-          }
+                {unreadCount >
+                99
+                  ? "99+"
+                  : unreadCount}
+              </Text>
+            </View>
+          )}
 
         </TouchableOpacity>
 
+      </View>
+
+
+      <View
+        style={
+          styles.searchBox
+        }
+      >
+
+        <Search
+          size={17}
+          color="#94A3B8"
+        />
+
+        <TextInput
+          placeholder="Search..."
+          placeholderTextColor="#9AA4B5"
+          style={
+            styles.input
+          }
+        />
+
+      </View>
+
+
+      <TouchableOpacity
+        style={
+          styles.profileButton
+        }
+        activeOpacity={0.78}
+        onPress={() => {
+
+          setShowProfile(
+            !showProfile
+          );
+
+        }}
+      >
+
+        <UserAvatar
+          name={
+            currentUser
+              ?.full_name
+          }
+          avatarUrl={
+            currentUser
+              ?.avatar_url
+          }
+          style={
+            styles.avatar
+          }
+          textStyle={
+            styles.avatarText
+          }
+        />
 
         <View
           style={
-            styles.profileWrapper
+            styles.profileCopy
           }
         >
 
-          <TouchableOpacity
-            activeOpacity={
-              0.75
-            }
+          <Text
+            numberOfLines={1}
             style={
-              styles.profileButton
+              styles.name
             }
-            onPress={() => {
-
-              setShowProfile(
-                previous =>
-                  !previous
-              );
-
-            }}
           >
+            {
+              currentUser
+                ?.full_name ||
+              "Therapist"
+            }
+          </Text>
 
-            <View
-              style={
-                styles.profileIcon
-              }
-            >
-
-              <Stethoscope
-                size={16}
-                color="#7566EB"
-              />
-
-            </View>
-
-
-            <ChevronDown
-              size={15}
-              color="#8A8EA5"
-              style={{
-                transform: [
-                  {
-                    rotate:
-                      showProfile
-                        ? "180deg"
-                        : "0deg",
-                  },
-                ],
-              }}
-            />
-
-          </TouchableOpacity>
-
-
-          {
-            showProfile && (
-
-              <ProfileMenu />
-
-            )
-          }
+          <Text
+            style={
+              styles.role
+            }
+          >
+            Therapist
+          </Text>
 
         </View>
 
-      </View>
+        <ChevronDown
+          size={16}
+          color="#4B5563"
+        />
+
+      </TouchableOpacity>
+
+
+      <Text
+        style={
+          styles.description
+        }
+      >
+        Monitor your children's cognitive assessments in one place.
+      </Text>
+
+
+      {showProfile &&
+        <ProfileMenu />
+      }
 
     </View>
 
@@ -333,12 +429,32 @@ const styles =
   StyleSheet.create({
 
     container: {
+      width:
+        "100%",
 
-      minHeight:
-        68,
+      alignSelf:
+        "stretch",
+
+      backgroundColor:
+        "#F7F8FC",
 
       paddingHorizontal:
-        18,
+        16,
+
+      paddingTop:
+        8,
+
+      paddingBottom:
+        8,
+
+      marginBottom:
+        12,
+    },
+
+
+    top: {
+      width:
+        "100%",
 
       flexDirection:
         "row",
@@ -346,40 +462,81 @@ const styles =
       alignItems:
         "center",
 
-      backgroundColor:
-        "#FFFFFF",
-
-      borderBottomWidth:
-        1,
-
-      borderBottomColor:
-        "#EEEFF5",
-
-      shadowColor:
-        "#44446E",
-
-      shadowOffset: {
-        width: 0,
-        height: 3,
-      },
-
-      shadowOpacity:
-        0.025,
-
-      shadowRadius:
-        7,
-
-      elevation:
-        1,
-
-      zIndex:
-        20,
-
+      marginBottom:
+        11,
     },
 
 
     menuButton: {
+      width:
+        40,
 
+      height:
+        40,
+
+      flexShrink:
+        0,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderRadius:
+        13,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E9ECF3",
+    },
+
+
+    titleContainer: {
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      marginHorizontal:
+        12,
+    },
+
+
+    date: {
+      fontSize:
+        10,
+
+      color:
+        "#94A3B8",
+    },
+
+
+    heading: {
+      marginTop:
+        1,
+
+      fontSize:
+        23,
+
+      lineHeight:
+        28,
+
+      fontWeight:
+        "700",
+
+      color:
+        "#1F2937",
+    },
+
+
+    iconButton: {
       width:
         40,
 
@@ -392,126 +549,24 @@ const styles =
       borderRadius:
         13,
 
-      alignItems:
-        "center",
+      backgroundColor:
+        "#FFFFFF",
 
       justifyContent:
         "center",
 
-      backgroundColor:
-        "#FFFFFF",
+      alignItems:
+        "center",
 
       borderWidth:
         1,
 
       borderColor:
-        "#ECECF4",
-
-    },
-
-
-    identity: {
-
-      flex:
-        1,
-
-      minWidth:
-        0,
-
-      marginLeft:
-        12,
-
-      justifyContent:
-        "center",
-
-    },
-
-
-    portalLabel: {
-
-      color:
-        "#A0A3B5",
-
-      fontSize:
-        9.5,
-
-      lineHeight:
-        13,
-
-    },
-
-
-    portalTitle: {
-
-      marginTop:
-        1,
-
-      color:
-        "#343654",
-
-      fontSize:
-        13,
-
-      lineHeight:
-        18,
-
-      fontWeight:
-        "700",
-
-    },
-
-
-    actions: {
-
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      gap:
-        8,
-
-      marginLeft:
-        8,
-
-    },
-
-
-    notificationButton: {
-
-      width:
-        40,
-
-      height:
-        40,
-
-      position:
-        "relative",
-
-      borderRadius:
-        13,
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      backgroundColor:
-        "#FFFFFF",
-
-      borderWidth:
-        1,
-
-      borderColor:
-        "#ECECF4",
-
+        "#E9ECF3",
     },
 
 
     badge: {
-
       position:
         "absolute",
 
@@ -522,16 +577,19 @@ const styles =
         -5,
 
       minWidth:
-        19,
+        18,
 
       height:
-        19,
+        18,
 
       paddingHorizontal:
         4,
 
       borderRadius:
-        10,
+        9,
+
+      backgroundColor:
+        "#EF4444",
 
       alignItems:
         "center",
@@ -539,56 +597,44 @@ const styles =
       justifyContent:
         "center",
 
-      backgroundColor:
-        "#7C6CFF",
-
       borderWidth:
         2,
 
       borderColor:
-        "#FFFFFF",
-
+        "#F7F8FC",
     },
 
 
     badgeText: {
-
       color:
         "#FFFFFF",
 
       fontSize:
-        8,
+        9,
 
       fontWeight:
         "800",
-
-      lineHeight:
-        10,
-
     },
 
 
-    profileWrapper: {
-
-      position:
-        "relative",
-
-      zIndex:
-        50,
-
-    },
-
-
-    profileButton: {
+    searchBox: {
+      width:
+        "100%",
 
       height:
-        40,
+        44,
 
-      minWidth:
-        68,
+      backgroundColor:
+        "#FFFFFF",
 
-      paddingHorizontal:
-        7,
+      borderRadius:
+        14,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E9ECF3",
 
       flexDirection:
         "row",
@@ -596,47 +642,155 @@ const styles =
       alignItems:
         "center",
 
-      justifyContent:
-        "center",
+      paddingHorizontal:
+        14,
 
       gap:
-        5,
+        9,
+    },
 
-      borderRadius:
+
+    input: {
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      height:
+        "100%",
+
+      fontSize:
         13,
+
+      color:
+        "#334155",
+
+      paddingVertical:
+        0,
+    },
+
+
+    profileButton: {
+      width:
+        "100%",
+
+      marginTop:
+        10,
+
+      minHeight:
+        52,
 
       backgroundColor:
         "#FFFFFF",
+
+      borderRadius:
+        14,
 
       borderWidth:
         1,
 
       borderColor:
-        "#ECECF4",
+        "#E9ECF3",
 
-    },
-
-
-    profileIcon: {
-
-      width:
-        27,
-
-      height:
-        27,
-
-      borderRadius:
-        9,
+      flexDirection:
+        "row",
 
       alignItems:
         "center",
 
-      justifyContent:
-        "center",
+      paddingHorizontal:
+        10,
 
-      backgroundColor:
-        "#F0EDFF",
+      paddingVertical:
+        7,
 
+      gap:
+        10,
+    },
+
+
+    avatar: {
+      width:
+        38,
+
+      height:
+        38,
+
+      borderRadius:
+        11,
+
+      flexShrink:
+        0,
+    },
+
+
+    avatarText: {
+      color:
+        "#7566EB",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "800",
+    },
+
+
+    profileCopy: {
+      minWidth:
+        0,
+
+      flex:
+        1,
+    },
+
+
+    name: {
+      fontSize:
+        13,
+
+      lineHeight:
+        17,
+
+      fontWeight:
+        "700",
+
+      color:
+        "#1F2937",
+    },
+
+
+    role: {
+      marginTop:
+        1,
+
+      fontSize:
+        10,
+
+      color:
+        "#64748B",
+    },
+
+
+    description: {
+      marginTop:
+        10,
+
+      marginBottom:
+        5,
+
+      paddingHorizontal:
+        1,
+
+      color:
+        "#64748B",
+
+      fontSize:
+        11.5,
+
+      lineHeight:
+        17,
     },
 
   });

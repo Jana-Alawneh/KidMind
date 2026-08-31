@@ -6,15 +6,12 @@ import {
   Modal,
   Platform,
   Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
 
 import {
   useCallback,
@@ -23,6 +20,11 @@ import {
   useRef,
   useState,
 } from "react";
+
+import {
+  MessageCircle,
+  Search,
+} from "lucide-react-native";
 
 import {
   clearChatConversation,
@@ -44,6 +46,8 @@ import {
   getCurrentUser,
 } from "../../api/authApi";
 
+import UserAvatar from "@/components/common/UserAvatar";
+
 
 type ChatListItem = {
   id:
@@ -62,6 +66,13 @@ type ChatListItem = {
   email: string;
   phone: string;
   region: string;
+  avatarUrl: string;
+  isOnline: boolean;
+  isActive: boolean;
+  lastSeenAt:
+    | string
+    | Date
+    | null;
   childName:
     | string
     | null;
@@ -246,6 +257,32 @@ const normalizeConversation =
       conversation
         .other_user_region ||
       "",
+    avatarUrl:
+      String(
+        conversation
+          .other_user_avatar_url ||
+        ""
+      ),
+    isOnline:
+      Boolean(
+        Number(
+          conversation
+            .other_user_is_online ||
+          0
+        )
+      ),
+    isActive:
+      Boolean(
+        Number(
+          conversation
+            .other_user_is_active ??
+          1
+        )
+      ),
+    lastSeenAt:
+      conversation
+        .other_user_last_seen_at ||
+      null,
     childName:
       conversation
         .child_name ||
@@ -315,6 +352,32 @@ const normalizeContact =
       contact.phone || "",
     region:
       contact.region || "",
+    avatarUrl:
+      String(
+        contact.avatar_url ||
+        ""
+      ),
+    isOnline:
+      Boolean(
+        Number(
+          contact.is_online ||
+          0
+        )
+      ),
+    isActive:
+      contact.is_active ===
+        undefined ||
+      contact.is_active ===
+        null
+        ? true
+        : Boolean(
+            Number(
+              contact.is_active
+            )
+          ),
+    lastSeenAt:
+      contact.last_seen_at ||
+      null,
     childName:
       contact.child_name ||
       null,
@@ -334,34 +397,51 @@ const getChatKey =
     `${item.userId}:${item.conversationType}:${item.childId || 0}`;
 
 
-const getInitials =
+const roleOrder:
+  Record<
+    ChatRole,
+    number
+  > = {
+    parent: 0,
+    therapist: 1,
+    admin: 2,
+  };
+
+
+const getRoleSectionLabel =
   (
-    value: string
+    role: ChatRole
   ) => {
 
-    const parts =
-      String(
-        value || "?"
-      )
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2);
-
     if (
-      parts.length === 0
+      role === "parent"
     ) {
-      return "?";
+      return "PARENTS";
     }
 
-    return parts
-      .map(
-        part =>
-          part
-            .charAt(0)
-            .toUpperCase()
-      )
-      .join("");
+    if (
+      role === "admin"
+    ) {
+      return "ADMINISTRATION";
+    }
+
+    return "THERAPISTS";
+
+  };
+
+
+const getPresenceLabel =
+  (
+    item: ChatListItem
+  ) => {
+
+    if (!item.isActive) {
+      return "Disabled";
+    }
+
+    return item.isOnline
+      ? "Online"
+      : "Offline";
 
   };
 
@@ -673,6 +753,37 @@ export default function MobileChat() {
   );
 
 
+  useEffect(
+    () => {
+
+      const timer =
+        setInterval(
+          () => {
+
+            Promise.all([
+              loadContacts(),
+              loadConversations(),
+            ]).catch(
+              () => {}
+            );
+
+          },
+          5000
+        );
+
+      return () =>
+        clearInterval(
+          timer
+        );
+
+    },
+    [
+      loadContacts,
+      loadConversations,
+    ]
+  );
+
+
   const availableItems =
     useMemo(
       () => {
@@ -747,6 +858,38 @@ export default function MobileChat() {
       [
         availableItems,
         searchText,
+      ]
+    );
+
+
+  const displayItems =
+    useMemo(
+      () => {
+
+        return [
+          ...filteredItems,
+        ].sort(
+          (first, second) => {
+
+            const roleDifference =
+              roleOrder[first.role] -
+              roleOrder[second.role];
+
+            if (roleDifference !== 0) {
+              return roleDifference;
+            }
+
+            return first.name
+              .localeCompare(
+                second.name
+              );
+
+          }
+        );
+
+      },
+      [
+        filteredItems,
       ]
     );
 
@@ -1369,130 +1512,195 @@ export default function MobileChat() {
   const renderContact =
     ({
       item,
+      index,
     }: {
       item:
         ChatListItem;
-    }) => (
-      <Pressable
-        style={
-          styles.contactCard
-        }
-        onPress={() =>
-          openConversation(
-            item
-          )
-        }
-      >
-        <View
-          style={
-            styles.avatar
-          }
-        >
-          <Text
-            style={
-              styles.avatarText
-            }
-          >
-            {getInitials(
-              item.name
-            )}
-          </Text>
-        </View>
+      index: number;
+    }) => {
 
-        <View
-          style={
-            styles.contactMain
-          }
-        >
-          <View
-            style={
-              styles.contactTop
-            }
-          >
-            <Text
-              numberOfLines={1}
-              style={
-                styles.contactName
-              }
-            >
-              {item.name}
-            </Text>
+      const previous =
+        index > 0
+          ? displayItems[
+              index - 1
+            ]
+          : null;
 
-            <Text
-              style={
-                styles.contactTime
-              }
-            >
-              {item.lastTime}
-            </Text>
-          </View>
+      const showSection =
+        !previous ||
+        previous.role !==
+          item.role;
 
-          <View
-            style={
-              styles.contactMetaRow
-            }
-          >
+      return (
+        <View>
+          {showSection && (
             <View
               style={
-                styles.rolePill
+                styles.sectionHeader
               }
             >
+              <View
+                style={[
+                  styles.sectionDot,
+                  item.role ===
+                    "admin"
+                    ? styles.sectionDotAdmin
+                    : item.role ===
+                        "therapist"
+                      ? styles.sectionDotTherapist
+                      : styles.sectionDotParent,
+                ]}
+              />
+
               <Text
                 style={
-                  styles.rolePillText
+                  styles.sectionLabel
                 }
               >
-                {normalizeRoleLabel(
+                {getRoleSectionLabel(
                   item.role
                 )}
               </Text>
             </View>
+          )}
 
-            {item.childName && (
-              <Text
-                numberOfLines={1}
-                style={
-                  styles.childText
-                }
-              >
-                {item.childName}
-              </Text>
-            )}
-          </View>
-
-          <View
+          <Pressable
             style={
-              styles.messagePreviewRow
+              styles.contactCard
+            }
+            onPress={() =>
+              openConversation(
+                item
+              )
             }
           >
-            <Text
-              numberOfLines={1}
+            <View
               style={
-                styles.messagePreview
+                styles.avatarWrap
               }
             >
-              {item.lastMessage}
-            </Text>
+              <UserAvatar
+                name={
+                  item.name
+                }
+                avatarUrl={
+                  item.avatarUrl
+                }
+                style={
+                  styles.avatar
+                }
+                textStyle={
+                  styles.avatarText
+                }
+              />
 
-            {item.unread > 0 && (
+              {item.isOnline &&
+                item.isActive && (
+                <View
+                  style={
+                    styles.onlineDot
+                  }
+                />
+              )}
+            </View>
+
+            <View
+              style={
+                styles.contactMain
+              }
+            >
               <View
                 style={
-                  styles.unreadBadge
+                  styles.contactTop
                 }
               >
                 <Text
+                  numberOfLines={1}
                   style={
-                    styles.unreadText
+                    styles.contactName
                   }
                 >
-                  {item.unread}
+                  {item.name}
+                </Text>
+
+                <Text
+                  style={
+                    styles.contactTime
+                  }
+                >
+                  {item.lastTime}
                 </Text>
               </View>
-            )}
-          </View>
+
+              <View
+                style={
+                  styles.contactMetaRow
+                }
+              >
+                <View
+                  style={
+                    styles.rolePill
+                  }
+                >
+                  <Text
+                    style={
+                      styles.rolePillText
+                    }
+                  >
+                    {normalizeRoleLabel(
+                      item.role
+                    )}
+                  </Text>
+                </View>
+
+                {item.childName && (
+                  <Text
+                    numberOfLines={1}
+                    style={
+                      styles.childText
+                    }
+                  >
+                    • {item.childName}
+                  </Text>
+                )}
+              </View>
+
+              <View
+                style={
+                  styles.messagePreviewRow
+                }
+              >
+                <Text
+                  numberOfLines={1}
+                  style={
+                    styles.messagePreview
+                  }
+                >
+                  {item.lastMessage}
+                </Text>
+
+                {item.unread > 0 && (
+                  <View
+                    style={
+                      styles.unreadBadge
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.unreadText
+                      }
+                    >
+                      {item.unread}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </Pressable>
         </View>
-      </Pressable>
-    );
+      );
+
+    };
 
 
   const renderMessage =
@@ -1636,19 +1844,36 @@ export default function MobileChat() {
 
             <View
               style={
-                styles.chatHeaderAvatar
+                styles.chatHeaderAvatarWrap
               }
             >
-              <Text
-                style={
-                  styles.chatHeaderAvatarText
-                }
-              >
-                {getInitials(
+              <UserAvatar
+                name={
                   selectedConversation
                     .name
-                )}
-              </Text>
+                }
+                avatarUrl={
+                  selectedConversation
+                    .avatarUrl
+                }
+                style={
+                  styles.chatHeaderAvatar
+                }
+                textStyle={
+                  styles.chatHeaderAvatarText
+                }
+              />
+
+              {selectedConversation
+                .isOnline &&
+                selectedConversation
+                  .isActive && (
+                <View
+                  style={
+                    styles.chatHeaderOnlineDot
+                  }
+                />
+              )}
             </View>
 
             <View
@@ -1678,6 +1903,40 @@ export default function MobileChat() {
                   ? ` • ${selectedConversation.childName}`
                   : ""}
               </Text>
+
+              <View
+                style={
+                  styles.presenceRow
+                }
+              >
+                <View
+                  style={[
+                    styles.presenceDot,
+                    selectedConversation
+                      .isOnline &&
+                    selectedConversation
+                      .isActive
+                      ? styles.presenceDotOnline
+                      : styles.presenceDotOffline,
+                  ]}
+                />
+
+                <Text
+                  style={[
+                    styles.presenceText,
+                    selectedConversation
+                      .isOnline &&
+                    selectedConversation
+                      .isActive
+                      ? styles.presenceTextOnline
+                      : styles.presenceTextOffline,
+                  ]}
+                >
+                  {getPresenceLabel(
+                    selectedConversation
+                  )}
+                </Text>
+              </View>
             </View>
 
             <Pressable
@@ -1983,19 +2242,37 @@ export default function MobileChat() {
               >
                 <View
                   style={
-                    styles.profileAvatar
+                    styles.profileAvatarWrap
                   }
                 >
-                  <Text
-                    style={
-                      styles.profileAvatarText
-                    }
-                  >
-                    {getInitials(
+                  <UserAvatar
+                    name={
                       selectedConversation
                         .name
-                    )}
-                  </Text>
+                    }
+                    avatarUrl={
+                      selectedConversation
+                        .avatarUrl
+                    }
+                    style={
+                      styles.profileAvatar
+                    }
+                    textStyle={
+                      styles.profileAvatarText
+                    }
+                  />
+
+                  <View
+                    style={[
+                      styles.profileStatusDot,
+                      selectedConversation
+                        .isOnline &&
+                      selectedConversation
+                        .isActive
+                        ? styles.profileStatusDotOnline
+                        : styles.profileStatusDotOffline,
+                    ]}
+                  />
                 </View>
 
                 <Text
@@ -2015,6 +2292,47 @@ export default function MobileChat() {
                     selectedConversation.role
                   )}
                 </Text>
+
+
+                <View
+                  style={[
+                    styles.profilePresencePill,
+                    selectedConversation
+                      .isOnline &&
+                    selectedConversation
+                      .isActive
+                      ? styles.profilePresencePillOnline
+                      : styles.profilePresencePillOffline,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.profilePresencePillDot,
+                      selectedConversation
+                        .isOnline &&
+                      selectedConversation
+                        .isActive
+                        ? styles.profileStatusDotOnline
+                        : styles.profileStatusDotOffline,
+                    ]}
+                  />
+
+                  <Text
+                    style={[
+                      styles.profilePresencePillText,
+                      selectedConversation
+                        .isOnline &&
+                      selectedConversation
+                        .isActive
+                        ? styles.profilePresencePillTextOnline
+                        : styles.profilePresencePillTextOffline,
+                    ]}
+                  >
+                    {getPresenceLabel(
+                      selectedConversation
+                    )}
+                  </Text>
+                </View>
 
                 {selectedConversation.childName && (
                   <View
@@ -2123,158 +2441,191 @@ export default function MobileChat() {
     >
       <View
         style={
-          styles.listHeader
+          styles.conversationsPanel
         }
       >
         <View
           style={
-            styles.listHeaderTop
+            styles.listHeader
           }
         >
-          <View>
-            <Text
+          <View
+            style={
+              styles.listHeaderTop
+            }
+          >
+            <View
               style={
-                styles.pageTitle
+                styles.listHeaderCopy
               }
             >
-              {getRoleTitle(
-                currentUser.role
-              )}
-            </Text>
+              <Text
+                style={
+                  styles.pageTitle
+                }
+              >
+                Conversations
+              </Text>
 
-            <Text
+              <Text
+                style={
+                  styles.pageSubtitle
+                }
+              >
+                {displayItems.length} {displayItems.length === 1
+                  ? "contact"
+                  : "contacts"}
+              </Text>
+            </View>
+
+            <View
               style={
-                styles.pageSubtitle
+                styles.chatIconBox
               }
             >
-              {getRoleSubtitle(
-                currentUser.role
+              <MessageCircle
+                size={20}
+                color="#7C6CFF"
+              />
+
+              {totalUnread > 0 && (
+                <View
+                  style={
+                    styles.totalUnreadBadge
+                  }
+                >
+                  <Text
+                    style={
+                      styles.totalUnreadText
+                    }
+                  >
+                    {totalUnread > 99
+                      ? "99+"
+                      : totalUnread}
+                  </Text>
+                </View>
               )}
-            </Text>
+            </View>
           </View>
 
-          {totalUnread > 0 && (
-            <View
-              style={
-                styles.totalUnreadBadge
-              }
-            >
-              <Text
-                style={
-                  styles.totalUnreadText
-                }
-              >
-                {totalUnread}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <TextInput
-          value={
-            searchText
-          }
-          onChangeText={
-            setSearchText
-          }
-          placeholder="Search conversations..."
-          placeholderTextColor="#a0a2b4"
-          style={
-            styles.searchInput
-          }
-        />
-      </View>
-
-      {error ? (
-        <View
-          style={
-            styles.errorBox
-          }
-        >
-          <Text
+          <View
             style={
-              styles.errorText
+              styles.searchBox
             }
           >
-            {error}
-          </Text>
-        </View>
-      ) : null}
+            <Search
+              size={17}
+              color="#98A0B5"
+            />
 
-      {loading ? (
-        <View
-          style={
-            styles.centeredPage
-          }
-        >
-          <ActivityIndicator
-            size="large"
-            color="#7666e7"
+            <TextInput
+              value={
+                searchText
+              }
+              onChangeText={
+                setSearchText
+              }
+              placeholder="Search conversations..."
+              placeholderTextColor="#9B9EB2"
+              style={
+                styles.searchInput
+              }
+            />
+          </View>
+        </View>
+
+        {error ? (
+          <View
+            style={
+              styles.errorBox
+            }
+          >
+            <Text
+              style={
+                styles.errorText
+              }
+            >
+              {error}
+            </Text>
+          </View>
+        ) : null}
+
+        {loading ? (
+          <View
+            style={
+              styles.centeredPanel
+            }
+          >
+            <ActivityIndicator
+              size="large"
+              color="#7666e7"
+            />
+
+            <Text
+              style={
+                styles.loadingText
+              }
+            >
+              Loading chat...
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={
+              displayItems
+            }
+            keyExtractor={
+              item =>
+                String(
+                  item.id
+                )
+            }
+            renderItem={
+              renderContact
+            }
+            contentContainerStyle={
+              displayItems.length
+                ? styles.contactsContent
+                : styles.emptyListContent
+            }
+            keyboardShouldPersistTaps="handled"
+            refreshing={
+              false
+            }
+            onRefresh={
+              loadPage
+            }
+            ListEmptyComponent={
+              <View
+                style={
+                  styles.emptyMessages
+                }
+              >
+                <Text
+                  style={
+                    styles.emptyTitle
+                  }
+                >
+                  No conversations found
+                </Text>
+
+                <Text
+                  style={
+                    styles.emptyText
+                  }
+                >
+                  {searchText
+                    ? "Try another search."
+                    : "No available chat contacts."}
+                </Text>
+              </View>
+            }
           />
-
-          <Text
-            style={
-              styles.loadingText
-            }
-          >
-            Loading chat...
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={
-            filteredItems
-          }
-          keyExtractor={
-            item =>
-              String(
-                item.id
-              )
-          }
-          renderItem={
-            renderContact
-          }
-          contentContainerStyle={
-            filteredItems.length
-              ? styles.contactsContent
-              : styles.emptyListContent
-          }
-          keyboardShouldPersistTaps="handled"
-          refreshing={
-            loading
-          }
-          onRefresh={
-            loadPage
-          }
-          ListEmptyComponent={
-            <View
-              style={
-                styles.emptyMessages
-              }
-            >
-              <Text
-                style={
-                  styles.emptyTitle
-                }
-              >
-                No conversations found
-              </Text>
-
-              <Text
-                style={
-                  styles.emptyText
-                }
-              >
-                {searchText
-                  ? "Try another search."
-                  : "No available chat contacts."}
-              </Text>
-            </View>
-          }
-        />
-      )}
+        )}
+      </View>
     </SafeAreaView>
   );
+
 }
 
 
@@ -2283,7 +2634,25 @@ const styles =
     page: {
       flex: 1,
       backgroundColor:
-        "#f7f8fc",
+        "#F4F5FA",
+    },
+    conversationsPanel: {
+      flex: 1,
+      marginHorizontal: 12,
+      marginTop: 10,
+      marginBottom: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: "#ECECF4",
+      borderRadius: 24,
+      backgroundColor: "#FFFFFF",
+    },
+    centeredPanel: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+      backgroundColor: "#FFFFFF",
     },
     centeredPage: {
       flex: 1,
@@ -2296,80 +2665,82 @@ const styles =
         "#f7f8fc",
     },
     listHeader: {
-      paddingHorizontal:
-        20,
-      paddingTop: 18,
+      paddingHorizontal: 20,
+      paddingTop: 22,
       paddingBottom: 16,
-      backgroundColor:
-        "#ffffff",
+      backgroundColor: "#FFFFFF",
       borderBottomWidth: 1,
-      borderBottomColor:
-        "#ececf4",
+      borderBottomColor: "#EEEEF5",
     },
     listHeaderTop: {
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
-      justifyContent:
-        "space-between",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: 16,
     },
+    listHeaderCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
     pageTitle: {
-      color:
-        "#303044",
-      fontSize: 22,
-      fontWeight:
-        "800",
+      color: "#28293E",
+      fontSize: 18,
+      fontWeight: "800",
     },
     pageSubtitle: {
-      marginTop: 4,
-      maxWidth: 290,
-      color:
-        "#989aab",
+      marginTop: 5,
+      color: "#9A9CAF",
       fontSize: 11,
-      lineHeight: 17,
+    },
+    chatIconBox: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#F3F0FF",
     },
     totalUnreadBadge: {
-      minWidth: 32,
-      height: 32,
-      paddingHorizontal:
-        9,
-      borderRadius: 16,
-      alignItems:
-        "center",
-      justifyContent:
-        "center",
-      backgroundColor:
-        "#7666e7",
+      position: "absolute",
+      top: -5,
+      right: -5,
+      minWidth: 18,
+      height: 18,
+      paddingHorizontal: 4,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#7666E7",
+      borderWidth: 2,
+      borderColor: "#FFFFFF",
     },
     totalUnreadText: {
-      color:
-        "#ffffff",
-      fontSize: 11,
-      fontWeight:
-        "800",
+      color: "#FFFFFF",
+      fontSize: 8,
+      fontWeight: "800",
+    },
+    searchBox: {
+      marginTop: 18,
+      height: 50,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 15,
+      borderRadius: 16,
+      backgroundColor: "#F7F7FB",
     },
     searchInput: {
-      marginTop: 16,
-      minHeight: 46,
-      paddingHorizontal:
-        15,
-      borderWidth: 1,
-      borderColor:
-        "#ececf4",
-      borderRadius: 15,
-      backgroundColor:
-        "#f8f8fb",
-      color:
-        "#303044",
+      flex: 1,
+      minWidth: 0,
+      height: "100%",
+      paddingVertical: 0,
+      color: "#303044",
       fontSize: 12,
     },
     contactsContent: {
-      padding:
-        14,
-      paddingBottom:
-        28,
+      paddingHorizontal: 20,
+      paddingTop: 14,
+      paddingBottom: 26,
     },
     emptyListContent: {
       flexGrow: 1,
@@ -2378,20 +2749,58 @@ const styles =
       padding:
         24,
     },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 14,
+      marginBottom: 6,
+      paddingHorizontal: 2,
+    },
+    sectionDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    sectionDotParent: {
+      backgroundColor: "#69B8E8",
+    },
+    sectionDotTherapist: {
+      backgroundColor: "#F0A75D",
+    },
+    sectionDotAdmin: {
+      backgroundColor: "#8978F4",
+    },
+    sectionLabel: {
+      color: "#9A9CAF",
+      fontSize: 9,
+      fontWeight: "800",
+      letterSpacing: 1.1,
+    },
     contactCard: {
-      flexDirection:
-        "row",
-      alignItems:
-        "center",
+      flexDirection: "row",
+      alignItems: "center",
       gap: 12,
-      padding: 14,
-      marginBottom: 10,
-      borderWidth: 1,
-      borderColor:
-        "#ececf4",
-      borderRadius: 18,
-      backgroundColor:
-        "#ffffff",
+      paddingHorizontal: 4,
+      paddingVertical: 13,
+      borderBottomWidth: 1,
+      borderBottomColor: "#F0F0F5",
+      backgroundColor: "#FFFFFF",
+    },
+    avatarWrap: {
+      position: "relative",
+      flexShrink: 0,
+    },
+    onlineDot: {
+      position: "absolute",
+      right: -1,
+      bottom: -1,
+      width: 11,
+      height: 11,
+      borderRadius: 6,
+      backgroundColor: "#38C991",
+      borderWidth: 2,
+      borderColor: "#FFFFFF",
     },
     avatar: {
       width: 50,
@@ -2545,6 +2954,21 @@ const styles =
         "900",
       letterSpacing: 1,
     },
+    chatHeaderAvatarWrap: {
+      position: "relative",
+      flexShrink: 0,
+    },
+    chatHeaderOnlineDot: {
+      position: "absolute",
+      right: -1,
+      bottom: -1,
+      width: 11,
+      height: 11,
+      borderRadius: 6,
+      backgroundColor: "#38C991",
+      borderWidth: 2,
+      borderColor: "#FFFFFF",
+    },
     chatHeaderAvatar: {
       width: 43,
       height: 43,
@@ -2579,6 +3003,33 @@ const styles =
       color:
         "#9799aa",
       fontSize: 9,
+    },
+    presenceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      marginTop: 4,
+    },
+    presenceDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    presenceDotOnline: {
+      backgroundColor: "#38C991",
+    },
+    presenceDotOffline: {
+      backgroundColor: "#C7C8D1",
+    },
+    presenceText: {
+      fontSize: 9,
+      fontWeight: "600",
+    },
+    presenceTextOnline: {
+      color: "#4E9B7B",
+    },
+    presenceTextOffline: {
+      color: "#9A9CAF",
     },
     childBanner: {
       marginHorizontal:
@@ -2870,6 +3321,26 @@ const styles =
       backgroundColor:
         "#ffffff",
     },
+    profileAvatarWrap: {
+      position: "relative",
+      alignSelf: "center",
+    },
+    profileStatusDot: {
+      position: "absolute",
+      right: 2,
+      bottom: 2,
+      width: 15,
+      height: 15,
+      borderRadius: 8,
+      borderWidth: 3,
+      borderColor: "#FFFFFF",
+    },
+    profileStatusDotOnline: {
+      backgroundColor: "#35C991",
+    },
+    profileStatusDotOffline: {
+      backgroundColor: "#C9CAD4",
+    },
     profileAvatar: {
       width: 72,
       height: 72,
@@ -2907,6 +3378,38 @@ const styles =
       fontSize: 10,
       textAlign:
         "center",
+    },
+    profilePresencePill: {
+      alignSelf: "center",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: 9,
+      marginBottom: 6,
+      paddingHorizontal: 11,
+      paddingVertical: 6,
+      borderRadius: 999,
+    },
+    profilePresencePillOnline: {
+      backgroundColor: "#EAF8F2",
+    },
+    profilePresencePillOffline: {
+      backgroundColor: "#F1F2F6",
+    },
+    profilePresencePillDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    profilePresencePillText: {
+      fontSize: 9,
+      fontWeight: "800",
+    },
+    profilePresencePillTextOnline: {
+      color: "#36956F",
+    },
+    profilePresencePillTextOffline: {
+      color: "#8D8F9E",
     },
     profileInfo: {
       marginTop: 12,

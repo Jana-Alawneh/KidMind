@@ -33,6 +33,55 @@ const emptyForm = {
 };
 
 
+const resolveAvatarUrl = value => {
+  const avatarUrl =
+    String(
+      value || ""
+    ).trim();
+
+  if (!avatarUrl) {
+    return "";
+  }
+
+  if (
+    /^(https?:|data:|blob:)/i.test(
+      avatarUrl
+    )
+  ) {
+    return avatarUrl;
+  }
+
+  const baseUrl =
+    String(
+      api.defaults.baseURL ||
+      ""
+    ).trim();
+
+  if (!baseUrl) {
+    return avatarUrl;
+  }
+
+  try {
+    return new URL(
+      avatarUrl,
+      baseUrl
+    ).toString();
+  } catch {
+    const normalizedBase =
+      baseUrl.replace(
+        /\/$/,
+        ""
+      );
+
+    return avatarUrl.startsWith(
+      "/"
+    )
+      ? `${normalizedBase}${avatarUrl}`
+      : `${normalizedBase}/${avatarUrl}`;
+  }
+};
+
+
 export default function AdminTherapists() {
 
   const [
@@ -283,6 +332,73 @@ export default function AdminTherapists() {
     []
   );
 
+  useEffect(
+  () => {
+
+    let active =
+      true;
+
+
+    const refreshPresence =
+      async () => {
+
+        try {
+
+          const response =
+            await api.get(
+              "/users"
+            );
+
+
+          if (
+            active
+          ) {
+
+            setUsers(
+              Array.isArray(
+                response.data
+              )
+                ? response.data
+                : []
+            );
+
+          }
+
+        } catch (
+          requestError
+        ) {
+
+          console.error(
+            "Unable to refresh user presence:",
+            requestError
+          );
+
+        }
+
+      };
+
+
+    const interval =
+      window.setInterval(
+        refreshPresence,
+        30000
+      );
+
+
+    return () => {
+
+      active =
+        false;
+
+      window.clearInterval(
+        interval
+      );
+
+    };
+
+  },
+  []
+);
 
   const therapists =
     useMemo(
@@ -441,17 +557,18 @@ export default function AdminTherapists() {
 
 
   const activeTherapists =
-    therapists.filter(
-      therapist =>
-        Number(
-          therapist.is_active
-        ) === 1
-    ).length;
+  therapists.filter(
+    therapist =>
+      therapist.is_online === true ||
+      Number(
+        therapist.is_online
+      ) === 1
+  ).length;
 
 
-  const inactiveTherapists =
-    therapists.length -
-    activeTherapists;
+const inactiveTherapists =
+  therapists.length -
+  activeTherapists;
 
 
   const therapistLinks =
@@ -1413,10 +1530,23 @@ export default function AdminTherapists() {
                         ] || [];
 
 
-                      const active =
+                      const accountActive =
                         Number(
                           therapist.is_active
                         ) === 1;
+
+
+                      const online =
+                        therapist.is_online === true ||
+                        Number(
+                          therapist.is_online
+                        ) === 1;
+
+
+                      const avatarUrl =
+                        resolveAvatarUrl(
+                          therapist.avatar_url
+                        );
 
 
                       return (
@@ -1433,14 +1563,28 @@ export default function AdminTherapists() {
                             <div className="therapist-avatar">
 
                               {
-                                String(
-                                  therapist.full_name ||
-                                  "T"
-                                )
-                                  .charAt(
-                                    0
+                                avatarUrl
+                                  ? (
+                                    <img
+                                      src={
+                                        avatarUrl
+                                      }
+                                      alt={
+                                        therapist.full_name ||
+                                        "Therapist"
+                                      }
+                                    />
                                   )
-                                  .toUpperCase()
+                                  : (
+                                    String(
+                                      therapist.full_name ||
+                                      "T"
+                                    )
+                                      .charAt(
+                                        0
+                                      )
+                                      .toUpperCase()
+                                  )
                               }
 
                             </div>
@@ -1457,18 +1601,18 @@ export default function AdminTherapists() {
                                 </h2>
 
                                 <span
-                                  className={
-                                    active
-                                      ? "therapist-status active"
-                                      : "therapist-status inactive"
-                                  }
-                                >
-                                  {
-                                    active
-                                      ? "Active"
-                                      : "Inactive"
-                                  }
-                                </span>
+  className={
+    online
+      ? "therapist-status active"
+      : "therapist-status inactive"
+  }
+>
+  {
+    online
+      ? "Active"
+      : "Inactive"
+  }
+</span>
 
                               </div>
 
@@ -1615,7 +1759,7 @@ export default function AdminTherapists() {
 
                             <button
                               className={
-                                active
+                                accountActive
                                   ? "deactivate"
                                   : "activate"
                               }
@@ -1631,7 +1775,7 @@ export default function AdminTherapists() {
                               />
 
                               {
-                                active
+                                accountActive
                                   ? "Disable"
                                   : "Enable"
                               }
@@ -2460,6 +2604,7 @@ export default function AdminTherapists() {
           flex: 0 0 auto;
           display: grid;
           place-items: center;
+          overflow: hidden;
           border-radius: 15px;
           background:
             linear-gradient(
@@ -2470,6 +2615,13 @@ export default function AdminTherapists() {
           color: #4B8BC8;
           font-size: 16px;
           font-weight: 800;
+        }
+
+        .therapist-avatar img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
         }
 
         .therapist-main-info {

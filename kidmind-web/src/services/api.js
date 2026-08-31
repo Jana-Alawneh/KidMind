@@ -6,19 +6,12 @@ const api = axios.create({
   baseURL:
     "http://localhost:5000",
 
-  headers: {
-
-    "Content-Type":
-      "application/json",
-
-  },
-
 });
 
 
 api.interceptors.request.use(
 
-  (config) => {
+  config => {
 
     const token =
       sessionStorage.getItem(
@@ -33,12 +26,11 @@ api.interceptors.request.use(
 
     }
 
-
     return config;
 
   },
 
-  (error) => {
+  error => {
 
     return Promise.reject(
       error
@@ -51,13 +43,13 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
 
-  (response) => {
+  response => {
 
     return response;
 
   },
 
-  (error) => {
+  error => {
 
     if (
       error.response?.status ===

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import api from "../../services/api";
+import UserAvatar from "../common/UserAvatar";
 
 
 const emptyForm = {
@@ -255,6 +256,73 @@ export default function AdminParents() {
     []
   );
 
+  useEffect(
+  () => {
+
+    let active =
+      true;
+
+
+    const refreshPresence =
+      async () => {
+
+        try {
+
+          const response =
+            await api.get(
+              "/users"
+            );
+
+
+          if (
+            active
+          ) {
+
+            setUsers(
+              Array.isArray(
+                response.data
+              )
+                ? response.data
+                : []
+            );
+
+          }
+
+        } catch (
+          requestError
+        ) {
+
+          console.error(
+            "Unable to refresh user presence:",
+            requestError
+          );
+
+        }
+
+      };
+
+
+    const interval =
+      window.setInterval(
+        refreshPresence,
+        30000
+      );
+
+
+    return () => {
+
+      active =
+        false;
+
+      window.clearInterval(
+        interval
+      );
+
+    };
+
+  },
+  []
+);
 
   const parents =
     useMemo(
@@ -411,19 +479,19 @@ export default function AdminParents() {
     );
 
 
-  const activeParents =
-    parents.filter(
-      parent =>
-        Number(
-          parent.is_active
-        ) === 1
-    ).length;
+const activeParents =
+  parents.filter(
+    parent =>
+      parent.is_online === true ||
+      Number(
+        parent.is_online
+      ) === 1
+  ).length;
 
 
-  const inactiveParents =
-    parents.length -
-    activeParents;
-
+const inactiveParents =
+  parents.length -
+  activeParents;
 
   const openCreate =
     () => {
@@ -1662,10 +1730,17 @@ export default function AdminParents() {
                         ] || [];
 
 
-                      const active =
-                        Number(
-                          parent.is_active
-                        ) === 1;
+                      const accountActive =
+  Number(
+    parent.is_active
+  ) === 1;
+
+
+const online =
+  parent.is_online === true ||
+  Number(
+    parent.is_online
+  ) === 1;
 
 
                       return (
@@ -1678,21 +1753,12 @@ export default function AdminParents() {
                         >
 
                           <div className="parent-card-top">
-
-                            <div className="parent-avatar">
-
-                              {
-                                String(
-                                  parent.full_name ||
-                                  "P"
-                                )
-                                  .charAt(
-                                    0
-                                  )
-                                  .toUpperCase()
-                              }
-
-                            </div>
+<UserAvatar
+  user={
+    parent
+  }
+  className="parent-avatar"
+/>
 
 
                             <div className="parent-main-info">
@@ -1705,19 +1771,19 @@ export default function AdminParents() {
                                   }
                                 </h2>
 
-                                <span
-                                  className={
-                                    active
-                                      ? "parent-status active"
-                                      : "parent-status inactive"
-                                  }
-                                >
-                                  {
-                                    active
-                                      ? "Active"
-                                      : "Inactive"
-                                  }
-                                </span>
+                               <span
+  className={
+    online
+      ? "parent-status active"
+      : "parent-status inactive"
+  }
+>
+  {
+    online
+      ? "Active"
+      : "Inactive"
+  }
+</span>
 
                               </div>
 
@@ -1880,10 +1946,10 @@ export default function AdminParents() {
 
                             <button
                               className={
-                                active
-                                  ? "deactivate"
-                                  : "activate"
-                              }
+  accountActive
+    ? "deactivate"
+    : "activate"
+}
                               onClick={() =>
                                 toggleStatus(
                                   parent
@@ -1896,10 +1962,10 @@ export default function AdminParents() {
                               />
 
                               {
-                                active
-                                  ? "Disable"
-                                  : "Enable"
-                              }
+  accountActive
+    ? "Disable"
+    : "Enable"
+}
 
                             </button>
 

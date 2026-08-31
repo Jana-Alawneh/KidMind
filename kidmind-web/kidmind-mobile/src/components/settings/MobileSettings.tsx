@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   Alert,
   Appearance,
+  Image,
   Pressable,
   StyleSheet,
   Switch,
@@ -21,11 +22,15 @@ import {
   router,
 } from "expo-router";
 
+import * as ImagePicker from "expo-image-picker";
+
 import {
   Bell,
+  Camera,
   Check,
   Eye,
   EyeOff,
+  ImagePlus,
   KeyRound,
   Laptop,
   LogOut,
@@ -38,13 +43,16 @@ import {
   ShieldCheck,
   Smartphone,
   Sun,
+  Trash2,
   UserRound,
   Users,
 } from "lucide-react-native";
 
 import {
+  authRequest,
   clearAuthSession,
   fetchCurrentUser,
+  resolveApiAssetUrl,
   type UserRole,
 } from "@/api/authApi";
 
@@ -52,7 +60,6 @@ import {
   changeUserPassword,
   getUserSettings,
   updateUserPreferences,
-  updateUserProfile,
   type AppearanceMode,
   type SettingsChild,
   type SettingsUser,
@@ -66,6 +73,109 @@ type Props = {
   onProfileUpdated?: (
     user: SettingsUser
   ) => void;
+};
+
+
+type SelectedProfilePhoto = {
+  uri: string;
+  name: string;
+  type: string;
+  fileSize?: number | null;
+};
+
+
+type ProfileUpdateResponse = {
+  message?: string;
+  user: SettingsUser;
+};
+
+
+const MAX_AVATAR_SIZE =
+  5 * 1024 * 1024;
+
+
+const allowedAvatarTypes =
+  new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ]);
+
+
+const normalizePhotoMimeType = (
+  value?: string | null,
+  fileName?: string | null
+) => {
+  const raw =
+    String(
+      value || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    raw === "image/jpg"
+  ) {
+    return "image/jpeg";
+  }
+
+  if (
+    allowedAvatarTypes.has(
+      raw
+    )
+  ) {
+    return raw;
+  }
+
+  const extension =
+    String(
+      fileName || ""
+    )
+      .split(".")
+      .pop()
+      ?.toLowerCase();
+
+  if (
+    extension === "jpg" ||
+    extension === "jpeg"
+  ) {
+    return "image/jpeg";
+  }
+
+  if (
+    extension === "png"
+  ) {
+    return "image/png";
+  }
+
+  if (
+    extension === "webp"
+  ) {
+    return "image/webp";
+  }
+
+  return "";
+};
+
+
+const getPhotoExtension = (
+  mimeType: string
+) => {
+  if (
+    mimeType ===
+    "image/png"
+  ) {
+    return "png";
+  }
+
+  if (
+    mimeType ===
+    "image/webp"
+  ) {
+    return "webp";
+  }
+
+  return "jpg";
 };
 
 
@@ -574,6 +684,27 @@ export default function MobileSettings({
   ] =
     useState("");
 
+
+  const [
+    selectedPhoto,
+    setSelectedPhoto,
+  ] =
+    useState<SelectedProfilePhoto | null>(
+      null
+    );
+
+  const [
+    removeAvatar,
+    setRemoveAvatar,
+  ] =
+    useState(false);
+
+  const [
+    photoMessage,
+    setPhotoMessage,
+  ] =
+    useState("");
+
   const [
     currentPassword,
     setCurrentPassword,
@@ -664,6 +795,18 @@ export default function MobileSettings({
       ""
     );
 
+    setSelectedPhoto(
+      null
+    );
+
+    setRemoveAvatar(
+      false
+    );
+
+    setPhotoMessage(
+      ""
+    );
+
     setPreferences({
       ...defaultPreferences,
       ...payload.settings,
@@ -744,6 +887,142 @@ export default function MobileSettings({
     );
 
 
+  const pickProfilePhoto =
+    async () => {
+      try {
+        const permission =
+          await ImagePicker
+            .requestMediaLibraryPermissionsAsync();
+
+        if (
+          !permission.granted
+        ) {
+          Alert.alert(
+            "Profile Photo",
+            "Please allow photo library access to choose a profile photo."
+          );
+
+          return;
+        }
+
+        const result =
+          await ImagePicker
+            .launchImageLibraryAsync({
+              mediaTypes: [
+                "images",
+              ],
+              allowsEditing:
+                true,
+              aspect: [
+                1,
+                1,
+              ],
+              quality:
+                0.85,
+            });
+
+        if (
+          result.canceled ||
+          !result.assets?.length
+        ) {
+          return;
+        }
+
+        const asset =
+          result.assets[0];
+
+        const mimeType =
+          normalizePhotoMimeType(
+            asset.mimeType,
+            asset.fileName ||
+              asset.uri
+          );
+
+        if (
+          !mimeType
+        ) {
+          Alert.alert(
+            "Profile Photo",
+            "Please choose a JPG, PNG or WEBP image."
+          );
+
+          return;
+        }
+
+        if (
+          asset.fileSize &&
+          asset.fileSize >
+            MAX_AVATAR_SIZE
+        ) {
+          Alert.alert(
+            "Profile Photo",
+            "Profile photo must be 5MB or smaller."
+          );
+
+          return;
+        }
+
+        const extension =
+          getPhotoExtension(
+            mimeType
+          );
+
+        const fileName =
+          asset.fileName &&
+          /\.(jpe?g|png|webp)$/i.test(
+            asset.fileName
+          )
+            ? asset.fileName
+            : `avatar-${Date.now()}.${extension}`;
+
+        setSelectedPhoto({
+          uri:
+            asset.uri,
+          name:
+            fileName,
+          type:
+            mimeType,
+          fileSize:
+            asset.fileSize,
+        });
+
+        setRemoveAvatar(
+          false
+        );
+
+        setPhotoMessage(
+          "Photo selected. Save your profile to keep it."
+        );
+      } catch (
+        requestError
+      ) {
+        Alert.alert(
+          "Profile Photo",
+          requestError instanceof
+            Error
+            ? requestError.message
+            : "Unable to open the photo library."
+        );
+      }
+    };
+
+
+  const removeProfilePhoto =
+    () => {
+      setSelectedPhoto(
+        null
+      );
+
+      setRemoveAvatar(
+        true
+      );
+
+      setPhotoMessage(
+        "Photo will be removed when you save your profile."
+      );
+    };
+
+
   const saveProfile =
     async () => {
       const cleanName =
@@ -786,26 +1065,104 @@ export default function MobileSettings({
           true
         );
 
-        const response =
-          await updateUserProfile({
-            full_name:
-              cleanName,
-            email:
-              cleanEmail,
-            phone:
-              phone.trim() ||
-              null,
-            avatar_url:
-              avatarUrl.trim() ||
-              null,
-            ...(role ===
-              "parent"
-              ? {
-                  region:
-                    cleanRegion,
-                }
-              : {}),
-          });
+        let response:
+          ProfileUpdateResponse;
+
+        if (
+          selectedPhoto ||
+          removeAvatar
+        ) {
+          const formData =
+            new FormData();
+
+          formData.append(
+            "full_name",
+            cleanName
+          );
+
+          formData.append(
+            "email",
+            cleanEmail
+          );
+
+          formData.append(
+            "phone",
+            phone.trim()
+          );
+
+          if (
+            role ===
+            "parent"
+          ) {
+            formData.append(
+              "region",
+              cleanRegion
+            );
+          }
+
+          formData.append(
+            "remove_avatar",
+            removeAvatar
+              ? "1"
+              : "0"
+          );
+
+          if (
+            selectedPhoto
+          ) {
+            formData.append(
+              "avatar",
+              {
+                uri:
+                  selectedPhoto.uri,
+                name:
+                  selectedPhoto.name,
+                type:
+                  selectedPhoto.type,
+              } as any
+            );
+          }
+
+          response =
+            await authRequest<ProfileUpdateResponse>(
+              "/users/settings/profile",
+              {
+                method:
+                  "PUT",
+                body:
+                  formData,
+              }
+            );
+        } else {
+          response =
+            await authRequest<ProfileUpdateResponse>(
+              "/users/settings/profile",
+              {
+                method:
+                  "PUT",
+                body:
+                  JSON.stringify({
+                    full_name:
+                      cleanName,
+                    email:
+                      cleanEmail,
+                    phone:
+                      phone.trim() ||
+                      null,
+                    avatar_url:
+                      avatarUrl.trim() ||
+                      null,
+                    ...(role ===
+                      "parent"
+                      ? {
+                          region:
+                            cleanRegion,
+                        }
+                      : {}),
+                  }),
+              }
+            );
+        }
 
         const updatedUser =
           response.user;
@@ -843,6 +1200,18 @@ export default function MobileSettings({
 
         setAvatarUrl(
           updatedUser.avatar_url ||
+          ""
+        );
+
+        setSelectedPhoto(
+          null
+        );
+
+        setRemoveAvatar(
+          false
+        );
+
+        setPhotoMessage(
           ""
         );
 
@@ -1135,6 +1504,17 @@ export default function MobileSettings({
   const user =
     data.user;
 
+  const displayAvatarUri =
+    selectedPhoto?.uri ||
+    (
+      removeAvatar
+        ? ""
+        : resolveApiAssetUrl(
+            avatarUrl ||
+            user.avatar_url
+          )
+    );
+
   const childCount =
     roleInfo.type ===
       "admin"
@@ -1259,21 +1639,38 @@ export default function MobileSettings({
             },
           ]}
         >
-          <Text
-            style={[
-              styles.heroAvatarText,
-              {
-                color:
-                  accent,
-              },
-            ]}
-          >
-            {
-              getInitials(
-                user.full_name
+          {
+            displayAvatarUri
+              ? (
+                <Image
+                  source={{
+                    uri:
+                      displayAvatarUri,
+                  }}
+                  style={
+                    styles.avatarImage
+                  }
+                  resizeMode="cover"
+                />
               )
-            }
-          </Text>
+              : (
+                <Text
+                  style={[
+                    styles.heroAvatarText,
+                    {
+                      color:
+                        accent,
+                    },
+                  ]}
+                >
+                  {
+                    getInitials(
+                      user.full_name
+                    )
+                  }
+                </Text>
+              )
+          }
         </View>
 
         <View
@@ -1421,7 +1818,7 @@ export default function MobileSettings({
                   styles.textSecondaryDark,
               ]}
             >
-              Update your account details.
+              Update your account details and profile photo.
             </Text>
           </View>
         </View>
@@ -1629,32 +2026,224 @@ export default function MobileSettings({
                 styles.textSecondaryDark,
             ]}
           >
-            Avatar URL
+            Profile Photo
           </Text>
 
-          <TextInput
-            value={
-              avatarUrl
-            }
-            onChangeText={
-              setAvatarUrl
-            }
-            editable={
-              !profileSaving
-            }
-            autoCapitalize="none"
+          <View
             style={[
-              styles.input,
+              styles.photoEditor,
               dark &&
-                styles.inputDark,
+                styles.photoEditorDark,
             ]}
-            placeholder="Optional image URL"
-            placeholderTextColor={
-              dark
-                ? "#777A8D"
-                : "#A7A8B7"
+          >
+            <View
+              style={[
+                styles.photoPreview,
+                {
+                  backgroundColor:
+                    dark
+                      ? "#38394E"
+                      : "#F0EDFF",
+                },
+              ]}
+            >
+              {
+                displayAvatarUri
+                  ? (
+                    <Image
+                      source={{
+                        uri:
+                          displayAvatarUri,
+                      }}
+                      style={
+                        styles.avatarImage
+                      }
+                      resizeMode="cover"
+                    />
+                  )
+                  : (
+                    <Text
+                      style={[
+                        styles.photoPreviewText,
+                        {
+                          color:
+                            accent,
+                        },
+                      ]}
+                    >
+                      {
+                        getInitials(
+                          fullName
+                        )
+                      }
+                    </Text>
+                  )
+              }
+
+              <View
+                style={[
+                  styles.photoCameraBadge,
+                  {
+                    backgroundColor:
+                      accent,
+                  },
+                ]}
+              >
+                <Camera
+                  size={13}
+                  color="#FFFFFF"
+                />
+              </View>
+            </View>
+
+            <View
+              style={
+                styles.photoCopy
+              }
+            >
+              <Text
+                style={[
+                  styles.photoTitle,
+                  dark &&
+                    styles.textPrimaryDark,
+                ]}
+              >
+                Upload your own photo
+              </Text>
+
+              <Text
+                style={[
+                  styles.photoHint,
+                  dark &&
+                    styles.textSecondaryDark,
+                ]}
+              >
+                JPG, PNG or WEBP. Maximum 5MB.
+              </Text>
+
+              {
+                selectedPhoto
+                  ? (
+                    <Text
+                      style={[
+                        styles.photoFileName,
+                        dark &&
+                          styles.textSecondaryDark,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {
+                        selectedPhoto.name
+                      }
+                    </Text>
+                  )
+                  : null
+              }
+
+              {
+                photoMessage
+                  ? (
+                    <Text
+                      style={[
+                        styles.photoMessage,
+                        {
+                          color:
+                            removeAvatar
+                              ? "#B65E69"
+                              : accent,
+                        },
+                      ]}
+                    >
+                      {
+                        photoMessage
+                      }
+                    </Text>
+                  )
+                  : null
+              }
+            </View>
+          </View>
+
+          <View
+            style={
+              styles.photoActions
             }
-          />
+          >
+            <Pressable
+              onPress={
+                pickProfilePhoto
+              }
+              disabled={
+                profileSaving
+              }
+              style={[
+                styles.photoButton,
+                dark &&
+                  styles.photoButtonDark,
+                {
+                  borderColor:
+                    `${accent}55`,
+                },
+                profileSaving &&
+                  styles.disabled,
+              ]}
+            >
+              <ImagePlus
+                size={16}
+                color={accent}
+              />
+
+              <Text
+                style={[
+                  styles.photoButtonText,
+                  {
+                    color:
+                      accent,
+                  },
+                ]}
+              >
+                {
+                  displayAvatarUri
+                    ? "Change Photo"
+                    : "Upload Photo"
+                }
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={
+                removeProfilePhoto
+              }
+              disabled={
+                profileSaving ||
+                !displayAvatarUri
+              }
+              style={[
+                styles.photoButton,
+                styles.removePhotoButton,
+                dark &&
+                  styles.removePhotoButtonDark,
+                (
+                  profileSaving ||
+                  !displayAvatarUri
+                ) &&
+                  styles.disabled,
+              ]}
+            >
+              <Trash2
+                size={15}
+                color="#B65E69"
+              />
+
+              <Text
+                style={
+                  styles.removePhotoButtonText
+                }
+              >
+                Remove Photo
+              </Text>
+            </Pressable>
+          </View>
 
           <Pressable
             onPress={
@@ -3047,6 +3636,13 @@ const styles =
         "center",
       justifyContent:
         "center",
+      overflow:
+        "hidden",
+    },
+
+    avatarImage: {
+      width: "100%",
+      height: "100%",
     },
 
     heroAvatarText: {
@@ -3165,6 +3761,156 @@ const styles =
     form: {
       marginTop: 17,
       gap: 8,
+    },
+
+    photoEditor: {
+      minHeight: 106,
+      padding: 13,
+      borderWidth: 1,
+      borderColor:
+        "#E7E7EF",
+      borderRadius: 14,
+      backgroundColor:
+        "#FAFAFD",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap: 12,
+    },
+
+    photoEditorDark: {
+      backgroundColor:
+        "#323346",
+      borderColor:
+        "#43455A",
+    },
+
+    photoPreview: {
+      width: 72,
+      height: 72,
+      flexShrink: 0,
+      position:
+        "relative",
+      borderRadius: 18,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      overflow:
+        "hidden",
+    },
+
+    photoPreviewText: {
+      fontSize: 18,
+      fontWeight: "800",
+    },
+
+    photoCameraBadge: {
+      width: 25,
+      height: 25,
+      position:
+        "absolute",
+      right: 4,
+      bottom: 4,
+      borderWidth: 2,
+      borderColor:
+        "#FFFFFF",
+      borderRadius: 9,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+    photoCopy: {
+      minWidth: 0,
+      flex: 1,
+    },
+
+    photoTitle: {
+      color:
+        "#51536B",
+      fontSize: 11,
+      fontWeight: "800",
+    },
+
+    photoHint: {
+      marginTop: 4,
+      color:
+        "#9A9CAC",
+      fontSize: 9,
+      lineHeight: 14,
+    },
+
+    photoFileName: {
+      marginTop: 5,
+      color:
+        "#777A90",
+      fontSize: 9,
+      fontWeight: "700",
+    },
+
+    photoMessage: {
+      marginTop: 5,
+      fontSize: 9,
+      fontWeight: "700",
+      lineHeight: 13,
+    },
+
+    photoActions: {
+      flexDirection:
+        "row",
+      flexWrap:
+        "wrap",
+      gap: 8,
+    },
+
+    photoButton: {
+      minHeight: 40,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderRadius: 11,
+      backgroundColor:
+        "#F8F7FF",
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      gap: 7,
+    },
+
+    photoButtonDark: {
+      backgroundColor:
+        "#343548",
+    },
+
+    photoButtonText: {
+      fontSize: 10,
+      fontWeight: "800",
+    },
+
+    removePhotoButton: {
+      borderColor:
+        "#F0CED2",
+      backgroundColor:
+        "#FFF4F4",
+    },
+
+    removePhotoButtonDark: {
+      borderColor:
+        "#65444A",
+      backgroundColor:
+        "#3B2D33",
+    },
+
+    removePhotoButtonText: {
+      color:
+        "#B65E69",
+      fontSize: 10,
+      fontWeight: "800",
     },
 
     label: {

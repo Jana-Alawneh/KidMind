@@ -3,6 +3,9 @@ import type {
   Response,
 } from "express";
 
+import fs from "fs";
+import path from "path";
+
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -797,9 +800,129 @@ export const updateCurrentUserProfile = async (
   res: Response
 ) => {
 
+  const uploadedFile =
+    (
+      req as AuthenticatedRequest & {
+        file?: {
+          filename?: string;
+          path?: string;
+        };
+      }
+    ).file;
+
+
+  const cleanupUploadedFile = () => {
+
+    const uploadedPath =
+      uploadedFile?.path
+        ? String(
+            uploadedFile.path
+          )
+        : "";
+
+    if (!uploadedPath) {
+      return;
+    }
+
+    try {
+
+      if (
+        fs.existsSync(
+          uploadedPath
+        )
+      ) {
+
+        fs.unlinkSync(
+          uploadedPath
+        );
+
+      }
+
+    } catch (cleanupError) {
+
+      console.error(
+        "Unable to remove unused uploaded avatar:",
+        cleanupError
+      );
+
+    }
+
+  };
+
+
+  const removeStoredAvatarFile = (
+    avatarUrl: unknown
+  ) => {
+
+    const normalizedUrl =
+      String(
+        avatarUrl || ""
+      ).trim();
+
+    const avatarPrefix =
+      "/uploads/avatars/";
+
+    if (
+      !normalizedUrl.startsWith(
+        avatarPrefix
+      )
+    ) {
+      return;
+    }
+
+    const fileName =
+      path.basename(
+        normalizedUrl
+      );
+
+    if (!fileName) {
+      return;
+    }
+
+    const avatarDirectory =
+      path.resolve(
+        process.cwd(),
+        "uploads",
+        "avatars"
+      );
+
+    const avatarPath =
+      path.join(
+        avatarDirectory,
+        fileName
+      );
+
+    try {
+
+      if (
+        fs.existsSync(
+          avatarPath
+        )
+      ) {
+
+        fs.unlinkSync(
+          avatarPath
+        );
+
+      }
+
+    } catch (cleanupError) {
+
+      console.error(
+        "Unable to remove previous avatar:",
+        cleanupError
+      );
+
+    }
+
+  };
+
+
   try {
 
     if (!req.auth) {
+
+      cleanupUploadedFile();
 
       return res.status(401).json({
         message:
@@ -817,6 +940,8 @@ export const updateCurrentUserProfile = async (
 
     if (!user) {
 
+      cleanupUploadedFile();
+
       return res.status(404).json({
         message:
           "User not found",
@@ -826,6 +951,8 @@ export const updateCurrentUserProfile = async (
 
 
     if (!user.is_active) {
+
+      cleanupUploadedFile();
 
       return res.status(403).json({
         message:
@@ -859,15 +986,66 @@ export const updateCurrentUserProfile = async (
         : null;
 
 
-    const avatarUrl =
-      req.body.avatar_url ===
+    const removeAvatarRequested =
+      req.body.remove_avatar ===
+        true ||
+      String(
+        req.body.remove_avatar ||
+        ""
+      )
+        .trim()
+        .toLowerCase() ===
+        "true" ||
+      String(
+        req.body.remove_avatar ||
+        ""
+      ).trim() ===
+        "1";
+
+
+    let avatarUrl:
+      | string
+      | null =
+        user.avatar_url
+          ? String(
+              user.avatar_url
+            ).trim()
+          : null;
+
+
+    if (
+      removeAvatarRequested
+    ) {
+
+      avatarUrl =
+        null;
+
+    }
+
+
+    if (
+      uploadedFile?.filename
+    ) {
+
+      avatarUrl =
+        `/uploads/avatars/${path.basename(
+          uploadedFile.filename
+        )}`;
+
+    } else if (
+      !removeAvatarRequested &&
+      req.body.avatar_url !==
         undefined
-        ? user.avatar_url
-        : req.body.avatar_url
+    ) {
+
+      avatarUrl =
+        req.body.avatar_url
           ? String(
               req.body.avatar_url
             ).trim()
           : null;
+
+    }
 
 
     const region =
@@ -885,6 +1063,8 @@ export const updateCurrentUserProfile = async (
       !fullName ||
       !email
     ) {
+
+      cleanupUploadedFile();
 
       return res.status(400).json({
         message:
@@ -906,6 +1086,8 @@ export const updateCurrentUserProfile = async (
         "parent" &&
       !finalRegion
     ) {
+
+      cleanupUploadedFile();
 
       return res.status(400).json({
         message:
@@ -931,6 +1113,8 @@ export const updateCurrentUserProfile = async (
         )
     ) {
 
+      cleanupUploadedFile();
+
       return res.status(409).json({
         message:
           "Email already exists",
@@ -950,8 +1134,29 @@ export const updateCurrentUserProfile = async (
 
 
     if (
+      (
+        uploadedFile?.filename ||
+        removeAvatarRequested
+      ) &&
+      user.avatar_url &&
+      String(
+        user.avatar_url
+      ).trim() !==
+        String(
+          avatarUrl || ""
+        ).trim()
+    ) {
+
+      removeStoredAvatarFile(
+        user.avatar_url
+      );
+
+    }
+
+
+    if (
       user.role ===
-      "parent" &&
+        "parent" &&
       user.full_name !==
         fullName
     ) {
@@ -1020,6 +1225,8 @@ export const updateCurrentUserProfile = async (
     });
 
   } catch (error) {
+
+    cleanupUploadedFile();
 
     console.error(
       "Update current user profile error:",

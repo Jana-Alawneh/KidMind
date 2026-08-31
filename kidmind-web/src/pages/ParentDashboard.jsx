@@ -37,6 +37,7 @@ import api from "../services/api";
 import EditChildModal from "../components/children/EditChildModal";
 import ParentSettings from "../components/parent/ParentSettings";
 import ParentFeedback from "../components/parent/ParentFeedback";
+import UserAvatar from "../components/common/UserAvatar";
 
 import {
   calculateCognitiveScore,
@@ -2689,14 +2690,12 @@ export default function ParentDashboard() {
                             key={`${therapist.id}-${therapist.child_id}`}
                           >
 
-                            <div className="therapist-avatar">
-                              {
-                                getInitials(
-                                  therapist.full_name
-                                )
-                              }
-                            </div>
-
+                           <UserAvatar
+  user={
+    therapist
+  }
+  className="therapist-avatar"
+/>
 
                             <div>
                               <strong>
@@ -3082,13 +3081,12 @@ export default function ParentDashboard() {
             </button>
 
 
-            <div className="topbar-avatar">
-              {
-                getInitials(
-                  currentUser.full_name
-                )
-              }
-            </div>
+            <UserAvatar
+  user={
+    currentUser
+  }
+  className="topbar-avatar"
+/>
 
           </div>
 

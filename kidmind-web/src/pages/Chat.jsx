@@ -49,6 +49,8 @@ import {
   setChatConversationMuted,
 } from "../api/chatApi";
 
+import UserAvatar from "../components/common/UserAvatar";
+
 
 const getCurrentUser = () => {
   try {
@@ -1650,39 +1652,91 @@ const Chat = () => {
     );
 
 
-  const getAvatar =
-    conversation => {
-      if (
-        conversation.role ===
-        "Admin"
-      ) {
-        return (
-          <ShieldCheck
-            size={20}
-            strokeWidth={1.8}
-          />
-        );
-      }
+  const getAvatarFallback =
+  (
+    conversation,
+    size = 20
+  ) => {
 
-      if (
-        conversation.role ===
-        "Parent"
-      ) {
-        return (
-          <UsersRound
-            size={20}
-            strokeWidth={1.8}
-          />
-        );
-      }
+    if (
+      conversation?.role ===
+      "Admin"
+    ) {
 
       return (
-        <UserRound
-          size={20}
+        <ShieldCheck
+          size={
+            size
+          }
           strokeWidth={1.8}
         />
       );
-    };
+
+    }
+
+
+    if (
+      conversation?.role ===
+      "Parent"
+    ) {
+
+      return (
+        <UsersRound
+          size={
+            size
+          }
+          strokeWidth={1.8}
+        />
+      );
+
+    }
+
+
+    return (
+      <UserRound
+        size={
+          size
+        }
+        strokeWidth={1.8}
+      />
+    );
+
+  };
+
+
+const renderAvatar =
+  (
+    conversation,
+    size = 20
+  ) => {
+
+    return (
+
+      <UserAvatar
+        name={
+          conversation?.name
+        }
+        avatarUrl={
+          conversation?.avatarUrl
+        }
+        className="
+          w-full
+          h-full
+          flex
+          items-center
+          justify-center
+        "
+        fallback={
+          getAvatarFallback(
+            conversation,
+            size
+          )
+        }
+      />
+
+    );
+
+  };
 
 
   const getRoleStyle =
@@ -1812,9 +1866,9 @@ const Chat = () => {
                 }
               `}
             >
-              {getAvatar(
-                conversation
-              )}
+              {renderAvatar(
+  conversation
+)}
             </div>
 
             {conversation.available && (
@@ -2256,9 +2310,9 @@ const Chat = () => {
 
                     <div className="relative">
                       <div className="w-11 h-11 rounded-[15px] bg-[#F3F4F8] text-[#777A91] flex items-center justify-center">
-                        {getAvatar(
-                          selectedConversation
-                        )}
+                        {renderAvatar(
+  selectedConversation
+)}
                       </div>
 
                       {selectedConversation.available && (
@@ -2927,11 +2981,10 @@ const Chat = () => {
 
                 <div className="flex items-start gap-5 pr-14">
                   <div className="w-[92px] h-[92px] rounded-[28px] bg-white border border-[#E8E8F0] shadow-[0_10px_28px_rgba(70,60,130,.11)] flex items-center justify-center text-[#7C6CFF] relative shrink-0">
-                    <div className="scale-[1.35]">
-                      {getAvatar(
-                        selectedConversation
-                      )}
-                    </div>
+                    {renderAvatar(
+  selectedConversation,
+  28
+)}
 
                     <span
                       className={`

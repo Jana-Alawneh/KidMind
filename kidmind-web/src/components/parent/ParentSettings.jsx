@@ -1,14 +1,17 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import {
   Bell,
+  Camera,
   Check,
   Eye,
   EyeOff,
+  ImagePlus,
   KeyRound,
   Laptop,
   LogOut,
@@ -20,6 +23,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sun,
+  Trash2,
   UserRound,
   Users,
   XCircle,
@@ -39,6 +43,68 @@ const emptySettings = {
   progress_notifications: true,
   appearance: "system",
 };
+
+
+const MAX_AVATAR_SIZE =
+  5 * 1024 * 1024;
+
+
+const allowedAvatarTypes =
+  new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ]);
+
+
+const resolveAvatarUrl =
+  value => {
+    const avatarUrl =
+      String(
+        value || ""
+      ).trim();
+
+    if (!avatarUrl) {
+      return "";
+    }
+
+    if (
+      /^(https?:|data:|blob:)/i.test(
+        avatarUrl
+      )
+    ) {
+      return avatarUrl;
+    }
+
+    const baseUrl =
+      String(
+        api.defaults.baseURL ||
+        ""
+      ).trim();
+
+    if (!baseUrl) {
+      return avatarUrl;
+    }
+
+    try {
+      return new URL(
+        avatarUrl,
+        baseUrl
+      ).toString();
+    } catch {
+      const normalizedBase =
+        baseUrl.replace(
+          /\/$/,
+          ""
+        );
+
+      return avatarUrl.startsWith(
+        "/"
+      )
+        ? `${normalizedBase}${avatarUrl}`
+        : `${normalizedBase}/${avatarUrl}`;
+    }
+  };
 
 
 const getInitials = value => {
@@ -214,6 +280,9 @@ export default function ParentSettings({
   const navigate =
     useNavigate();
 
+  const photoInputRef =
+    useRef(null);
+
   const [
     loading,
     setLoading,
@@ -238,6 +307,30 @@ export default function ParentSettings({
     phone: "",
     region: "",
     avatar_url: "",
+  });
+
+
+  const [
+    photoFile,
+    setPhotoFile,
+  ] = useState(null);
+
+  const [
+    photoPreviewUrl,
+    setPhotoPreviewUrl,
+  ] = useState("");
+
+  const [
+    removeAvatar,
+    setRemoveAvatar,
+  ] = useState(false);
+
+  const [
+    photoMessage,
+    setPhotoMessage,
+  ] = useState({
+    type: "",
+    text: "",
   });
 
   const [
@@ -311,6 +404,55 @@ export default function ParentSettings({
   ] = useState(false);
 
 
+  useEffect(
+    () => {
+      return () => {
+        if (
+          photoPreviewUrl &&
+          photoPreviewUrl.startsWith(
+            "blob:"
+          )
+        ) {
+          URL.revokeObjectURL(
+            photoPreviewUrl
+          );
+        }
+      };
+    },
+    [
+      photoPreviewUrl,
+    ]
+  );
+
+
+  const clearPhotoDraft =
+    () => {
+      setPhotoFile(
+        null
+      );
+
+      setPhotoPreviewUrl(
+        ""
+      );
+
+      setRemoveAvatar(
+        false
+      );
+
+      setPhotoMessage({
+        type: "",
+        text: "",
+      });
+
+      if (
+        photoInputRef.current
+      ) {
+        photoInputRef.current.value =
+          "";
+      }
+    };
+
+
   const loadSettings =
     async () => {
       try {
@@ -351,6 +493,9 @@ export default function ParentSettings({
               ?.avatar_url ||
             "",
         });
+
+        clearPhotoDraft();
+
 
         setPreferences({
           ...emptySettings,
@@ -453,19 +598,29 @@ export default function ParentSettings({
       : [];
 
 
+  const storedAvatarUrl =
+    removeAvatar
+      ? ""
+      : resolveAvatarUrl(
+          profile.avatar_url
+        );
+
+
+  const displayAvatarUrl =
+    photoPreviewUrl ||
+    storedAvatarUrl;
+
+
   const avatar =
     useMemo(
       () => {
         if (
-          profile.avatar_url
-            .trim()
+          displayAvatarUrl
         ) {
           return (
             <img
               src={
-                profile
-                  .avatar_url
-                  .trim()
+                displayAvatarUrl
               }
               alt="Parent profile"
             />
@@ -483,7 +638,7 @@ export default function ParentSettings({
         );
       },
       [
-        profile.avatar_url,
+        displayAvatarUrl,
         profile.full_name,
       ]
     );
@@ -525,6 +680,116 @@ export default function ParentSettings({
     };
 
 
+  const handlePhotoSelect =
+    event => {
+      const file =
+        event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      setProfileMessage({
+        type: "",
+        text: "",
+      });
+
+      if (
+        !allowedAvatarTypes.has(
+          file.type
+        )
+      ) {
+        setPhotoMessage({
+          type:
+            "error",
+          text:
+            "Please choose a JPG, PNG or WEBP image.",
+        });
+
+        event.target.value =
+          "";
+
+        return;
+      }
+
+      if (
+        file.size >
+        MAX_AVATAR_SIZE
+      ) {
+        setPhotoMessage({
+          type:
+            "error",
+          text:
+            "Profile photo must be 5MB or smaller.",
+        });
+
+        event.target.value =
+          "";
+
+        return;
+      }
+
+      const previewUrl =
+        URL.createObjectURL(
+          file
+        );
+
+      setPhotoFile(
+        file
+      );
+
+      setPhotoPreviewUrl(
+        previewUrl
+      );
+
+      setRemoveAvatar(
+        false
+      );
+
+      setPhotoMessage({
+        type:
+          "success",
+        text:
+          "Photo selected. Save your profile to keep it.",
+      });
+    };
+
+
+  const handleRemovePhoto =
+    () => {
+      setPhotoFile(
+        null
+      );
+
+      setPhotoPreviewUrl(
+        ""
+      );
+
+      setRemoveAvatar(
+        true
+      );
+
+      if (
+        photoInputRef.current
+      ) {
+        photoInputRef.current.value =
+          "";
+      }
+
+      setProfileMessage({
+        type: "",
+        text: "",
+      });
+
+      setPhotoMessage({
+        type:
+          "success",
+        text:
+          "Photo will be removed when you save your profile.",
+      });
+    };
+
+
   const saveProfile =
     async event => {
       event.preventDefault();
@@ -563,27 +828,81 @@ export default function ParentSettings({
           text: "",
         });
 
-        const response =
-          await api.put(
-            "/users/settings/profile",
-            {
-              full_name:
-                fullName,
-              email,
-              phone:
-                profile.phone
-                  .trim() ||
-                null,
-              region:
-                profile.region
-                  .trim(),
-              avatar_url:
-                profile
-                  .avatar_url
-                  .trim() ||
-                null,
-            }
+        let response;
+
+        if (
+          photoFile ||
+          removeAvatar
+        ) {
+          const formData =
+            new FormData();
+
+          formData.append(
+            "full_name",
+            fullName
           );
+
+          formData.append(
+            "email",
+            email
+          );
+
+          formData.append(
+            "phone",
+            profile.phone
+              .trim()
+          );
+
+          formData.append(
+            "region",
+            profile.region
+              .trim()
+          );
+
+          formData.append(
+            "remove_avatar",
+            removeAvatar
+              ? "1"
+              : "0"
+          );
+
+          if (
+            photoFile
+          ) {
+            formData.append(
+              "avatar",
+              photoFile
+            );
+          }
+
+          response =
+            await api.put(
+              "/users/settings/profile",
+              formData
+            );
+        } else {
+          response =
+            await api.put(
+              "/users/settings/profile",
+              {
+                full_name:
+                  fullName,
+                email,
+                phone:
+                  profile.phone
+                    .trim() ||
+                  null,
+                region:
+                  profile.region
+                    .trim(),
+                avatar_url:
+                  profile
+                    .avatar_url
+                    .trim() ||
+                  null,
+              }
+            );
+        }
 
         const updatedUser =
           response.data?.user;
@@ -647,6 +966,8 @@ export default function ParentSettings({
                 .avatar_url ||
               "",
           });
+
+          clearPhotoDraft();
 
           onProfileUpdated?.(
             updatedUser
@@ -1047,7 +1368,7 @@ export default function ParentSettings({
               </h3>
 
               <p>
-                Update your parent account details.
+                Update your parent account details and profile photo.
               </p>
             </div>
           </div>
@@ -1058,6 +1379,133 @@ export default function ParentSettings({
               saveProfile
             }
           >
+            <div className="parent-account-settings-photo-editor">
+              <div className="parent-account-settings-photo-preview">
+                {avatar}
+
+                <div className="parent-account-settings-photo-camera">
+                  <Camera
+                    size={14}
+                  />
+                </div>
+              </div>
+
+              <div className="parent-account-settings-photo-copy">
+                <strong>
+                  Profile Photo
+                </strong>
+
+                <span>
+                  Upload your own profile photo from your device.
+                  JPG, PNG or WEBP. Maximum 5MB.
+                </span>
+
+                {
+                  photoFile
+                    ? (
+                      <small>
+                        Selected: {
+                          photoFile.name
+                        }
+                      </small>
+                    )
+                    : null
+                }
+
+                {
+                  photoMessage.text
+                    ? (
+                      <span
+                        className={
+                          `parent-account-settings-photo-message ${photoMessage.type}`
+                        }
+                      >
+                        {
+                          photoMessage.type ===
+                          "error"
+                            ? (
+                              <XCircle
+                                size={13}
+                              />
+                            )
+                            : (
+                              <Check
+                                size={13}
+                              />
+                            )
+                        }
+
+                        {
+                          photoMessage.text
+                        }
+                      </span>
+                    )
+                    : null
+                }
+              </div>
+
+              <div className="parent-account-settings-photo-actions">
+                <input
+                  ref={
+                    photoInputRef
+                  }
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="parent-account-settings-photo-input"
+                  onChange={
+                    handlePhotoSelect
+                  }
+                  disabled={
+                    profileSaving
+                  }
+                />
+
+                <button
+                  type="button"
+                  className="parent-account-settings-photo-upload"
+                  onClick={() =>
+                    photoInputRef
+                      .current
+                      ?.click()
+                  }
+                  disabled={
+                    profileSaving
+                  }
+                >
+                  <ImagePlus
+                    size={15}
+                  />
+
+                  {
+                    displayAvatarUrl
+                      ? "Change Photo"
+                      : "Upload Photo"
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  className="parent-account-settings-photo-remove"
+                  onClick={
+                    handleRemovePhoto
+                  }
+                  disabled={
+                    profileSaving ||
+                    (
+                      !displayAvatarUrl &&
+                      !photoFile
+                    )
+                  }
+                >
+                  <Trash2
+                    size={14}
+                  />
+
+                  Remove Photo
+                </button>
+              </div>
+            </div>
+
             <label>
               <span>
                 Full Name
@@ -1149,25 +1597,6 @@ export default function ParentSettings({
               />
             </label>
 
-            <label>
-              <span>
-                Avatar URL
-              </span>
-
-              <input
-                name="avatar_url"
-                value={
-                  profile.avatar_url
-                }
-                onChange={
-                  handleProfileField
-                }
-                placeholder="Optional image URL"
-                disabled={
-                  profileSaving
-                }
-              />
-            </label>
 
             <div className="parent-account-settings-form-footer">
               {
@@ -2160,6 +2589,160 @@ const settingsStyles = `
     margin-top: 18px;
   }
 
+  .parent-account-settings-photo-editor {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-height: 112px;
+    padding: 16px;
+    border: 1px solid #e9e9f2;
+    border-radius: 15px;
+    background:
+      linear-gradient(
+        135deg,
+        #fbfcff,
+        #f9f8ff
+      );
+  }
+
+  .parent-account-settings-photo-preview {
+    width: 78px;
+    height: 78px;
+    flex: 0 0 auto;
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    border: 4px solid #ffffff;
+    border-radius: 19px;
+    background: linear-gradient(135deg,#dceeff,#e8e0ff);
+    color: #557bad;
+    box-shadow: 0 9px 24px rgba(81,121,174,.12);
+    font-size: 20px;
+    font-weight: 850;
+  }
+
+  .parent-account-settings-photo-preview > img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 15px;
+  }
+
+  .parent-account-settings-photo-preview > span {
+    display: grid;
+    place-items: center;
+  }
+
+  .parent-account-settings-photo-camera {
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    right: -7px;
+    bottom: -6px;
+    display: grid;
+    place-items: center;
+    border: 3px solid #fff;
+    border-radius: 9px;
+    background: #6f82df;
+    color: #fff;
+    box-shadow: 0 5px 12px rgba(85,100,180,.2);
+  }
+
+  .parent-account-settings-photo-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .parent-account-settings-photo-copy > strong {
+    display: block;
+    color: #4d4f68;
+    font-size: 11px;
+  }
+
+  .parent-account-settings-photo-copy > span {
+    display: block;
+    max-width: 430px;
+    margin-top: 5px;
+    color: #9a9cad;
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  .parent-account-settings-photo-copy > small {
+    display: block;
+    max-width: 430px;
+    margin-top: 6px;
+    overflow: hidden;
+    color: #73768d;
+    font-size: 8.5px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .parent-account-settings-photo-message {
+    display: flex !important;
+    align-items: center;
+    gap: 5px;
+    margin-top: 7px !important;
+    font-weight: 700;
+  }
+
+  .parent-account-settings-photo-message.success {
+    color: #4f8b69 !important;
+  }
+
+  .parent-account-settings-photo-message.error {
+    color: #b85d67 !important;
+  }
+
+  .parent-account-settings-photo-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .parent-account-settings-photo-input {
+    display: none;
+  }
+
+  .parent-account-settings-photo-upload,
+  .parent-account-settings-photo-remove {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 11px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .parent-account-settings-photo-upload {
+    border: 1px solid #d8e5f4;
+    background: #eef6ff;
+    color: #537fab;
+  }
+
+  .parent-account-settings-photo-remove {
+    border: 1px solid #f0d7da;
+    background: #fff7f7;
+    color: #b25f68;
+  }
+
+  .parent-account-settings-photo-upload:disabled,
+  .parent-account-settings-photo-remove:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
   .parent-account-settings-form label,
   .parent-account-settings-password-form label {
     display: block;
@@ -2640,6 +3223,45 @@ const settingsStyles = `
     background: linear-gradient(135deg,#273545,#292f3f,#2e2941);
   }
 
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-editor {
+    border-color: #393b50;
+    background:
+      linear-gradient(
+        135deg,
+        #292b3d,
+        #2c2d41
+      );
+  }
+
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-preview {
+    border-color: #37394b;
+  }
+
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-camera {
+    border-color: #292b3d;
+  }
+
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-copy > strong {
+    color: #ececf5;
+  }
+
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-copy > span,
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-copy > small {
+    color: #a6a8bb;
+  }
+
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-upload {
+    border-color: #3e536b;
+    background: #29384a;
+    color: #b9d8f7;
+  }
+
+  html[data-kidmind-appearance="dark"] .parent-account-settings-photo-remove {
+    border-color: #5d3c45;
+    background: #3b2d33;
+    color: #e3a5ad;
+  }
+
   html[data-kidmind-appearance="dark"] .parent-account-settings-form input,
   html[data-kidmind-appearance="dark"] .parent-account-settings-password-form input,
   html[data-kidmind-appearance="dark"] .parent-account-grid > div,
@@ -2680,6 +3302,16 @@ const settingsStyles = `
   }
 
   @media (max-width: 720px) {
+    .parent-account-settings-photo-editor {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .parent-account-settings-photo-actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
     .parent-account-settings-heading,
     .parent-account-settings-profile-hero,
     .parent-account-settings-signout-card,

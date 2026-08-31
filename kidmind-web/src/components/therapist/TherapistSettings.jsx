@@ -1,14 +1,17 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import {
   Bell,
+  Camera,
   Check,
   Eye,
   EyeOff,
+  ImagePlus,
   KeyRound,
   Laptop,
   LogOut,
@@ -20,6 +23,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sun,
+  Trash2,
   UserRound,
   Users,
   XCircle,
@@ -39,6 +43,18 @@ const emptySettings = {
   progress_notifications: true,
   appearance: "system",
 };
+
+
+const MAX_AVATAR_SIZE =
+  5 * 1024 * 1024;
+
+
+const allowedAvatarTypes =
+  new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ]);
 
 
 const getInitials = value => {
@@ -101,6 +117,50 @@ const getErrorMessage = (
     fallback
   );
 };
+
+
+const resolveAvatarUrl =
+  value => {
+    const avatarUrl =
+      String(
+        value || ""
+      ).trim();
+
+    if (!avatarUrl) {
+      return "";
+    }
+
+    if (
+      /^(https?:|data:|blob:)/i.test(
+        avatarUrl
+      )
+    ) {
+      return avatarUrl;
+    }
+
+    const baseUrl =
+      String(
+        api.defaults.baseURL ||
+        ""
+      ).replace(
+        /\/$/,
+        ""
+      );
+
+    if (!baseUrl) {
+      return avatarUrl;
+    }
+
+    if (
+      avatarUrl.startsWith(
+        "/"
+      )
+    ) {
+      return `${baseUrl}${avatarUrl}`;
+    }
+
+    return `${baseUrl}/${avatarUrl}`;
+  };
 
 
 const resolveAppearance = mode => {
@@ -214,6 +274,9 @@ export default function TherapistSettings({
   const navigate =
     useNavigate();
 
+  const photoInputRef =
+    useRef(null);
+
   const [
     loading,
     setLoading,
@@ -237,6 +300,29 @@ export default function TherapistSettings({
     email: "",
     phone: "",
     avatar_url: "",
+  });
+
+  const [
+    photoFile,
+    setPhotoFile,
+  ] = useState(null);
+
+  const [
+    photoPreviewUrl,
+    setPhotoPreviewUrl,
+  ] = useState("");
+
+  const [
+    removeAvatar,
+    setRemoveAvatar,
+  ] = useState(false);
+
+  const [
+    photoMessage,
+    setPhotoMessage,
+  ] = useState({
+    type: "",
+    text: "",
   });
 
   const [
@@ -310,6 +396,55 @@ export default function TherapistSettings({
   ] = useState(false);
 
 
+  useEffect(
+    () => {
+      return () => {
+        if (
+          photoPreviewUrl &&
+          photoPreviewUrl.startsWith(
+            "blob:"
+          )
+        ) {
+          URL.revokeObjectURL(
+            photoPreviewUrl
+          );
+        }
+      };
+    },
+    [
+      photoPreviewUrl,
+    ]
+  );
+
+
+  const clearPhotoDraft =
+    () => {
+      setPhotoFile(
+        null
+      );
+
+      setPhotoPreviewUrl(
+        ""
+      );
+
+      setRemoveAvatar(
+        false
+      );
+
+      setPhotoMessage({
+        type: "",
+        text: "",
+      });
+
+      if (
+        photoInputRef.current
+      ) {
+        photoInputRef.current.value =
+          "";
+      }
+    };
+
+
   const loadSettings =
     async () => {
       try {
@@ -346,6 +481,8 @@ export default function TherapistSettings({
               ?.avatar_url ||
             "",
         });
+
+        clearPhotoDraft();
 
         setPreferences({
           ...emptySettings,
@@ -448,19 +585,29 @@ export default function TherapistSettings({
       : [];
 
 
+  const storedAvatarUrl =
+    removeAvatar
+      ? ""
+      : resolveAvatarUrl(
+          profile.avatar_url
+        );
+
+
+  const displayAvatarUrl =
+    photoPreviewUrl ||
+    storedAvatarUrl;
+
+
   const avatar =
     useMemo(
       () => {
         if (
-          profile.avatar_url
-            .trim()
+          displayAvatarUrl
         ) {
           return (
             <img
               src={
-                profile
-                  .avatar_url
-                  .trim()
+                displayAvatarUrl
               }
               alt="Therapist profile"
             />
@@ -478,7 +625,7 @@ export default function TherapistSettings({
         );
       },
       [
-        profile.avatar_url,
+        displayAvatarUrl,
         profile.full_name,
       ]
     );
@@ -520,6 +667,116 @@ export default function TherapistSettings({
     };
 
 
+  const handlePhotoSelect =
+    event => {
+      const file =
+        event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      setProfileMessage({
+        type: "",
+        text: "",
+      });
+
+      if (
+        !allowedAvatarTypes.has(
+          file.type
+        )
+      ) {
+        setPhotoMessage({
+          type:
+            "error",
+          text:
+            "Please choose a JPG, PNG or WEBP image.",
+        });
+
+        event.target.value =
+          "";
+
+        return;
+      }
+
+      if (
+        file.size >
+        MAX_AVATAR_SIZE
+      ) {
+        setPhotoMessage({
+          type:
+            "error",
+          text:
+            "Profile photo must be 5MB or smaller.",
+        });
+
+        event.target.value =
+          "";
+
+        return;
+      }
+
+      const previewUrl =
+        URL.createObjectURL(
+          file
+        );
+
+      setPhotoFile(
+        file
+      );
+
+      setPhotoPreviewUrl(
+        previewUrl
+      );
+
+      setRemoveAvatar(
+        false
+      );
+
+      setPhotoMessage({
+        type:
+          "success",
+        text:
+          "Photo selected. Save your profile to keep it.",
+      });
+    };
+
+
+  const handleRemovePhoto =
+    () => {
+      setPhotoFile(
+        null
+      );
+
+      setPhotoPreviewUrl(
+        ""
+      );
+
+      setRemoveAvatar(
+        true
+      );
+
+      if (
+        photoInputRef.current
+      ) {
+        photoInputRef.current.value =
+          "";
+      }
+
+      setProfileMessage({
+        type: "",
+        text: "",
+      });
+
+      setPhotoMessage({
+        type:
+          "success",
+        text:
+          "Photo will be removed when you save your profile.",
+      });
+    };
+
+
   const saveProfile =
     async event => {
       event.preventDefault();
@@ -557,24 +814,84 @@ export default function TherapistSettings({
           text: "",
         });
 
-        const response =
-          await api.put(
-            "/users/settings/profile",
-            {
-              full_name:
-                fullName,
-              email,
-              phone:
-                profile.phone
-                  .trim() ||
-                null,
-              avatar_url:
-                profile
-                  .avatar_url
-                  .trim() ||
-                null,
-            }
+        let response;
+
+        if (
+          photoFile ||
+          removeAvatar
+        ) {
+          const formData =
+            new FormData();
+
+          formData.append(
+            "full_name",
+            fullName
           );
+
+          formData.append(
+            "email",
+            email
+          );
+
+          formData.append(
+            "phone",
+            profile.phone
+              .trim()
+          );
+
+          formData.append(
+            "remove_avatar",
+            removeAvatar
+              ? "1"
+              : "0"
+          );
+
+          if (
+            profile.avatar_url
+              .trim()
+          ) {
+            formData.append(
+              "avatar_url",
+              profile
+                .avatar_url
+                .trim()
+            );
+          }
+
+          if (
+            photoFile
+          ) {
+            formData.append(
+              "avatar",
+              photoFile
+            );
+          }
+
+          response =
+            await api.put(
+              "/users/settings/profile",
+              formData
+            );
+        } else {
+          response =
+            await api.put(
+              "/users/settings/profile",
+              {
+                full_name:
+                  fullName,
+                email,
+                phone:
+                  profile.phone
+                    .trim() ||
+                  null,
+                avatar_url:
+                  profile
+                    .avatar_url
+                    .trim() ||
+                  null,
+              }
+            );
+        }
 
         const updatedUser =
           response.data?.user;
@@ -634,6 +951,30 @@ export default function TherapistSettings({
                 .avatar_url ||
               "",
           });
+
+          setPhotoFile(
+            null
+          );
+
+          setPhotoPreviewUrl(
+            ""
+          );
+
+          setRemoveAvatar(
+            false
+          );
+
+          setPhotoMessage({
+            type: "",
+            text: "",
+          });
+
+          if (
+            photoInputRef.current
+          ) {
+            photoInputRef.current.value =
+              "";
+          }
 
           onProfileUpdated?.(
             updatedUser
@@ -1034,7 +1375,7 @@ export default function TherapistSettings({
               </h3>
 
               <p>
-                Update your therapist account details.
+                Update your therapist account details and profile photo.
               </p>
             </div>
           </div>
@@ -1045,6 +1386,134 @@ export default function TherapistSettings({
               saveProfile
             }
           >
+            <div className="therapist-settings-photo-editor">
+              <div className="therapist-settings-photo-preview">
+                {avatar}
+
+                <div className="therapist-settings-photo-camera">
+                  <Camera
+                    size={14}
+                  />
+                </div>
+              </div>
+
+              <div className="therapist-settings-photo-copy">
+                <strong>
+                  Profile Photo
+                </strong>
+
+                <span>
+                  Upload your own profile photo from your device.
+                  JPG, PNG or WEBP. Maximum 5MB.
+                </span>
+
+                {
+                  photoFile
+                    ? (
+                      <small>
+                        Selected: {
+                          photoFile.name
+                        }
+                      </small>
+                    )
+                    : null
+                }
+
+                {
+                  photoMessage.text
+                    ? (
+                      <span
+                        className={
+                          `therapist-settings-photo-message ${photoMessage.type}`
+                        }
+                      >
+                        {
+                          photoMessage.type ===
+                          "error"
+                            ? (
+                              <XCircle
+                                size={13}
+                              />
+                            )
+                            : (
+                              <Check
+                                size={13}
+                              />
+                            )
+                        }
+
+                        {
+                          photoMessage.text
+                        }
+                      </span>
+                    )
+                    : null
+                }
+              </div>
+
+              <div className="therapist-settings-photo-actions">
+                <input
+                  ref={
+                    photoInputRef
+                  }
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="therapist-settings-photo-input"
+                  onChange={
+                    handlePhotoSelect
+                  }
+                  disabled={
+                    profileSaving
+                  }
+                />
+
+                <button
+                  type="button"
+                  className="therapist-settings-photo-upload"
+                  onClick={() =>
+                    photoInputRef
+                      .current
+                      ?.click()
+                  }
+                  disabled={
+                    profileSaving
+                  }
+                >
+                  <ImagePlus
+                    size={15}
+                  />
+
+                  {
+                    displayAvatarUrl
+                      ? "Change Photo"
+                      : "Upload Photo"
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  className="therapist-settings-photo-remove"
+                  onClick={
+                    handleRemovePhoto
+                  }
+                  disabled={
+                    profileSaving ||
+                    (
+                      !displayAvatarUrl &&
+                      !photoFile
+                    )
+                  }
+                >
+                  <Trash2
+                    size={14}
+                  />
+
+                  Remove Photo
+                </button>
+              </div>
+            </div>
+
+
             <label>
               <span>
                 Full Name
@@ -1114,26 +1583,6 @@ export default function TherapistSettings({
                   }
                 />
               </div>
-            </label>
-
-            <label>
-              <span>
-                Avatar URL
-              </span>
-
-              <input
-                name="avatar_url"
-                value={
-                  profile.avatar_url
-                }
-                onChange={
-                  handleProfileField
-                }
-                placeholder="Optional image URL"
-                disabled={
-                  profileSaving
-                }
-              />
             </label>
 
             <div className="therapist-settings-form-footer">
@@ -1952,6 +2401,7 @@ const settingsStyles = `
     font: inherit;
     font-size: 10px;
     font-weight: 750;
+    cursor: pointer;
   }
 
   .therapist-settings-profile-hero {
@@ -2114,6 +2564,177 @@ const settingsStyles = `
     margin-top: 18px;
   }
 
+  .therapist-settings-photo-editor {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-height: 112px;
+    padding: 16px;
+    border: 1px solid #e9e9f2;
+    border-radius: 15px;
+    background:
+      linear-gradient(
+        135deg,
+        #fbfcff,
+        #f9f8ff
+      );
+  }
+
+  .therapist-settings-photo-preview {
+    width: 78px;
+    height: 78px;
+    flex: 0 0 auto;
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    border: 4px solid #ffffff;
+    border-radius: 19px;
+    background:
+      linear-gradient(
+        135deg,
+        #dceeff,
+        #e8e0ff
+      );
+    color: #557bad;
+    box-shadow:
+      0 9px 24px
+      rgba(81,121,174,.12);
+    font-size: 20px;
+    font-weight: 850;
+  }
+
+  .therapist-settings-photo-preview > img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 15px;
+  }
+
+  .therapist-settings-photo-preview > span {
+    display: grid;
+    place-items: center;
+  }
+
+  .therapist-settings-photo-camera {
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    right: -7px;
+    bottom: -6px;
+    display: grid;
+    place-items: center;
+    border: 3px solid #fff;
+    border-radius: 9px;
+    background: #6f82df;
+    color: #fff;
+    box-shadow:
+      0 5px 12px
+      rgba(85,100,180,.2);
+  }
+
+  .therapist-settings-photo-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .therapist-settings-photo-copy > strong {
+    display: block;
+    color: #4d4f68;
+    font-size: 11px;
+  }
+
+  .therapist-settings-photo-copy > span {
+    display: block;
+    max-width: 430px;
+    margin-top: 5px;
+    color: #9a9cad;
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  .therapist-settings-photo-copy > small {
+    display: block;
+    max-width: 430px;
+    margin-top: 6px;
+    overflow: hidden;
+    color: #73768d;
+    font-size: 8.5px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .therapist-settings-photo-message {
+    display: flex !important;
+    align-items: center;
+    gap: 5px;
+    margin-top: 7px !important;
+    font-weight: 700;
+  }
+
+  .therapist-settings-photo-message.success {
+    color: #4f8b69 !important;
+  }
+
+  .therapist-settings-photo-message.error {
+    color: #b85d67 !important;
+  }
+
+  .therapist-settings-photo-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .therapist-settings-photo-input {
+    display: none;
+  }
+
+  .therapist-settings-photo-upload,
+  .therapist-settings-photo-remove {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 11px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .therapist-settings-photo-upload {
+    border: 1px solid #d8e5f4;
+    background: #eef6ff;
+    color: #537fab;
+  }
+
+  .therapist-settings-photo-upload:hover {
+    background: #e6f1fd;
+  }
+
+  .therapist-settings-photo-remove {
+    border: 1px solid #f0d7da;
+    background: #fff7f7;
+    color: #b25f68;
+  }
+
+  .therapist-settings-photo-remove:hover {
+    background: #fff0f1;
+  }
+
+  .therapist-settings-photo-upload:disabled,
+  .therapist-settings-photo-remove:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
   .therapist-settings-form label,
   .therapist-settings-password-form label {
     display: block;
@@ -2128,7 +2749,7 @@ const settingsStyles = `
     font-weight: 750;
   }
 
-  .therapist-settings-form input,
+  .therapist-settings-form input:not([type="file"]),
   .therapist-settings-password-form input {
     width: 100%;
     height: 40px;
@@ -2140,14 +2761,19 @@ const settingsStyles = `
     padding: 0 11px;
     font: inherit;
     font-size: 10px;
-    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    transition:
+      border-color .18s ease,
+      box-shadow .18s ease,
+      background .18s ease;
   }
 
-  .therapist-settings-form input:focus,
+  .therapist-settings-form input:not([type="file"]):focus,
   .therapist-settings-password-form input:focus {
     border-color: #aacbed;
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(85,149,221,.08);
+    box-shadow:
+      0 0 0 3px
+      rgba(85,149,221,.08);
   }
 
   .therapist-settings-input-icon {
@@ -2163,7 +2789,7 @@ const settingsStyles = `
   }
 
   .therapist-settings-input-icon input {
-    padding-left: 34px;
+    padding-left: 34px !important;
   }
 
   .therapist-settings-form-footer {
@@ -2185,12 +2811,20 @@ const settingsStyles = `
     padding: 0 14px;
     border: 0;
     border-radius: 10px;
-    background: linear-gradient(135deg,#5595dd,#6d83dc);
+    background:
+      linear-gradient(
+        135deg,
+        #5595dd,
+        #6d83dc
+      );
     color: #fff;
     font: inherit;
     font-size: 9.5px;
     font-weight: 800;
-    box-shadow: 0 8px 18px rgba(85,149,221,.16);
+    box-shadow:
+      0 8px 18px
+      rgba(85,149,221,.16);
+    cursor: pointer;
   }
 
   .therapist-settings-primary-button.full {
@@ -2246,6 +2880,7 @@ const settingsStyles = `
     border: 0;
     background: transparent;
     color: #9294a6;
+    cursor: pointer;
   }
 
   .therapist-settings-toggle-list {
@@ -2305,7 +2940,9 @@ const settingsStyles = `
     border-radius: 999px;
     background: #dcdfe8;
     padding: 0;
-    transition: background .18s ease;
+    transition:
+      background .18s ease;
+    cursor: pointer;
   }
 
   .therapist-settings-switch > span {
@@ -2316,8 +2953,11 @@ const settingsStyles = `
     top: 3px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 2px 6px rgba(41,43,70,.18);
-    transition: transform .18s ease;
+    box-shadow:
+      0 2px 6px
+      rgba(41,43,70,.18);
+    transition:
+      transform .18s ease;
   }
 
   .therapist-settings-switch.active {
@@ -2325,12 +2965,16 @@ const settingsStyles = `
   }
 
   .therapist-settings-switch.active > span {
-    transform: translateX(16px);
+    transform:
+      translateX(
+        16px
+      );
   }
 
   .therapist-appearance-options {
     display: grid;
-    grid-template-columns: repeat(3,1fr);
+    grid-template-columns:
+      repeat(3,1fr);
     gap: 8px;
     margin-top: 18px;
   }
@@ -2338,7 +2982,8 @@ const settingsStyles = `
   .therapist-appearance-option {
     min-height: 72px;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns:
+      auto 1fr auto;
     align-items: center;
     gap: 7px;
     padding: 0 11px;
@@ -2350,13 +2995,16 @@ const settingsStyles = `
     font-size: 9px;
     font-weight: 750;
     text-align: left;
+    cursor: pointer;
   }
 
   .therapist-appearance-option.active {
     border-color: #aacbed;
     background: #eef7ff;
     color: #4f7eaf;
-    box-shadow: 0 0 0 2px rgba(85,149,221,.06);
+    box-shadow:
+      0 0 0 2px
+      rgba(85,149,221,.06);
   }
 
   .therapist-settings-preferences-footer {
@@ -2380,7 +3028,11 @@ const settingsStyles = `
 
   .therapist-caseload-grid {
     display: grid;
-    grid-template-columns: repeat(3,minmax(0,1fr));
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0,1fr)
+      );
     gap: 10px;
     margin-top: 17px;
   }
@@ -2447,7 +3099,8 @@ const settingsStyles = `
 
   .therapist-account-grid {
     display: grid;
-    grid-template-columns: repeat(5,1fr);
+    grid-template-columns:
+      repeat(5,1fr);
     gap: 10px;
     margin-top: 17px;
   }
@@ -2507,6 +3160,7 @@ const settingsStyles = `
     font: inherit;
     font-size: 9.5px;
     font-weight: 800;
+    cursor: pointer;
   }
 
   .therapist-settings-state {
@@ -2520,7 +3174,10 @@ const settingsStyles = `
     border-radius: 18px;
     background: #fff;
     color: #85879d;
-    font-family: Inter, Arial, sans-serif;
+    font-family:
+      Inter,
+      Arial,
+      sans-serif;
     font-size: 11px;
   }
 
@@ -2547,15 +3204,21 @@ const settingsStyles = `
     font: inherit;
     font-size: 9px;
     font-weight: 750;
+    cursor: pointer;
   }
 
   .therapist-settings-spin {
-    animation: therapistSettingsSpin .8s linear infinite;
+    animation:
+      therapistSettingsSpin
+      .8s linear infinite;
   }
 
   @keyframes therapistSettingsSpin {
     to {
-      transform: rotate(360deg);
+      transform:
+        rotate(
+          360deg
+        );
     }
   }
 
@@ -2568,7 +3231,8 @@ const settingsStyles = `
   html[data-kidmind-appearance="dark"] .therapist-settings-card-heading h3,
   html[data-kidmind-appearance="dark"] .therapist-settings-toggle-copy strong,
   html[data-kidmind-appearance="dark"] .therapist-account-grid strong,
-  html[data-kidmind-appearance="dark"] .therapist-caseload-card strong {
+  html[data-kidmind-appearance="dark"] .therapist-caseload-card strong,
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-copy > strong {
     color: #ececf5;
   }
 
@@ -2577,7 +3241,9 @@ const settingsStyles = `
   html[data-kidmind-appearance="dark"] .therapist-settings-card-heading p,
   html[data-kidmind-appearance="dark"] .therapist-settings-toggle-copy span,
   html[data-kidmind-appearance="dark"] .therapist-account-grid span,
-  html[data-kidmind-appearance="dark"] .therapist-caseload-card span {
+  html[data-kidmind-appearance="dark"] .therapist-caseload-card span,
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-copy > span,
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-copy > small {
     color: #a6a8bb;
   }
 
@@ -2591,10 +3257,46 @@ const settingsStyles = `
 
   html[data-kidmind-appearance="dark"] .therapist-settings-profile-hero {
     border-color: #35465d;
-    background: linear-gradient(135deg,#273545,#292f3f,#2e2941);
+    background:
+      linear-gradient(
+        135deg,
+        #273545,
+        #292f3f,
+        #2e2941
+      );
   }
 
-  html[data-kidmind-appearance="dark"] .therapist-settings-form input,
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-editor {
+    border-color: #393b50;
+    background:
+      linear-gradient(
+        135deg,
+        #292b3d,
+        #2c2d41
+      );
+  }
+
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-preview {
+    border-color: #37394b;
+  }
+
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-camera {
+    border-color: #292b3d;
+  }
+
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-upload {
+    border-color: #3e536b;
+    background: #29384a;
+    color: #b9d8f7;
+  }
+
+  html[data-kidmind-appearance="dark"] .therapist-settings-photo-remove {
+    border-color: #5d3c45;
+    background: #3b2d33;
+    color: #e3a5ad;
+  }
+
+  html[data-kidmind-appearance="dark"] .therapist-settings-form input:not([type="file"]),
   html[data-kidmind-appearance="dark"] .therapist-settings-password-form input,
   html[data-kidmind-appearance="dark"] .therapist-account-grid > div,
   html[data-kidmind-appearance="dark"] .therapist-appearance-option,
@@ -2625,11 +3327,29 @@ const settingsStyles = `
     }
 
     .therapist-caseload-grid {
-      grid-template-columns: repeat(2,1fr);
+      grid-template-columns:
+        repeat(2,1fr);
     }
 
     .therapist-account-grid {
-      grid-template-columns: repeat(3,1fr);
+      grid-template-columns:
+        repeat(3,1fr);
+    }
+  }
+
+  @media (max-width: 820px) {
+    .therapist-settings-photo-editor {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .therapist-settings-photo-copy {
+      min-width: 200px;
+    }
+
+    .therapist-settings-photo-actions {
+      width: 100%;
+      padding-left: 93px;
     }
   }
 
@@ -2657,6 +3377,17 @@ const settingsStyles = `
     .therapist-caseload-grid,
     .therapist-appearance-options {
       grid-template-columns: 1fr;
+    }
+
+    .therapist-settings-photo-editor {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .therapist-settings-photo-actions {
+      width: 100%;
+      padding-left: 0;
+      flex-wrap: wrap;
     }
 
     .therapist-settings-status,

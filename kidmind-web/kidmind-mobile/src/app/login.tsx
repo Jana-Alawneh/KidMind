@@ -66,23 +66,29 @@ export default function Login() {
       clearAuthSession();
       setError("This account role is not supported.");
     } catch (loginError) {
-      clearAuthSession();
 
-      const message =
-        loginError instanceof Error ? loginError.message : "";
+  console.error(
+    "LOGIN ERROR:",
+    loginError
+  );
 
-      if (message === "Invalid email or password") {
-        setError("Incorrect email or password.");
-      } else if (message === "This account is inactive") {
-        setError(
-          "Your account is currently inactive. Please contact the administrator."
-        );
-      } else {
-        setError("Unable to sign in. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
+  clearAuthSession();
+
+  const message =
+    loginError instanceof Error
+      ? loginError.message
+      : String(loginError);
+
+  setError(
+    message ||
+    "Unable to sign in. Please try again."
+  );
+
+} finally {
+
+  setLoading(false);
+
+}
   };
 
   return (

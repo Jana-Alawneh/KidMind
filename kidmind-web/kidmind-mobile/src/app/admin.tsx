@@ -23,7 +23,6 @@ import type {
 
 import {
   router,
-  useLocalSearchParams,
 } from "expo-router";
 
 import {
@@ -52,7 +51,12 @@ import {
   authRequest,
   clearAuthSession,
   fetchCurrentUser,
+  type AuthUser,
 } from "@/api/authApi";
+
+import {
+  getUnreadNotificationCount,
+} from "@/api/notificationsApi";
 
 import AdminChildren from "@/components/admin/AdminChildren";
 import AdminParents from "@/components/admin/AdminParents";
@@ -62,7 +66,9 @@ import AdminReports from "@/components/admin/AdminReports";
 import AdminAIInsights from "@/components/admin/AdminAIInsights";
 import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
-import AdminFeedback from "@/components/admin/AdminFeedback";
+import UserAvatar from "@/components/common/UserAvatar";
+import MobileNotificationsContent from "@/components/notifications/MobileNotificationsContent";
+
 
 type UserRole =
   | "admin"
@@ -78,6 +84,13 @@ type UserItem = {
   is_active:
     | number
     | boolean;
+  is_online?:
+    | number
+    | boolean
+    | null;
+  avatar_url?:
+    | string
+    | null;
   created_at?:
     | string
     | null;
@@ -147,6 +160,7 @@ type SectionKey =
   | "reports"
   | "ai-insights"
   | "messages"
+  | "notifications"
   | "feedback"
   | "settings";
 
@@ -237,6 +251,15 @@ const menu:
 
     {
       key:
+        "notifications",
+      title:
+        "Notifications",
+      icon:
+        Bell,
+    },
+
+    {
+      key:
         "feedback",
       title:
         "Feedback",
@@ -272,12 +295,6 @@ const roleLabel:
 
 
 export default function AdminDashboard() {
-  const params =
-  useLocalSearchParams<{
-    section?:
-      | string
-      | string[];
-  }>();
 
   const [
     activeSection,
@@ -287,38 +304,7 @@ export default function AdminDashboard() {
       "overview"
     );
 
-  useEffect(
-  () => {
 
-    const rawSection =
-      Array.isArray(
-        params.section
-      )
-        ? params.section[0]
-        : params.section;
-
-
-    if (
-      rawSection &&
-      menu.some(
-        item =>
-          item.key ===
-          rawSection
-      )
-    ) {
-
-      setActiveSection(
-        rawSection as
-          SectionKey
-      );
-
-    }
-
-  },
-  [
-    params.section,
-  ]
-);
   const [
     sidebarVisible,
     setSidebarVisible,
@@ -330,9 +316,11 @@ export default function AdminDashboard() {
     currentUser,
     setCurrentUser,
   ] =
-    useState<{
-      full_name?: string;
-    }>({});
+    useState<
+      AuthUser | null
+    >(
+      null
+    );
 
 
   const [
@@ -383,6 +371,13 @@ export default function AdminDashboard() {
     setError,
   ] =
     useState("");
+
+
+  const [
+    unreadCount,
+    setUnreadCount,
+  ] =
+    useState(0);
 
 
   const loadDashboard =
@@ -614,6 +609,139 @@ export default function AdminDashboard() {
     [
       activeSection,
     ]
+  );
+
+
+  useEffect(
+    () => {
+
+      if (
+        activeSection !==
+        "overview"
+      ) {
+        return;
+      }
+
+      let active =
+        true;
+
+      const refreshUserPresence =
+        async () => {
+
+          try {
+
+            const data =
+              await authRequest<
+                UserItem[]
+              >(
+                "/users"
+              );
+
+            if (
+              active
+            ) {
+              setUsers(
+                Array.isArray(
+                  data
+                )
+                  ? data
+                  : []
+              );
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              "Unable to refresh user presence:",
+              requestError
+            );
+
+          }
+
+        };
+
+      const interval =
+        setInterval(
+          refreshUserPresence,
+          30000
+        );
+
+      return () => {
+
+        active =
+          false;
+
+        clearInterval(
+          interval
+        );
+
+      };
+
+    },
+    [
+      activeSection,
+    ]
+  );
+
+
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+      const refreshUnreadCount =
+        async () => {
+
+          try {
+
+            const count =
+              await getUnreadNotificationCount();
+
+            if (
+              active
+            ) {
+              setUnreadCount(
+                count
+              );
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              "Unable to load notification count:",
+              requestError
+            );
+
+          }
+
+        };
+
+      refreshUnreadCount();
+
+      const interval =
+        setInterval(
+          refreshUnreadCount,
+          30000
+        );
+
+      return () => {
+
+        active =
+          false;
+
+        clearInterval(
+          interval
+        );
+
+      };
+
+    },
+    []
   );
 
 
@@ -952,7 +1080,7 @@ export default function AdminDashboard() {
               >
                 Welcome back,{" "}
                 {
-                  currentUser.full_name ||
+                  currentUser?.full_name ||
                   "Admin"
                 }
               </Text>
@@ -1189,30 +1317,20 @@ export default function AdminDashboard() {
                           }
                         >
 
-                          <View
+                          <UserAvatar
+                            name={
+                              user.full_name
+                            }
+                            avatarUrl={
+                              user.avatar_url
+                            }
                             style={
                               styles.userAvatar
                             }
-                          >
-
-                            <Text
-                              style={
-                                styles.userAvatarText
-                              }
-                            >
-                              {
-                                String(
-                                  user.full_name ||
-                                  "U"
-                                )
-                                  .charAt(
-                                    0
-                                  )
-                                  .toUpperCase()
-                              }
-                            </Text>
-
-                          </View>
+                            textStyle={
+                              styles.userAvatarText
+                            }
+                          />
 
 
                           <View
@@ -1301,10 +1419,10 @@ export default function AdminDashboard() {
                             style={[
                               styles.statusDot,
 
-                              user.is_active ===
+                              user.is_online ===
                                 true ||
                               Number(
-                                user.is_active
+                                user.is_online
                               ) === 1
                                 ? styles.statusActive
                                 : styles.statusInactive,
@@ -1857,17 +1975,41 @@ export default function AdminDashboard() {
           <MobileChat />
         );
       }
-      
+
+
       if (
-  activeSection ===
-  "feedback"
-) {
+        activeSection ===
+        "notifications"
+      ) {
+        return (
+          <MobileNotificationsContent
+            onUnreadCountChange={
+              setUnreadCount
+            }
+            onNavigateSection={
+              (section: string) => {
 
-  return (
-    <AdminFeedback />
-  );
+                const matched =
+                  menu.find(
+                    item =>
+                      item.key ===
+                      section
+                  );
 
-}
+                if (
+                  matched
+                ) {
+                  selectSection(
+                    matched.key
+                  );
+                }
+
+              }
+            }
+          />
+        );
+      }
+
 
       if (
         activeSection ===
@@ -1878,10 +2020,12 @@ export default function AdminDashboard() {
             role="admin"
             onProfileUpdated={
               updatedUser =>
-                setCurrentUser({
-                  full_name:
-                    updatedUser.full_name,
-                })
+                setCurrentUser(
+                  previous => ({
+                    ...(previous || {}),
+                    ...updatedUser,
+                  }) as AuthUser
+                )
             }
           />
         );
@@ -1959,7 +2103,7 @@ export default function AdminDashboard() {
               }
             >
               {
-                currentUser.full_name ||
+                currentUser?.full_name ||
                 "Administrator"
               }
             </Text>
@@ -1971,12 +2115,42 @@ export default function AdminDashboard() {
             style={
               styles.headerButton
             }
+            onPress={() =>
+              selectSection(
+                "notifications"
+              )
+            }
+            accessibilityLabel="Open notifications"
           >
 
             <Bell
               size={20}
               color="#757991"
             />
+
+            {
+              unreadCount >
+                0 && (
+                <View
+                  style={
+                    styles.headerBadge
+                  }
+                >
+                  <Text
+                    style={
+                      styles.headerBadgeText
+                    }
+                  >
+                    {
+                      unreadCount >
+                        99
+                        ? "99+"
+                        : unreadCount
+                    }
+                  </Text>
+                </View>
+              )
+            }
 
           </Pressable>
 
@@ -2187,6 +2361,32 @@ export default function AdminDashboard() {
                                 item.title
                               }
                             </Text>
+
+                            {
+                              item.key ===
+                                "notifications" &&
+                              unreadCount >
+                                0 && (
+                                <View
+                                  style={
+                                    styles.menuBadge
+                                  }
+                                >
+                                  <Text
+                                    style={
+                                      styles.menuBadgeText
+                                    }
+                                  >
+                                    {
+                                      unreadCount >
+                                        99
+                                        ? "99+"
+                                        : unreadCount
+                                    }
+                                  </Text>
+                                </View>
+                              )
+                            }
 
                           </Pressable>
 
@@ -2417,6 +2617,44 @@ const styles =
         "center",
       backgroundColor:
         "#FFFFFF",
+    },
+
+
+    headerBadge: {
+      minWidth:
+        19,
+      height:
+        19,
+      paddingHorizontal:
+        4,
+      position:
+        "absolute",
+      top:
+        -5,
+      right:
+        -5,
+      borderRadius:
+        999,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      borderWidth:
+        2,
+      borderColor:
+        "#FFFFFF",
+      backgroundColor:
+        "#7C6CFF",
+    },
+
+
+    headerBadgeText: {
+      color:
+        "#FFFFFF",
+      fontSize:
+        8,
+      fontWeight:
+        "900",
     },
 
 
@@ -3291,6 +3529,36 @@ const styles =
         "#7465E8",
       fontWeight:
         "700",
+    },
+
+
+    menuBadge: {
+      minWidth:
+        21,
+      height:
+        21,
+      paddingHorizontal:
+        5,
+      marginLeft:
+        "auto",
+      borderRadius:
+        999,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#7C6CFF",
+    },
+
+
+    menuBadgeText: {
+      color:
+        "#FFFFFF",
+      fontSize:
+        8,
+      fontWeight:
+        "900",
     },
 
 

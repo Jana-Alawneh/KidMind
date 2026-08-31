@@ -47,6 +47,8 @@ import {
   authRequest,
 } from "@/api/authApi";
 
+import UserAvatar from "@/components/common/UserAvatar";
+
 
 type ParentItem = {
   id: number;
@@ -61,6 +63,13 @@ type ParentItem = {
   is_active:
     | number
     | boolean;
+  is_online?:
+    | number
+    | boolean
+    | null;
+  avatar_url?:
+    | string
+    | null;
 };
 
 
@@ -141,6 +150,19 @@ const isActiveParent =
       true ||
     Number(
       parent.is_active
+    ) ===
+      1;
+
+
+const isOnlineParent =
+  (
+    parent:
+      ParentItem
+  ) =>
+    parent.is_online ===
+      true ||
+    Number(
+      parent.is_online
     ) ===
       1;
 
@@ -478,6 +500,71 @@ export default function AdminParents() {
   );
 
 
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+      const refreshPresence =
+        async () => {
+
+          try {
+
+            const data =
+              await authRequest<
+                ParentItem[]
+              >(
+                "/users"
+              );
+
+            if (
+              active
+            ) {
+              setUsers(
+                Array.isArray(
+                  data
+                )
+                  ? data
+                  : []
+              );
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              "Unable to refresh parent presence:",
+              requestError
+            );
+
+          }
+
+        };
+
+      const interval =
+        setInterval(
+          refreshPresence,
+          30000
+        );
+
+      return () => {
+
+        active =
+          false;
+
+        clearInterval(
+          interval
+        );
+
+      };
+
+    },
+    []
+  );
+
+
   const parents =
     useMemo(
       () =>
@@ -628,7 +715,7 @@ export default function AdminParents() {
   const activeParents =
     parents.filter(
       parent =>
-        isActiveParent(
+        isOnlineParent(
           parent
         )
     ).length;
@@ -1983,11 +2070,16 @@ export default function AdminParents() {
                           )
                         ] || [];
 
-                      const active =
+                      const accountActive =
                         Number(
                           parent.is_active
                         ) ===
                         1;
+
+                      const online =
+                        isOnlineParent(
+                          parent
+                        );
 
                       return (
                         <View
@@ -2003,28 +2095,20 @@ export default function AdminParents() {
                               styles.parentTop
                             }
                           >
-                            <View
+                            <UserAvatar
+                              name={
+                                parent.full_name
+                              }
+                              avatarUrl={
+                                parent.avatar_url
+                              }
                               style={
                                 styles.parentAvatar
                               }
-                            >
-                              <Text
-                                style={
-                                  styles.parentAvatarText
-                                }
-                              >
-                                {
-                                  String(
-                                    parent.full_name ||
-                                    "P"
-                                  )
-                                    .charAt(
-                                      0
-                                    )
-                                    .toUpperCase()
-                                }
-                              </Text>
-                            </View>
+                              textStyle={
+                                styles.parentAvatarText
+                              }
+                            />
 
                             <View
                               style={
@@ -2053,7 +2137,7 @@ export default function AdminParents() {
                                   style={[
                                     styles.statusPill,
 
-                                    active
+                                    online
                                       ? styles.statusActive
                                       : styles.statusInactive,
                                   ]}
@@ -2062,13 +2146,13 @@ export default function AdminParents() {
                                     style={[
                                       styles.statusText,
 
-                                      active
+                                      online
                                         ? styles.statusActiveText
                                         : styles.statusInactiveText,
                                     ]}
                                   >
                                     {
-                                      active
+                                      online
                                         ? "Active"
                                         : "Inactive"
                                     }
@@ -2315,7 +2399,7 @@ export default function AdminParents() {
                               style={[
                                 styles.actionButton,
 
-                                active
+                                accountActive
                                   ? styles.disableButton
                                   : styles.enableButton,
                               ]}
@@ -2328,7 +2412,7 @@ export default function AdminParents() {
                               <Power
                                 size={14}
                                 color={
-                                  active
+                                  accountActive
                                     ? "#B16A48"
                                     : "#438866"
                                 }
@@ -2338,13 +2422,13 @@ export default function AdminParents() {
                                 style={[
                                   styles.actionText,
 
-                                  active
+                                  accountActive
                                     ? styles.disableText
                                     : styles.enableText,
                                 ]}
                               >
                                 {
-                                  active
+                                  accountActive
                                     ? "Disable"
                                     : "Enable"
                                 }

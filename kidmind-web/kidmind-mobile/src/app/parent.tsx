@@ -27,7 +27,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  ClipboardList,
   Eye,
   FileText,
   LayoutDashboard,
@@ -54,7 +53,7 @@ import {
 
 import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
-import ParentFeedback from "@/components/parent/ParentFeedback";
+import UserAvatar from "@/components/common/UserAvatar";
 
 import {
   calculateCognitiveScore,
@@ -115,7 +114,6 @@ type SectionKey =
   | "progress"
   | "messages"
   | "notifications"
-  | "feedback"
   | "settings";
 
 type IconComponent = ComponentType<{
@@ -138,7 +136,6 @@ const menuItems: {
   { key: "progress", title: "Progress", icon: BarChart3 },
   { key: "messages", title: "Messages", icon: MessageCircle },
   { key: "notifications", title: "Notifications", icon: Bell },
-  { key: "feedback", title: "Feedback", icon: ClipboardList },
   { key: "settings", title: "Settings", icon: Settings },
 ];
 
@@ -1159,11 +1156,12 @@ export default function Parent() {
               key={`${therapist.id}-${therapist.child_id}`}
               style={styles.therapistCard}
             >
-              <View style={styles.therapistAvatar}>
-                <Text style={styles.therapistAvatarText}>
-                  {getInitials(therapist.full_name)}
-                </Text>
-              </View>
+              <UserAvatar
+                name={therapist.full_name}
+                avatarUrl={therapist.avatar_url}
+                style={styles.therapistAvatar}
+                textStyle={styles.therapistAvatarText}
+              />
 
               <View style={styles.flexOne}>
                 <Text style={styles.therapistName}>
@@ -1234,8 +1232,6 @@ export default function Parent() {
         return <MobileChat />;
       case "notifications":
         return renderNotifications();
-      case "feedback":
-        return <ParentFeedback />;
       case "settings":
         return renderSettings();
       default:
@@ -1282,11 +1278,12 @@ export default function Parent() {
               </Text>
             </View>
 
-            <View style={styles.topAvatar}>
-              <Text style={styles.topAvatarText}>
-                {getInitials(currentUser?.full_name)}
-              </Text>
-            </View>
+            <UserAvatar
+              name={currentUser?.full_name}
+              avatarUrl={currentUser?.avatar_url}
+              style={styles.topAvatar}
+              textStyle={styles.topAvatarText}
+            />
           </View>
         </View>
 

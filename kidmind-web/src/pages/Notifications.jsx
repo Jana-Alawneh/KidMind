@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import {
+  Navigate,
   useNavigate,
 } from "react-router-dom";
 
@@ -181,7 +182,7 @@ const getSubtitle = (
   return "Keep track of child assignments, completed sessions, games, and messages.";
 };
 
-function NotificationsContent({
+export function NotificationsContent({
   currentUser,
 }) {
   const navigate =
@@ -1192,7 +1193,19 @@ export default function Notifications() {
 
   const role =
     currentUser?.role;
-
+  
+      if (
+    role ===
+    "admin"
+  ) {
+    return (
+      <Navigate
+        to="/admin?section=notifications"
+        replace
+      />
+    );
+  }
+  
   if (
     role ===
     "therapist"

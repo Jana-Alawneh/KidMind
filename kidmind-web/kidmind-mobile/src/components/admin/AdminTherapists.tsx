@@ -42,6 +42,8 @@ import {
   authRequest,
 } from "@/api/authApi";
 
+import UserAvatar from "@/components/common/UserAvatar";
+
 
 type TherapistItem = {
   id: number;
@@ -50,6 +52,8 @@ type TherapistItem = {
   phone?: string | null;
   role: "parent" | "therapist" | "admin";
   is_active: number | boolean;
+  is_online?: number | boolean | null;
+  avatar_url?: string | null;
 };
 
 
@@ -305,6 +309,71 @@ export default function AdminTherapists() {
   );
 
 
+  useEffect(
+    () => {
+
+      let active =
+        true;
+
+      const refreshPresence =
+        async () => {
+
+          try {
+
+            const data =
+              await authRequest<
+                TherapistItem[]
+              >(
+                "/users"
+              );
+
+            if (
+              active
+            ) {
+              setUsers(
+                Array.isArray(
+                  data
+                )
+                  ? data
+                  : []
+              );
+            }
+
+          } catch (
+            requestError
+          ) {
+
+            console.error(
+              "Unable to refresh therapist presence:",
+              requestError
+            );
+
+          }
+
+        };
+
+      const interval =
+        setInterval(
+          refreshPresence,
+          30000
+        );
+
+      return () => {
+
+        active =
+          false;
+
+        clearInterval(
+          interval
+        );
+
+      };
+
+    },
+    []
+  );
+
+
   const therapists =
     useMemo(
       () =>
@@ -435,10 +504,10 @@ export default function AdminTherapists() {
   const activeTherapists =
     therapists.filter(
       therapist =>
-        therapist.is_active ===
+        therapist.is_online ===
           true ||
         Number(
-          therapist.is_active
+          therapist.is_online
         ) === 1
     ).length;
 
@@ -1352,9 +1421,16 @@ export default function AdminTherapists() {
                           )
                         ] || [];
 
-                      const active =
+                      const accountActive =
                         Number(
                           therapist.is_active
+                        ) === 1;
+
+                      const online =
+                        therapist.is_online ===
+                          true ||
+                        Number(
+                          therapist.is_online
                         ) === 1;
 
                       return (
@@ -1371,26 +1447,20 @@ export default function AdminTherapists() {
                               styles.therapistTop
                             }
                           >
-                            <View
+                            <UserAvatar
+                              name={
+                                therapist.full_name
+                              }
+                              avatarUrl={
+                                therapist.avatar_url
+                              }
                               style={
                                 styles.therapistAvatar
                               }
-                            >
-                              <Text
-                                style={
-                                  styles.therapistAvatarText
-                                }
-                              >
-                                {
-                                  String(
-                                    therapist.full_name ||
-                                    "T"
-                                  )
-                                    .charAt(0)
-                                    .toUpperCase()
-                                }
-                              </Text>
-                            </View>
+                              textStyle={
+                                styles.therapistAvatarText
+                              }
+                            />
 
                             <View
                               style={
@@ -1417,7 +1487,7 @@ export default function AdminTherapists() {
                                   style={[
                                     styles.statusPill,
 
-                                    active
+                                    online
                                       ? styles.statusActive
                                       : styles.statusInactive,
                                   ]}
@@ -1426,13 +1496,13 @@ export default function AdminTherapists() {
                                     style={[
                                       styles.statusText,
 
-                                      active
+                                      online
                                         ? styles.statusActiveText
                                         : styles.statusInactiveText,
                                     ]}
                                   >
                                     {
-                                      active
+                                      online
                                         ? "Active"
                                         : "Inactive"
                                     }
@@ -1648,7 +1718,7 @@ export default function AdminTherapists() {
                               style={[
                                 styles.actionButton,
 
-                                active
+                                accountActive
                                   ? styles.disableButton
                                   : styles.enableButton,
                               ]}
@@ -1661,7 +1731,7 @@ export default function AdminTherapists() {
                               <Power
                                 size={14}
                                 color={
-                                  active
+                                  accountActive
                                     ? "#B16A48"
                                     : "#438866"
                                 }
@@ -1671,13 +1741,13 @@ export default function AdminTherapists() {
                                 style={[
                                   styles.actionText,
 
-                                  active
+                                  accountActive
                                     ? styles.disableText
                                     : styles.enableText,
                                 ]}
                               >
                                 {
-                                  active
+                                  accountActive
                                     ? "Disable"
                                     : "Enable"
                                 }

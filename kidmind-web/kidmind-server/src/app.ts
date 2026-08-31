@@ -1,3 +1,5 @@
+import path from "path";
+
 import express from "express";
 import cors from "cors";
 
@@ -26,6 +28,18 @@ app.use(
     limit:
       "10mb",
   })
+);
+
+
+app.use(
+  "/uploads/avatars",
+  express.static(
+    path.resolve(
+      process.cwd(),
+      "uploads",
+      "avatars"
+    )
+  )
 );
 
 
@@ -66,6 +80,7 @@ app.use(
   "/ai",
   aiRoutes
 );
+
 
 app.use(
   "/api/ai",

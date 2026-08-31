@@ -23,6 +23,18 @@ export type ChatContact = {
   phone?: string | null;
   region?: string | null;
   avatar_url?: string | null;
+  is_active?:
+    | number
+    | boolean
+    | null;
+  is_online?:
+    | number
+    | boolean
+    | null;
+  last_seen_at?:
+    | string
+    | Date
+    | null;
   role: ChatRole;
   child_id?: number | null;
   child_name?: string | null;
@@ -67,6 +79,14 @@ export type ChatConversation = {
     string | null;
   other_user_is_active:
     number | boolean;
+  other_user_is_online?:
+    | number
+    | boolean
+    | null;
+  other_user_last_seen_at?:
+    | string
+    | Date
+    | null;
   child_name?:
     string | null;
   last_message_id?:

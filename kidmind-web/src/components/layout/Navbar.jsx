@@ -6,7 +6,6 @@ import {
 import {
   Bell,
   ChevronDown,
-  Stethoscope,
 } from "lucide-react";
 
 import {
@@ -15,6 +14,7 @@ import {
 
 import api from "../../services/api";
 import ProfileMenu from "./ProfileMenu";
+import UserAvatar from "../common/UserAvatar";
 
 
 const Navbar = () => {
@@ -273,13 +273,12 @@ const Navbar = () => {
             }
           >
 
-            <div className="therapist-profile-icon">
-
-              <Stethoscope
-                size={17}
-              />
-
-            </div>
+            <UserAvatar
+  user={
+    currentUser
+  }
+  className="therapist-profile-icon"
+/>
 
 
             <div className="therapist-profile-copy">
