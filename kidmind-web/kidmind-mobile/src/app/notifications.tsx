@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Bell,
   CheckCheck,
+  ClipboardList,
   Gamepad2,
   Mail,
   RefreshCw,
@@ -250,7 +251,21 @@ const getVisual = (
         "#FFF3DF",
     };
   }
+if (
+  type ===
+  "new_feedback"
+) {
 
+  return {
+    Icon:
+      ClipboardList,
+    color:
+      "#7465E8",
+    background:
+      "#EEEAFE",
+  };
+
+}
   return {
     Icon:
       Sparkles,
@@ -516,11 +531,20 @@ export default function NotificationsScreen() {
 
       }
 
-      const path =
-        String(
-          item.action_path ||
-          ""
-        ).trim();
+      const isFeedbackNotification =
+  item.type ===
+    "new_feedback" ||
+  item.entity_type ===
+    "feedback";
+
+
+const path =
+  isFeedbackNotification
+    ? "/admin?section=feedback"
+    : String(
+        item.action_path ||
+        ""
+      ).trim();
 
       if (
         path
@@ -1016,7 +1040,7 @@ export default function NotificationsScreen() {
                   !isRead(
                     item.is_read
                   );
-
+                
                 return (
 
                   <TouchableOpacity

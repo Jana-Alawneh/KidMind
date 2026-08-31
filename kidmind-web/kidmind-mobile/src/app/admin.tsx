@@ -23,6 +23,7 @@ import type {
 
 import {
   router,
+  useLocalSearchParams,
 } from "expo-router";
 
 import {
@@ -61,7 +62,7 @@ import AdminReports from "@/components/admin/AdminReports";
 import AdminAIInsights from "@/components/admin/AdminAIInsights";
 import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
-
+import AdminFeedback from "@/components/admin/AdminFeedback";
 
 type UserRole =
   | "admin"
@@ -271,6 +272,12 @@ const roleLabel:
 
 
 export default function AdminDashboard() {
+  const params =
+  useLocalSearchParams<{
+    section?:
+      | string
+      | string[];
+  }>();
 
   const [
     activeSection,
@@ -280,7 +287,38 @@ export default function AdminDashboard() {
       "overview"
     );
 
+  useEffect(
+  () => {
 
+    const rawSection =
+      Array.isArray(
+        params.section
+      )
+        ? params.section[0]
+        : params.section;
+
+
+    if (
+      rawSection &&
+      menu.some(
+        item =>
+          item.key ===
+          rawSection
+      )
+    ) {
+
+      setActiveSection(
+        rawSection as
+          SectionKey
+      );
+
+    }
+
+  },
+  [
+    params.section,
+  ]
+);
   const [
     sidebarVisible,
     setSidebarVisible,
@@ -1819,7 +1857,17 @@ export default function AdminDashboard() {
           <MobileChat />
         );
       }
+      
+      if (
+  activeSection ===
+  "feedback"
+) {
 
+  return (
+    <AdminFeedback />
+  );
+
+}
 
       if (
         activeSection ===

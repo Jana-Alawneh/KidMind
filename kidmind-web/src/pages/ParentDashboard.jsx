@@ -12,6 +12,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  ClipboardList,
   Eye,
   FileText,
   LayoutDashboard,
@@ -35,6 +36,7 @@ import {
 import api from "../services/api";
 import EditChildModal from "../components/children/EditChildModal";
 import ParentSettings from "../components/parent/ParentSettings";
+import ParentFeedback from "../components/parent/ParentFeedback";
 
 import {
   calculateCognitiveScore,
@@ -98,6 +100,11 @@ const menu = [
     title: "Notifications",
     icon: Bell,
   },
+  {
+  key: "feedback",
+  title: "Feedback",
+  icon: ClipboardList,
+},
   {
     key: "settings",
     title: "Settings",
@@ -2815,7 +2822,10 @@ export default function ParentDashboard() {
 
         case "notifications":
           return renderNotifications();
-
+        
+        case "feedback":
+          return <ParentFeedback />;
+          
         case "settings":
           return renderSettings();
 

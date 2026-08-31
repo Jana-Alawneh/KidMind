@@ -9,6 +9,7 @@ import adminAiRoutes from "./routes/adminAiRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import sessionsRoutes from "./routes/sessionsRoutes";
 import userRoutes from "./routes/userRoutes";
+import feedbackRoutes from "./routes/feedbackRoutes";
 
 
 const app =
@@ -34,9 +35,11 @@ app.get(
     req,
     res
   ) => {
+
     res.send(
       "KidMind API is running"
     );
+
   }
 );
 
@@ -59,16 +62,11 @@ app.use(
 );
 
 
-// Existing Child AI:
-// one child -> strengthening plan -> personalized game.
 app.use(
   "/ai",
   aiRoutes
 );
 
-
-// Separate Admin AI:
-// aggregated platform statistics -> trends -> recommendations.
 app.use(
   "/api/ai",
   adminAiRoutes
@@ -78,6 +76,12 @@ app.use(
 app.use(
   "/notifications",
   notificationRoutes
+);
+
+
+app.use(
+  "/feedback",
+  feedbackRoutes
 );
 
 

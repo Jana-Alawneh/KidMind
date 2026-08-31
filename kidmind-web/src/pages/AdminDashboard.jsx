@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import {
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -32,6 +33,7 @@ import AdminAssignments from "../components/admin/AdminAssignments";
 import AdminReports from "../components/admin/AdminReports";
 import AdminSettings from "../components/admin/AdminSettings";
 import AdminAIInsights from "../components/admin/AdminAIInsights";
+import AdminFeedback from "../components/admin/AdminFeedback";
 
 
 const menu = [
@@ -118,14 +120,76 @@ export default function AdminDashboard() {
 
   const navigate =
     useNavigate();
+  
+  const location =
+  useLocation();
+
+ const [
+  activeSection,
+  setActiveSection,
+] = useState(
+  () => {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const requestedSection =
+      params.get(
+        "section"
+      );
+
+    const validSection =
+      menu.some(
+        item =>
+          item.key ===
+          requestedSection
+      );
+
+    return validSection
+      ? requestedSection
+      : "overview";
+
+  }
+);
+
+useEffect(
+  () => {
+
+    const params =
+      new URLSearchParams(
+        location.search
+      );
+
+    const requestedSection =
+      params.get(
+        "section"
+      );
+
+    const validSection =
+      menu.some(
+        item =>
+          item.key ===
+          requestedSection
+      );
 
 
-  const [
-    activeSection,
-    setActiveSection,
-  ] = useState(
-    "overview"
-  );
+    if (
+      validSection
+    ) {
+
+      setActiveSection(
+        requestedSection
+      );
+
+    }
+
+  },
+  [
+    location.search,
+  ]
+);
 
 
   const [
@@ -1579,44 +1643,47 @@ export default function AdminDashboard() {
         <div className="admin-content">
 
           {
-activeSection ===
-  "overview"
-  ? renderOverview()
-  : activeSection ===
-    "children"
-    ? <AdminChildren />
+  activeSection ===
+    "overview"
+    ? renderOverview()
     : activeSection ===
-      "parents"
-      ? <AdminParents />
+      "children"
+      ? <AdminChildren />
       : activeSection ===
-        "therapists"
-        ? <AdminTherapists />
+        "parents"
+        ? <AdminParents />
         : activeSection ===
-          "assignments"
-          ? <AdminAssignments />
+          "therapists"
+          ? <AdminTherapists />
           : activeSection ===
-            "reports"
-            ? <AdminReports />
+            "assignments"
+            ? <AdminAssignments />
             : activeSection ===
-              "ai-insights"
-              ? <AdminAIInsights />
+              "reports"
+              ? <AdminReports />
               : activeSection ===
-                "settings"
-                ? (
-                  <AdminSettings
-                              onProfileUpdated={
-                                updatedUser =>
-                                  setCurrentUser(
-                                    previous => ({
-                                      ...previous,
-                                      ...updatedUser,
-                                    })
-                                  )
-                              }
-                            />
-                          )
-                          : renderPlaceholder()
-          }
+                "ai-insights"
+                ? <AdminAIInsights />
+                : activeSection ===
+                  "feedback"
+                  ? <AdminFeedback />
+                  : activeSection ===
+                    "settings"
+                    ? (
+                      <AdminSettings
+                        onProfileUpdated={
+                          updatedUser =>
+                            setCurrentUser(
+                              previous => ({
+                                ...previous,
+                                ...updatedUser,
+                              })
+                            )
+                        }
+                      />
+                    )
+                    : renderPlaceholder()
+}
 
         </div>
 

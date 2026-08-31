@@ -383,10 +383,17 @@ function NotificationsContent({
       }
 
       const path =
-        String(
-          item.action_path ||
-          ""
-        ).trim();
+  (
+    item.type ===
+      "new_feedback" ||
+    item.entity_type ===
+      "feedback"
+  )
+    ? "/admin?section=feedback"
+    : String(
+        item.action_path ||
+        ""
+      ).trim();
 
       if (path) {
         navigate(path);

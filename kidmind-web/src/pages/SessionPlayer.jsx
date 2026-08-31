@@ -23,6 +23,15 @@ const SessionPlayer = () => {
     const [gameSaveError, setGameSaveError,] = useState("");
     const [pendingGameResult, setPendingGameResult,] = useState(null);
     const [recentlyFinishedGameId, setRecentlyFinishedGameId,] = useState(null);
+    const [
+    preparedGameId,
+    setPreparedGameId,
+] = useState(null);
+
+const [
+    launchedGameId,
+    setLaunchedGameId,
+] = useState(null);
     useEffect(() => {
         const loadSession = async () => {
             try {
@@ -90,6 +99,22 @@ const SessionPlayer = () => {
     const isFinished = session?.status === "Completed" ||
         session?.status === "Ended" ||
         session?.status === "Cancelled";
+
+        const isCustomGame = (game) => {
+
+    const customGameId =
+        Number(
+            game?.custom_game_id
+        );
+
+    return (
+        Number.isInteger(
+            customGameId
+        ) &&
+        customGameId > 0
+    );
+
+};
     const formatTime = (totalSeconds) => {
         const safeSeconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
         const minutes = Math.floor(safeSeconds / 60);
@@ -164,9 +189,25 @@ const SessionPlayer = () => {
                 ...gameResult,
                 session_duration_seconds: elapsedSeconds,
             });
-            setSession(result.session);
-            setRecentlyFinishedGameId(gameId);
-            setPendingGameResult(null);
+            setSession(
+    result.session
+);
+
+setRecentlyFinishedGameId(
+    gameId
+);
+
+setPendingGameResult(
+    null
+);
+
+setPreparedGameId(
+    null
+);
+
+setLaunchedGameId(
+    null
+);
             if (result.all_games_completed) {
                 setRunning(false);
                 setElapsedSeconds(Number(result.session
@@ -202,36 +243,201 @@ const SessionPlayer = () => {
         }
         await submitGameResult(pendingGameResult.gameId, pendingGameResult.gameResult);
     };
-    const handleStartNextGame = async () => {
-        if (!session ||
+const startPendingGameNow =
+    async (
+        game
+    ) => {
+
+        if (
+            !session ||
+            !game ||
+            actionLoading ||
+            gameSaving ||
+            isFinished
+        ) {
+            return;
+        }
+
+
+        try {
+
+            setActionLoading(
+                true
+            );
+
+            setGameSaveError(
+                ""
+            );
+
+
+            if (
+                session.status ===
+                "Paused"
+            ) {
+
+                const resumed =
+                    await resumeSession(
+                        session.id,
+                        elapsedSeconds
+                    );
+
+
+                setSession(
+                    resumed.session
+                );
+
+                setRunning(
+                    true
+                );
+
+            }
+
+
+            const result =
+                await startSessionGame(
+                    session.id,
+                    game.id
+                );
+
+
+            setSession(
+                result.session
+            );
+
+
+            setRecentlyFinishedGameId(
+                null
+            );
+
+
+            setPendingGameResult(
+                null
+            );
+
+
+            setPreparedGameId(
+                null
+            );
+
+
+            /*
+             * Important:
+             * The actual game component is allowed
+             * to mount only after this point.
+             */
+            setLaunchedGameId(
+                Number(
+                    game.id
+                )
+            );
+
+
+            setRunning(
+                true
+            );
+
+        }
+        catch (
+            actionError
+        ) {
+
+            console.error(
+                "Failed to start next game:",
+                actionError
+            );
+
+
+            window.alert(
+                actionError?.response?.data?.message ||
+                actionError?.message ||
+                "Failed to start next game"
+            );
+
+        }
+        finally {
+
+            setActionLoading(
+                false
+            );
+
+        }
+
+    };
+
+
+const handlePlayNextGame =
+    async () => {
+
+        if (
+            !session ||
             !pendingGame ||
             actionLoading ||
             gameSaving ||
-            isFinished) {
+            isFinished
+        ) {
             return;
         }
-        try {
-            setActionLoading(true);
-            setGameSaveError("");
-            if (session.status === "Paused") {
-                const resumed = await resumeSession(session.id, elapsedSeconds);
-                setSession(resumed.session);
-                setRunning(true);
-            }
-            const result = await startSessionGame(session.id, pendingGame.id);
-            setSession(result.session);
-            setRecentlyFinishedGameId(null);
-            setPendingGameResult(null);
-            setRunning(true);
+
+
+        setGameSaveError(
+            ""
+        );
+
+
+        /*
+         * Game Builder games keep their
+         * current behavior.
+         */
+        if (
+            isCustomGame(
+                pendingGame
+            )
+        ) {
+
+            await startPendingGameNow(
+                pendingGame
+            );
+
+            return;
+
         }
-        catch (actionError) {
-            console.error("Failed to start next game:", actionError);
-            window.alert(actionError.message ||
-                "Failed to start next game");
+
+
+        /*
+         * Built-in assessment game:
+         *
+         * Play does NOT start the game.
+         * It only opens the Ready screen.
+         */
+        setPreparedGameId(
+            Number(
+                pendingGame.id
+            )
+        );
+
+    };
+
+
+const handleConfirmPreparedGame =
+    async () => {
+
+        if (
+            !pendingGame ||
+            Number(
+                pendingGame.id
+            ) !==
+                Number(
+                    preparedGameId
+                )
+        ) {
+            return;
         }
-        finally {
-            setActionLoading(false);
-        }
+
+
+        await startPendingGameNow(
+            pendingGame
+        );
+
     };
     const handleViewReport = () => {
         navigate(`/assessment-report?sessionId=${session.id}`);
@@ -392,7 +598,216 @@ const SessionPlayer = () => {
 
         </div>);
     };
+
+    const renderGameStartGate = (
+    game,
+    onStart
+) => {
+
+    return (
+
+        <div
+            className="
+                min-h-[430px]
+                flex
+                items-center
+                justify-center
+                text-center
+                px-5
+            "
+        >
+
+            <div
+                className="
+                    max-w-xl
+                    w-full
+                    bg-white
+                    border
+                    border-[#E8E3FF]
+                    rounded-[26px]
+                    p-8
+                    shadow-sm
+                "
+            >
+
+                <div
+                    className="
+                        w-16
+                        h-16
+                        rounded-[20px]
+                        bg-[#F0EDFF]
+                        text-[#7566EB]
+                        flex
+                        items-center
+                        justify-center
+                        mx-auto
+                    "
+                >
+
+                    <Play
+                        size={28}
+                    />
+
+                </div>
+
+
+                <p
+                    className="
+                        text-[11px]
+                        font-bold
+                        tracking-[0.12em]
+                        text-[#8C80E8]
+                        mt-6
+                    "
+                >
+                    READY TO START
+                </p>
+
+
+                <h2
+                    className="
+                        text-3xl
+                        font-bold
+                        text-[#303253]
+                        mt-2
+                    "
+                >
+                    {game.game_name}
+                </h2>
+
+
+                <p
+                    className="
+                        text-slate-500
+                        mt-3
+                        leading-7
+                    "
+                >
+                    Prepare the child and scroll to this
+                    start area before beginning.
+                </p>
+
+
+                <p
+                    className="
+                        text-sm
+                        text-[#8D8FA3]
+                        mt-2
+                    "
+                >
+                    The game screen is not loaded yet,
+                    so its interaction and reaction timing
+                    has not started.
+                </p>
+
+
+                {game.difficulty && (
+
+                    <div
+                        className="
+                            inline-flex
+                            mt-5
+                            px-4
+                            py-2
+                            rounded-full
+                            bg-[#F7F4FF]
+                            text-[#7566EB]
+                            text-sm
+                            font-semibold
+                        "
+                    >
+                        Difficulty:{" "}
+                        {game.difficulty}
+                    </div>
+
+                )}
+
+
+                <button
+                    type="button"
+                    onClick={
+                        onStart
+                    }
+                    disabled={
+                        actionLoading ||
+                        gameSaving
+                    }
+                    className="
+                        mt-7
+                        min-w-[220px]
+                        bg-[#7969EA]
+                        text-white
+                        px-7
+                        py-4
+                        rounded-[14px]
+                        inline-flex
+                        items-center
+                        justify-center
+                        gap-2
+                        font-bold
+                        hover:bg-[#6959F5]
+                        transition
+                        disabled:opacity-50
+                    "
+                >
+
+                    <Play
+                        size={19}
+                    />
+
+                    {
+                        actionLoading
+                            ? "Starting..."
+                            : `Start ${game.game_name}`
+                    }
+
+                </button>
+
+
+                <p
+                    className="
+                        text-xs
+                        text-[#A0A3B4]
+                        mt-4
+                    "
+                >
+                    Timing begins when you press Start.
+                </p>
+
+            </div>
+
+        </div>
+
+    );
+
+};
+
     const renderBetweenGames = () => {
+
+    const pendingGamePrepared =
+        pendingGame &&
+        !isCustomGame(
+            pendingGame
+        ) &&
+        Number(
+            preparedGameId
+        ) ===
+            Number(
+                pendingGame.id
+            );
+
+
+    if (
+        pendingGamePrepared
+    ) {
+
+        return renderGameStartGate(
+            pendingGame,
+            handleConfirmPreparedGame
+        );
+
+    }
+
         return (<div className="
             min-h-[360px]
             flex
@@ -526,7 +941,7 @@ const SessionPlayer = () => {
                 View Therapist Report
               </button>
 
-              {pendingGame && (<button type="button" onClick={handleStartNextGame} disabled={actionLoading ||
+              {pendingGame && (<button type="button" onClick={ handlePlayNextGame} disabled={actionLoading ||
                     gameSaving} className="
                     bg-[#7B6EF6]
                     text-white
@@ -598,6 +1013,32 @@ const SessionPlayer = () => {
 
         </div>);
         }
+        if (
+    !isCustomGame(
+        currentGame
+    ) &&
+    Number(
+        launchedGameId
+    ) !==
+        Number(
+            currentGame.id
+        )
+) {
+
+    return renderGameStartGate(
+        currentGame,
+        () => {
+
+            setLaunchedGameId(
+                Number(
+                    currentGame.id
+                )
+            );
+
+        }
+    );
+
+}
         const customGameId = Number(currentGame.custom_game_id);
         if (Number.isInteger(customGameId) &&
             customGameId > 0) {
