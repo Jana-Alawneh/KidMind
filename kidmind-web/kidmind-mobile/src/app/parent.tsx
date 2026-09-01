@@ -1253,7 +1253,7 @@ export default function Parent() {
   return (
     <SafeAreaView
       style={styles.safeArea}
-      edges={["top", "left", "right"]}
+      edges={["top"]}
     >
       <View style={styles.container}>
         <View style={styles.topbar}>
@@ -1261,23 +1261,23 @@ export default function Parent() {
             style={styles.menuButton}
             onPress={() => setDrawerVisible(true)}
           >
-            <Menu size={23} color="#6253B8" />
+            <Menu size={21} color="#72768F" />
           </Pressable>
 
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.headerText}>
+            <Text style={styles.topUserRole}>
+              Parent Portal
+            </Text>
 
-          <View style={styles.topUser}>
-            <View style={styles.topUserText}>
-              <Text style={styles.topUserRole}>Parent Portal</Text>
-              <Text numberOfLines={1} style={styles.topUserName}>
-                {currentUser?.full_name || "Parent"}
-              </Text>
-            </View>
+            <Text
+              numberOfLines={1}
+              style={styles.topUserName}
+            >
+              {currentUser?.full_name || "Parent"}
+            </Text>
+          </View>
 
+          <View style={styles.avatarButton}>
             <UserAvatar
               name={currentUser?.full_name}
               avatarUrl={currentUser?.avatar_url}
@@ -1372,7 +1372,7 @@ export default function Parent() {
                   >
                     <Icon
                       size={19}
-                      color={active ? "#FFFFFF" : "#777893"}
+                      color={active ? "#7465E8" : "#8A8EA5"}
                     />
 
                     <Text
@@ -1935,17 +1935,29 @@ function EditField({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F7F8FC" },
-  container: { flex: 1, backgroundColor: "#F7F8FC" },
-  scroll: { flex: 1 },
-  chatContent: { flex: 1 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F7F8FC",
+  },
+  scroll: {
+    flex: 1,
+  },
+  chatContent: {
+    flex: 1,
+  },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 50,
+    padding: 18,
+    paddingBottom: 45,
     gap: 16,
   },
-  flexOne: { flex: 1 },
+  flexOne: {
+    flex: 1,
+  },
+
   loadingPage: {
     flex: 1,
     alignItems: "center",
@@ -1958,52 +1970,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+
+  /* Header — same visual system as Admin mobile */
   topbar: {
-    height: 70,
-    paddingHorizontal: 14,
+    height: 74,
+    paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#EDEDF5",
+    borderBottomColor: "#EEEFF5",
     backgroundColor: "#FFFFFF",
   },
   menuButton: {
     width: 42,
     height: 42,
     borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "#ECECF4",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F0FF",
+    backgroundColor: "#FFFFFF",
   },
-  logo: { width: 105, height: 48, marginLeft: 8 },
+  headerText: {
+    flex: 1,
+    paddingHorizontal: 13,
+  },
   topUser: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 9,
   },
-  topUserText: { maxWidth: 120, alignItems: "flex-end" },
-  topUserRole: { color: "#9898AD", fontSize: 9 },
+  topUserText: {
+    flex: 1,
+  },
+  topUserRole: {
+    color: "#A0A3B5",
+    fontSize: 10.5,
+  },
   topUserName: {
     marginTop: 2,
-    color: "#303158",
-    fontSize: 11,
-    fontWeight: "800",
+    color: "#343654",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  avatarButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "#ECECF4",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden",
   },
   topAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 13,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEEAFF",
+    backgroundColor: "#F0EDFF",
   },
   topAvatarText: {
-    color: "#6D5BC8",
+    color: "#7465E8",
     fontSize: 12,
     fontWeight: "800",
   },
+
   sectionHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -2012,52 +2044,78 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   sectionTitle: {
-    color: "#28294F",
+    color: "#34365A",
     fontSize: 25,
     fontWeight: "800",
   },
   sectionSubtitle: {
     marginTop: 6,
-    color: "#9293AA",
-    fontSize: 12,
+    color: "#989BAD",
+    fontSize: 12.5,
     lineHeight: 18,
   },
   refreshButton: {
     width: 42,
     height: 42,
     borderWidth: 1,
-    borderColor: "#E5E1F7",
-    borderRadius: 12,
+    borderColor: "#ECECF4",
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
   },
-  errorBox: { padding: 13, borderRadius: 12, backgroundColor: "#FFF0F2" },
-  errorText: { color: "#B74661", fontSize: 12 },
-  selectorSection: { marginBottom: 2 },
+
+  errorBox: {
+    padding: 13,
+    borderRadius: 14,
+    backgroundColor: "#FFF0F3",
+    borderWidth: 1,
+    borderColor: "#F6D8DF",
+  },
+  errorText: {
+    color: "#B9415E",
+    fontSize: 13,
+  },
+
+  selectorSection: {
+    marginBottom: 2,
+  },
   selectorLabel: {
     marginBottom: 8,
     color: "#9293A8",
     fontSize: 11,
     fontWeight: "700",
   },
-  selectorScroll: { gap: 8, paddingRight: 10 },
+  selectorScroll: {
+    gap: 8,
+    paddingRight: 10,
+  },
   selectorChip: {
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: "#ECECF5",
-    borderRadius: 12,
+    borderRadius: 13,
     backgroundColor: "#FFFFFF",
   },
-  selectorChipActive: { borderColor: "#7867D9", backgroundColor: "#7867D9" },
-  selectorChipText: { color: "#62637E", fontSize: 11, fontWeight: "700" },
-  selectorChipTextActive: { color: "#FFFFFF" },
+  selectorChipActive: {
+    borderColor: "#DED8FF",
+    backgroundColor: "#F0EDFF",
+  },
+  selectorChipText: {
+    color: "#62637E",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  selectorChipTextActive: {
+    color: "#7465E8",
+  },
+
   childHero: {
     padding: 20,
     borderWidth: 1,
-    borderColor: "#EBE9F6",
-    borderRadius: 21,
+    borderColor: "#ECECF4",
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
   },
   largeAvatar: {
@@ -2066,14 +2124,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEE8FF",
+    backgroundColor: "#F0EDFF",
   },
   largeAvatarText: {
-    color: "#6856BD",
+    color: "#7465E8",
     fontSize: 20,
     fontWeight: "800",
   },
-  childHeroInfo: { marginTop: 14 },
+  childHeroInfo: {
+    marginTop: 14,
+  },
   eyebrow: {
     color: "#988CCF",
     fontSize: 10,
@@ -2082,7 +2142,7 @@ const styles = StyleSheet.create({
   },
   childHeroName: {
     marginTop: 5,
-    color: "#303158",
+    color: "#333554",
     fontSize: 22,
     fontWeight: "800",
   },
@@ -2098,7 +2158,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#F5F3FB",
   },
-  metaChipText: { color: "#7C7D97", fontSize: 10, fontWeight: "600" },
+  metaChipText: {
+    color: "#7C7D97",
+    fontSize: 10,
+    fontWeight: "600",
+  },
   therapistSummary: {
     marginTop: 16,
     paddingTop: 15,
@@ -2107,42 +2171,53 @@ const styles = StyleSheet.create({
   },
   therapistSummaryName: {
     marginTop: 5,
-    color: "#333459",
+    color: "#333554",
     fontSize: 13,
     fontWeight: "800",
   },
-  statsGrid: { gap: 11 },
+
+  statsGrid: {
+    gap: 12,
+  },
   statCard: {
-    minHeight: 105,
+    minHeight: 126,
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    padding: 17,
+    gap: 16,
+    padding: 19,
     borderWidth: 1,
-    borderColor: "#EDEDF5",
-    borderRadius: 18,
+    borderColor: "#ECECF4",
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
   },
   statIcon: {
-    width: 45,
-    height: 45,
+    width: 47,
+    height: 47,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  statTitle: { color: "#9596A9", fontSize: 10 },
+  statTitle: {
+    color: "#85899D",
+    fontSize: 11.5,
+  },
   statValue: {
-    marginTop: 3,
-    color: "#303158",
-    fontSize: 23,
+    marginTop: 2,
+    color: "#2E3054",
+    fontSize: 25,
     fontWeight: "800",
   },
-  statSubtitle: { marginTop: 2, color: "#B0B0BF", fontSize: 9 },
+  statSubtitle: {
+    marginTop: 2,
+    color: "#A0A3B3",
+    fontSize: 10.5,
+  },
+
   panel: {
     padding: 19,
     borderWidth: 1,
-    borderColor: "#EDEDF5",
-    borderRadius: 19,
+    borderColor: "#ECECF4",
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
   },
   panelHeader: {
@@ -2152,17 +2227,33 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 18,
   },
-  panelTitle: { color: "#333459", fontSize: 16, fontWeight: "800" },
-  panelSubtitle: {
-    marginTop: 5,
-    color: "#A1A1B2",
-    fontSize: 10,
-    lineHeight: 15,
+  panelTitle: {
+    color: "#333554",
+    fontSize: 16,
+    fontWeight: "800",
   },
-  snapshotGrid: { gap: 11 },
-  snapshotCard: { flexDirection: "row", gap: 12, padding: 15, borderRadius: 14 },
-  positiveCard: { backgroundColor: "#EEFAF5" },
-  attentionCard: { backgroundColor: "#FFF4F3" },
+  panelSubtitle: {
+    marginTop: 4,
+    color: "#A0A3B4",
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+
+  snapshotGrid: {
+    gap: 11,
+  },
+  snapshotCard: {
+    flexDirection: "row",
+    gap: 12,
+    padding: 15,
+    borderRadius: 14,
+  },
+  positiveCard: {
+    backgroundColor: "#ECFAF4",
+  },
+  attentionCard: {
+    backgroundColor: "#FFF4F3",
+  },
   snapshotIcon: {
     width: 36,
     height: 36,
@@ -2171,15 +2262,27 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: "#FFFFFF",
   },
-  smallLabel: { color: "#9293A5", fontSize: 10 },
+  smallLabel: {
+    color: "#9293A5",
+    fontSize: 10,
+  },
   snapshotTitle: {
     marginTop: 4,
-    color: "#333459",
+    color: "#333554",
     fontSize: 13,
     fontWeight: "800",
   },
-  snapshotSmall: { marginTop: 4, color: "#999AAC", fontSize: 10 },
-  activityCard: { padding: 15, borderRadius: 14, backgroundColor: "#F8F7FD" },
+  snapshotSmall: {
+    marginTop: 4,
+    color: "#999AAC",
+    fontSize: 10,
+  },
+
+  activityCard: {
+    padding: 15,
+    borderRadius: 14,
+    backgroundColor: "#F8F7FD",
+  },
   activityTop: {
     flexDirection: "row",
     alignItems: "center",
@@ -2187,17 +2290,36 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 14,
   },
-  activityLabel: { color: "#8F90A6", fontSize: 11 },
-  activityDetails: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
-  iconTextRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  activityDetailText: { color: "#83849B", fontSize: 10 },
+  activityLabel: {
+    color: "#8F90A6",
+    fontSize: 11,
+  },
+  activityDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  iconTextRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  activityDetailText: {
+    color: "#83849B",
+    fontSize: 10,
+  },
+
   viewAllButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: "#F3F0FF",
+    backgroundColor: "#F0EDFF",
   },
-  viewAllText: { color: "#6B5BC3", fontSize: 10, fontWeight: "800" },
+  viewAllText: {
+    color: "#7465E8",
+    fontSize: 10,
+    fontWeight: "800",
+  },
   recentReportRow: {
     minHeight: 75,
     flexDirection: "row",
@@ -2207,32 +2329,57 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F1F1F6",
   },
-  recentReportTitle: { color: "#444564", fontSize: 11, fontWeight: "800" },
-  recentReportDate: { marginTop: 4, color: "#999AAC", fontSize: 9 },
-  recentScoreWrap: { alignItems: "flex-end", gap: 5 },
-  recentScore: { color: "#5F607C", fontSize: 12, fontWeight: "800" },
+  recentReportTitle: {
+    color: "#444564",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  recentReportDate: {
+    marginTop: 4,
+    color: "#999AAC",
+    fontSize: 9,
+  },
+  recentScoreWrap: {
+    alignItems: "flex-end",
+    gap: 5,
+  },
+  recentScore: {
+    color: "#5F607C",
+    fontSize: 12,
+    fontWeight: "800",
+  },
   eyeButton: {
     width: 34,
     height: 34,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
-    backgroundColor: "#F1EEFF",
+    backgroundColor: "#F0EDFF",
   },
+
   statusPill: {
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 20,
     alignSelf: "flex-start",
   },
-  statusText: { fontSize: 9, fontWeight: "800" },
-  miniEmpty: { paddingVertical: 20, color: "#A0A1B2", fontSize: 11, textAlign: "center" },
+  statusText: {
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  miniEmpty: {
+    paddingVertical: 20,
+    color: "#A0A1B2",
+    fontSize: 11,
+    textAlign: "center",
+  },
+
   childCard: {
     marginBottom: 14,
     padding: 19,
     borderWidth: 1,
-    borderColor: "#EDEDF5",
-    borderRadius: 19,
+    borderColor: "#ECECF4",
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
   },
   childCardTop: {
@@ -2249,21 +2396,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 16,
-    backgroundColor: "#EEE8FF",
+    backgroundColor: "#F0EDFF",
   },
-  childCardAvatarText: { color: "#6856BD", fontSize: 16, fontWeight: "800" },
-  childCardName: { color: "#333459", fontSize: 17, fontWeight: "800" },
-  childCardMeta: { marginTop: 5, color: "#999AAC", fontSize: 10 },
+  childCardAvatarText: {
+    color: "#7465E8",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  childCardName: {
+    color: "#333554",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  childCardMeta: {
+    marginTop: 5,
+    color: "#999AAC",
+    fontSize: 10,
+  },
   infoGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingVertical: 16,
     gap: 10,
   },
-  infoItem: { width: "47%", minHeight: 45 },
-  infoLabel: { color: "#A0A1B2", fontSize: 9 },
-  infoValue: { marginTop: 4, color: "#444564", fontSize: 11, fontWeight: "800" },
-  childActions: { flexDirection: "row", gap: 9 },
+  infoItem: {
+    width: "47%",
+    minHeight: 45,
+  },
+  infoLabel: {
+    color: "#A0A1B2",
+    fontSize: 9,
+  },
+  infoValue: {
+    marginTop: 4,
+    color: "#444564",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  childActions: {
+    flexDirection: "row",
+    gap: 9,
+  },
   primarySoftButton: {
     flex: 1,
     minHeight: 42,
@@ -2274,17 +2447,30 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: "#F0EDFF",
   },
-  primarySoftText: { color: "#6D59C8", fontSize: 11, fontWeight: "800" },
+  primarySoftText: {
+    color: "#6D59C8",
+    fontSize: 11,
+    fontWeight: "800",
+  },
   editButton: {
     width: 44,
     height: 42,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 11,
-    backgroundColor: "#E8F1FF",
+    backgroundColor: "#EDF6FF",
   },
-  sessionCard: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: "#EEEEF5" },
-  sessionTop: { flexDirection: "row", alignItems: "center", gap: 11 },
+
+  sessionCard: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEEEF5",
+  },
+  sessionTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
   sessionNumber: {
     width: 45,
     height: 45,
@@ -2293,49 +2479,154 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: "#F0EDFF",
   },
-  sessionNumberText: { color: "#6A59C1", fontSize: 11, fontWeight: "800" },
-  sessionTitle: { color: "#444564", fontSize: 12, fontWeight: "800" },
-  sessionDate: { marginTop: 4, color: "#9A9BAD", fontSize: 9 },
-  sessionInfoGrid: { marginTop: 15, flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  sessionNumberText: {
+    color: "#7465E8",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  sessionTitle: {
+    color: "#444564",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  sessionDate: {
+    marginTop: 4,
+    color: "#9A9BAD",
+    fontSize: 9,
+  },
+  sessionInfoGrid: {
+    marginTop: 15,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+
   reportCard: {
     marginBottom: 14,
     padding: 19,
     borderWidth: 1,
-    borderColor: "#EDEDF5",
-    borderRadius: 19,
+    borderColor: "#ECECF4",
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
   },
-  reportTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  reportTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   reportIcon: {
     width: 40,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: "#EEEAFF",
+    backgroundColor: "#F0EDFF",
   },
-  reportTitle: { marginTop: 17, color: "#333459", fontSize: 16, fontWeight: "800" },
-  reportDate: { marginTop: 4, marginBottom: 17, color: "#999AAC", fontSize: 10 },
-  reportScore: { padding: 14, marginBottom: 13, borderRadius: 13, backgroundColor: "#F8F7FD" },
-  reportScoreValue: { marginTop: 4, color: "#6655BD", fontSize: 23, fontWeight: "800" },
-  reportMeta: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
-  reportMetaText: { color: "#87889C", fontSize: 10 },
-  progressRow: { paddingVertical: 17, borderBottomWidth: 1, borderBottomColor: "#F0F0F5" },
-  progressHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
-  progressTitle: { color: "#444564", fontSize: 12, fontWeight: "800" },
-  progressPrevious: { marginTop: 4, color: "#9A9BAD", fontSize: 9 },
-  progressValueWrap: { flexDirection: "row", alignItems: "center", gap: 6 },
-  progressValue: { color: "#444564", fontSize: 12, fontWeight: "800" },
-  changeBadge: { paddingHorizontal: 6, paddingVertical: 4, borderRadius: 7 },
-  changePositive: { backgroundColor: "#EAF8F1" },
-  changeNegative: { backgroundColor: "#FFF0F2" },
-  changeNeutral: { backgroundColor: "#F1F1F5" },
-  changeText: { fontSize: 9, fontWeight: "800" },
-  changePositiveText: { color: "#3B9271" },
-  changeNegativeText: { color: "#C35E6D" },
-  changeNeutralText: { color: "#77788C" },
-  progressTrack: { width: "100%", height: 9, overflow: "hidden", borderRadius: 20, backgroundColor: "#F0EFF6" },
-  progressFill: { height: "100%", borderRadius: 20, backgroundColor: "#8B79DF" },
+  reportTitle: {
+    marginTop: 17,
+    color: "#333554",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  reportDate: {
+    marginTop: 4,
+    marginBottom: 17,
+    color: "#999AAC",
+    fontSize: 10,
+  },
+  reportScore: {
+    padding: 14,
+    marginBottom: 13,
+    borderRadius: 13,
+    backgroundColor: "#F8F7FD",
+  },
+  reportScoreValue: {
+    marginTop: 4,
+    color: "#6655BD",
+    fontSize: 23,
+    fontWeight: "800",
+  },
+  reportMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+  reportMetaText: {
+    color: "#87889C",
+    fontSize: 10,
+  },
+
+  progressRow: {
+    paddingVertical: 17,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+  },
+  progressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  progressTitle: {
+    color: "#444564",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  progressPrevious: {
+    marginTop: 4,
+    color: "#9A9BAD",
+    fontSize: 9,
+  },
+  progressValueWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  progressValue: {
+    color: "#444564",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  changeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 7,
+  },
+  changePositive: {
+    backgroundColor: "#EAF8F1",
+  },
+  changeNegative: {
+    backgroundColor: "#FFF0F2",
+  },
+  changeNeutral: {
+    backgroundColor: "#F1F1F5",
+  },
+  changeText: {
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  changePositiveText: {
+    color: "#3B9271",
+  },
+  changeNegativeText: {
+    color: "#C35E6D",
+  },
+  changeNeutralText: {
+    color: "#77788C",
+  },
+  progressTrack: {
+    width: "100%",
+    height: 9,
+    overflow: "hidden",
+    borderRadius: 20,
+    backgroundColor: "#F0EFF6",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 20,
+    backgroundColor: "#8B79DF",
+  },
+
   therapistCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -2350,96 +2641,400 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 13,
-    backgroundColor: "#EEEAFF",
+    backgroundColor: "#F0EDFF",
   },
-  therapistAvatarText: { color: "#6958C0", fontSize: 12, fontWeight: "800" },
-  therapistName: { color: "#444564", fontSize: 12, fontWeight: "800" },
-  therapistRole: { marginTop: 3, color: "#9B9CAD", fontSize: 9 },
-  comingSoonButton: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F3F2F7" },
-  comingSoonText: { color: "#A0A0AE", fontSize: 8, fontWeight: "700" },
-  settingsHeader: { flexDirection: "row", alignItems: "center", gap: 15, marginBottom: 20 },
+  therapistAvatarText: {
+    color: "#7465E8",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  therapistName: {
+    color: "#444564",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  therapistRole: {
+    marginTop: 3,
+    color: "#9B9CAD",
+    fontSize: 9,
+  },
+  comingSoonButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "#F3F2F7",
+  },
+  comingSoonText: {
+    color: "#A0A0AE",
+    fontSize: 8,
+    fontWeight: "700",
+  },
+
+  settingsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
+    marginBottom: 20,
+  },
   settingsAvatar: {
     width: 75,
     height: 75,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 21,
-    backgroundColor: "#EEE8FF",
+    backgroundColor: "#F0EDFF",
   },
-  settingsAvatarText: { color: "#6754BC", fontSize: 21, fontWeight: "800" },
-  settingsName: { color: "#333459", fontSize: 17, fontWeight: "800" },
-  settingsRole: { marginTop: 4, color: "#999AAD", fontSize: 10 },
-  settingsGrid: { gap: 10 },
-  infoBlock: { padding: 14, borderRadius: 12, backgroundColor: "#FAFAFD" },
-  infoBlockLabel: { color: "#9B9BAD", fontSize: 9 },
-  infoBlockValue: { marginTop: 5, color: "#444564", fontSize: 12, fontWeight: "800" },
+  settingsAvatarText: {
+    color: "#7465E8",
+    fontSize: 21,
+    fontWeight: "800",
+  },
+  settingsName: {
+    color: "#333554",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  settingsRole: {
+    marginTop: 4,
+    color: "#999AAD",
+    fontSize: 10,
+  },
+  settingsGrid: {
+    gap: 10,
+  },
+  infoBlock: {
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#FAFAFD",
+  },
+  infoBlockLabel: {
+    color: "#9B9BAD",
+    fontSize: 9,
+  },
+  infoBlockValue: {
+    marginTop: 5,
+    color: "#444564",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
   emptyState: {
     minHeight: 280,
     padding: 30,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#EDEDF5",
-    borderRadius: 18,
+    borderColor: "#ECECF4",
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
   },
-  emptyInsidePanel: { minHeight: 210, paddingHorizontal: 15, alignItems: "center", justifyContent: "center" },
-  emptyTitle: { marginTop: 13, color: "#4D4E6C", fontSize: 15, fontWeight: "800", textAlign: "center" },
-  emptyMessage: { marginTop: 6, maxWidth: 350, color: "#A2A2B3", fontSize: 10, lineHeight: 17, textAlign: "center" },
-  drawerBackdrop: { flex: 1, flexDirection: "row", backgroundColor: "rgba(30,28,51,0.42)" },
-  drawerDismiss: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  drawer: { width: 290, height: "100%", paddingHorizontal: 17, paddingTop: 22, paddingBottom: 20, backgroundColor: "#FFFFFF" },
-  drawerTop: { height: 65, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  drawerLogo: { width: 135, height: 55 },
-  drawerClose: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 11, backgroundColor: "#F4F3F8" },
+  emptyInsidePanel: {
+    minHeight: 210,
+    paddingHorizontal: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    marginTop: 13,
+    color: "#4D4E6C",
+    fontSize: 15,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  emptyMessage: {
+    marginTop: 6,
+    maxWidth: 350,
+    color: "#A2A2B3",
+    fontSize: 10,
+    lineHeight: 17,
+    textAlign: "center",
+  },
+
+  /* Drawer — same dimensions, logo and navigation theme as Admin */
+  drawerBackdrop: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "rgba(35,37,64,.32)",
+  },
+  drawerDismiss: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  drawer: {
+    width: 285,
+    height: "100%",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 18,
+    backgroundColor: "#FFFFFF",
+    borderRightWidth: 1,
+    borderRightColor: "#ECECF5",
+  },
+  drawerTop: {
+    height: 112,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  drawerLogo: {
+    width: 190,
+    height: 105,
+  },
+  drawerClose: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#F7F7FB",
+  },
   roleCard: {
-    marginVertical: 14,
-    padding: 13,
     flexDirection: "row",
     alignItems: "center",
     gap: 11,
+    marginBottom: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: "#EBE5FF",
     borderRadius: 16,
-    backgroundColor: "#F7F3FF",
+    backgroundColor: "#F5F0FF",
   },
-  roleIcon: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: "#FFFFFF" },
-  roleTitle: { color: "#333459", fontSize: 13, fontWeight: "800" },
-  roleSubtitle: { marginTop: 3, color: "#8A8BA4", fontSize: 9 },
-  drawerMenuItem: { minHeight: 47, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 5, borderRadius: 12 },
-  drawerMenuItemActive: { backgroundColor: "#7867D9" },
-  drawerMenuText: { color: "#777893", fontSize: 13, fontWeight: "700" },
-  drawerMenuTextActive: { color: "#FFFFFF" },
-  logoutButton: { minHeight: 48, marginTop: 10, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, backgroundColor: "#FFF5F7" },
-  logoutText: { color: "#C1536E", fontSize: 13, fontWeight: "700" },
-  modalBackdrop: { flex: 1, paddingHorizontal: 17, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(30,28,51,0.46)" },
-  reportModal: { width: "100%", maxHeight: "88%", padding: 20, borderRadius: 22, backgroundColor: "#FFFFFF" },
-  editModal: { width: "100%", maxHeight: "88%", padding: 20, borderRadius: 22, backgroundColor: "#FFFFFF" },
-  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 16, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: "#EEEEF5" },
-  modalLabel: { color: "#999AAD", fontSize: 9 },
-  modalTitle: { marginTop: 4, color: "#333459", fontSize: 19, fontWeight: "800" },
-  modalClose: { width: 37, height: 37, alignItems: "center", justifyContent: "center", borderRadius: 11, backgroundColor: "#F4F3F8" },
-  modalSummaryGrid: { gap: 9, paddingVertical: 5 },
-  gamesTitle: { marginTop: 17, marginBottom: 12, color: "#333459", fontSize: 14, fontWeight: "800" },
-  gameCard: { marginBottom: 10, padding: 13, borderWidth: 1, borderColor: "#EEEEF5", borderRadius: 13 },
-  gameHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  gameName: { color: "#444564", fontSize: 11, fontWeight: "800" },
-  gameDomain: { marginTop: 3, color: "#999AAD", fontSize: 9 },
-  gameDetails: { marginTop: 12, flexDirection: "row", gap: 15 },
-  editTitleRow: { flexDirection: "row", alignItems: "center", gap: 11 },
-  editIconBox: { width: 43, height: 43, alignItems: "center", justifyContent: "center", borderRadius: 13, backgroundColor: "#E8F1FF" },
-  editField: { marginBottom: 17 },
-  editLabel: { marginBottom: 8, color: "#596078", fontSize: 11, fontWeight: "700" },
-  editInput: { height: 51, paddingHorizontal: 14, borderWidth: 1, borderColor: "#E0E2EE", borderRadius: 13, color: "#333459", fontSize: 13, backgroundColor: "#FFFFFF" },
-  genderRow: { flexDirection: "row", gap: 9, marginBottom: 17 },
-  genderButton: { flex: 1, height: 49, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E0E2EE", borderRadius: 13, backgroundColor: "#FFFFFF" },
-  genderButtonActive: { borderColor: "#7867D9", backgroundColor: "#F0EDFF" },
-  genderButtonText: { color: "#777893", fontSize: 12, fontWeight: "700" },
-  genderButtonTextActive: { color: "#6856BD" },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 5, paddingBottom: 5 },
-  cancelButton: { flex: 1, height: 50, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E0E2EE", borderRadius: 13, backgroundColor: "#FFFFFF" },
-  cancelButtonText: { color: "#777893", fontSize: 12, fontWeight: "700" },
-  saveButton: { flex: 1, height: 50, alignItems: "center", justifyContent: "center", borderRadius: 13, backgroundColor: "#7867D9" },
-  saveButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
-  buttonDisabled: { opacity: 0.65 },
+  roleIcon: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+  },
+  roleTitle: {
+    color: "#37306F",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  roleSubtitle: {
+    marginTop: 2,
+    color: "#989AB0",
+    fontSize: 10.5,
+  },
+  drawerMenuItem: {
+    height: 45,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    marginBottom: 4,
+    borderRadius: 14,
+  },
+  drawerMenuItemActive: {
+    backgroundColor: "#F0EDFF",
+  },
+  drawerMenuText: {
+    color: "#8A8EA5",
+    fontSize: 13.5,
+  },
+  drawerMenuTextActive: {
+    color: "#7465E8",
+    fontWeight: "700",
+  },
+  logoutButton: {
+    height: 46,
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: "#FFF8F9",
+  },
+  logoutText: {
+    color: "#E35469",
+    fontSize: 13.5,
+    fontWeight: "700",
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    paddingHorizontal: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(30,28,51,0.46)",
+  },
+  reportModal: {
+    width: "100%",
+    maxHeight: "88%",
+    padding: 20,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+  },
+  editModal: {
+    width: "100%",
+    maxHeight: "88%",
+    padding: 20,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 16,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEEEF5",
+  },
+  modalLabel: {
+    color: "#999AAD",
+    fontSize: 9,
+  },
+  modalTitle: {
+    marginTop: 4,
+    color: "#333459",
+    fontSize: 19,
+    fontWeight: "800",
+  },
+  modalClose: {
+    width: 37,
+    height: 37,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+    backgroundColor: "#F4F3F8",
+  },
+  modalSummaryGrid: {
+    gap: 9,
+    paddingVertical: 5,
+  },
+  gamesTitle: {
+    marginTop: 17,
+    marginBottom: 12,
+    color: "#333459",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  gameCard: {
+    marginBottom: 10,
+    padding: 13,
+    borderWidth: 1,
+    borderColor: "#EEEEF5",
+    borderRadius: 13,
+  },
+  gameHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  gameName: {
+    color: "#444564",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  gameDomain: {
+    marginTop: 3,
+    color: "#999AAD",
+    fontSize: 9,
+  },
+  gameDetails: {
+    marginTop: 12,
+    flexDirection: "row",
+    gap: 15,
+  },
+  editTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  editIconBox: {
+    width: 43,
+    height: 43,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 13,
+    backgroundColor: "#EDF6FF",
+  },
+  editField: {
+    marginBottom: 17,
+  },
+  editLabel: {
+    marginBottom: 8,
+    color: "#596078",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  editInput: {
+    height: 51,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#E0E2EE",
+    borderRadius: 13,
+    color: "#333459",
+    fontSize: 13,
+    backgroundColor: "#FFFFFF",
+  },
+  genderRow: {
+    flexDirection: "row",
+    gap: 9,
+    marginBottom: 17,
+  },
+  genderButton: {
+    flex: 1,
+    height: 49,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E0E2EE",
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+  },
+  genderButtonActive: {
+    borderColor: "#DED8FF",
+    backgroundColor: "#F0EDFF",
+  },
+  genderButtonText: {
+    color: "#6A6C82",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  genderButtonTextActive: {
+    color: "#7465E8",
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 5,
+  },
+  cancelButton: {
+    flex: 1,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E0E2EE",
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+  },
+  cancelButtonText: {
+    color: "#62657A",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  saveButton: {
+    flex: 1,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 13,
+    backgroundColor: "#7968ED",
+  },
+  saveButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
 });

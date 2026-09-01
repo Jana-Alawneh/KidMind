@@ -4848,6 +4848,520 @@ export default function ParentDashboard() {
   flex: 1;
 }
 
+
+        /* =========================================================
+           ADMIN THEME PARITY — VISUAL ONLY
+           Keeps every Parent function, section, permission and route
+           unchanged. These rules only align the visual shell/theme
+           with AdminDashboard.
+        ========================================================= */
+
+        .parent-page {
+          min-height: 100vh;
+          display: flex;
+          background: #F7F8FC;
+          color: #252852;
+          font-family:
+            Inter,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        }
+
+        .parent-sidebar {
+          width: 270px;
+          height: 100vh;
+          min-height: 0;
+          position: sticky;
+          left: auto;
+          right: auto;
+          bottom: auto;
+          top: 0;
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          padding: 18px 18px 16px;
+          background: rgba(255,255,255,.94);
+          border-right: 1px solid #ECECF5;
+          box-shadow:
+            8px 0 35px
+            rgba(124,108,255,.05);
+        }
+
+        .parent-logo {
+          height: 125px;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 0;
+          overflow: hidden;
+        }
+
+        .parent-logo img {
+          width: 220px;
+          height: 150px;
+          max-height: none;
+          object-fit: contain;
+        }
+
+        .parent-role-card {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          margin: 3px 4px 17px;
+          padding: 12px;
+          border-radius: 16px;
+          background:
+            linear-gradient(
+              135deg,
+              #F2EEFF,
+              #FBF3FF
+            );
+          border: 1px solid #EBE5FF;
+        }
+
+        .parent-role-icon {
+          width: 38px;
+          height: 38px;
+          flex: 0 0 auto;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          color: #7665EE;
+          background: white;
+          box-shadow: none;
+        }
+
+        .parent-role-card strong {
+          display: block;
+          font-size: 13px;
+          color: #37306F;
+        }
+
+        .parent-role-card span {
+          display: block;
+          margin-top: 2px;
+          font-size: 10.5px;
+          color: #989AB0;
+        }
+
+        .parent-sidebar nav {
+          flex: 1;
+          display: block;
+          overflow-y: auto;
+        }
+
+        .parent-sidebar nav button {
+          width: 100%;
+          height: 43px;
+          min-height: 43px;
+          border: 0;
+          background: transparent;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 14px;
+          margin-bottom: 4px;
+          border-radius: 14px;
+          color: #8A8EA5;
+          cursor: pointer;
+          font-size: 13.5px;
+          font-weight: 400;
+          transition: .18s ease;
+          box-shadow: none;
+        }
+
+        .parent-sidebar nav button:hover {
+          color: #7465E8;
+          background: #F8F7FD;
+        }
+
+        .parent-sidebar nav button.active {
+          color: #7465E8;
+          background: #F0EDFF;
+          font-weight: 600;
+          box-shadow: none;
+        }
+
+        .parent-nav-title {
+          flex: 1;
+          text-align: left;
+        }
+
+        .parent-nav-badge {
+          min-width: 23px;
+          height: 23px;
+          padding: 0 6px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: #7C6CFF;
+          font-size: 10px;
+          font-weight: 800;
+          line-height: 1;
+        }
+
+        .parent-sidebar nav button.active .parent-nav-badge {
+          color: white;
+          background: #7C6CFF;
+        }
+
+        .parent-logout {
+          width: 100%;
+          height: 44px;
+          min-height: 44px;
+          margin-top: 0;
+          border: 0;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 14px;
+          background: transparent;
+          color: #E35469;
+          cursor: pointer;
+          font-size: 13.5px;
+          font-weight: 400;
+          transition: .18s ease;
+        }
+
+        .parent-logout:hover {
+          background: #FFF2F4;
+        }
+
+        .parent-main {
+          flex: 1;
+          width: auto;
+          min-width: 0;
+          min-height: 100vh;
+          margin-left: 0;
+        }
+
+        .parent-topbar {
+          height: 72px;
+          position: sticky;
+          z-index: 20;
+          top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 0 34px;
+          background: rgba(255,255,255,.88);
+          backdrop-filter: blur(15px);
+          border-bottom: 1px solid #EEEFF5;
+        }
+
+        .parent-topbar > div:first-child {
+          display: flex;
+          flex-direction: column;
+          text-align: left;
+        }
+
+        .parent-topbar > div:first-child > span {
+          color: #A0A3B5;
+          font-size: 10.5px;
+        }
+
+        .parent-topbar > div:first-child > strong {
+          margin-top: 2px;
+          font-size: 14px;
+          color: #343654;
+        }
+
+        .parent-topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .parent-notification-button {
+          width: 42px;
+          height: 42px;
+          position: relative;
+          border-radius: 13px;
+          border: 1px solid #ECECF4;
+          display: grid;
+          place-items: center;
+          color: #757991;
+          background: white;
+          cursor: pointer;
+          transition: .18s ease;
+        }
+
+        .parent-notification-button:hover {
+          color: #7465E8;
+          background: #F8F6FF;
+          border-color: #DED8FF;
+        }
+
+        .parent-topbar-badge {
+          min-width: 20px;
+          height: 20px;
+          padding: 0 5px;
+          position: absolute;
+          top: -7px;
+          right: -7px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: white !important;
+          background: #7C6CFF;
+          border: 2px solid white;
+          font-size: 9px !important;
+          font-weight: 800;
+          line-height: 1;
+        }
+
+        .topbar-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 13px;
+          border: 1px solid #ECECF4;
+          display: grid;
+          place-items: center;
+          background: white;
+          color: #7465E8;
+          font-size: 12px;
+          font-weight: 800;
+          overflow: hidden;
+        }
+
+        .parent-content {
+          width: 100%;
+          max-width: none;
+          margin: 0;
+          padding: 32px 34px 45px;
+        }
+
+        .parent-section-heading {
+          margin-bottom: 20px;
+        }
+
+        .parent-section-heading h1 {
+          margin: 0;
+          color: #34365A;
+          font-size: 25px;
+          letter-spacing: -.35px;
+        }
+
+        .parent-section-heading p {
+          margin: 6px 0 0;
+          color: #989BAD;
+          font-size: 12.5px;
+        }
+
+        .parent-refresh-button,
+        .text-button {
+          border: 1px solid #ECECF4;
+          background: white;
+          color: #7465E8;
+          border-radius: 13px;
+          padding: 10px 14px;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .text-button {
+          border: 0;
+          background: #F0EDFF;
+        }
+
+        .parent-error {
+          margin-bottom: 18px;
+          padding: 13px 16px;
+          border-radius: 14px;
+          color: #B9415E;
+          background: #FFF0F3;
+          border: 1px solid #F6D8DF;
+          font-size: 13px;
+        }
+
+        .parent-stat-card {
+          min-height: 126px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 19px;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid #ECECF4;
+          box-shadow:
+            0 8px 26px
+            rgba(68,68,110,.04);
+        }
+
+        .parent-stat-card .stat-icon {
+          width: 47px;
+          height: 47px;
+          flex: 0 0 auto;
+          border-radius: 14px;
+        }
+
+        .parent-stat-card span {
+          color: #85899D;
+          font-size: 11.5px;
+        }
+
+        .parent-stat-card strong {
+          margin: 2px 0;
+          color: #2E3054;
+          font-size: 25px;
+        }
+
+        .parent-stat-card small {
+          color: #A0A3B3;
+          font-size: 10.5px;
+        }
+
+        .parent-panel {
+          background: white;
+          border: 1px solid #ECECF4;
+          border-radius: 22px;
+          padding: 22px;
+          box-shadow:
+            0 8px 26px
+            rgba(68,68,110,.035);
+        }
+
+        .panel-heading {
+          margin-bottom: 18px;
+        }
+
+        .panel-heading h2 {
+          margin: 0;
+          color: #333554;
+          font-size: 16px;
+        }
+
+        .panel-heading p {
+          margin: 4px 0 0;
+          color: #A0A3B4;
+          font-size: 11.5px;
+        }
+
+        .child-hero,
+        .child-card,
+        .report-card,
+        .empty-state {
+          border-color: #ECECF4;
+          box-shadow:
+            0 8px 26px
+            rgba(68,68,110,.035);
+        }
+
+        .child-hero {
+          border-radius: 22px;
+        }
+
+        .child-card,
+        .report-card {
+          border-radius: 20px;
+        }
+
+        @media (max-width: 1150px) {
+          .parent-stats-grid {
+            grid-template-columns:
+              repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 900px) {
+          .parent-sidebar {
+            width: 220px;
+          }
+
+          .parent-content {
+            padding: 25px 22px 40px;
+          }
+
+          .parent-topbar {
+            padding: 0 22px;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .parent-sidebar {
+            width: 78px;
+            padding: 20px 10px;
+          }
+
+          .parent-logo {
+            height: 74px;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+          }
+
+          .parent-logo img {
+            width: 58px;
+            height: auto;
+            max-height: 60px;
+          }
+
+          .parent-role-card {
+            justify-content: center;
+            margin: 12px 5px 22px;
+            padding: 10px;
+          }
+
+          .parent-role-card > div:last-child {
+            display: none;
+          }
+
+          .parent-sidebar nav button,
+          .parent-logout {
+            justify-content: center;
+            padding: 0;
+          }
+
+          .parent-sidebar nav button .parent-nav-title,
+          .parent-sidebar nav button .parent-nav-badge,
+          .parent-logout {
+            font-size: 0;
+          }
+
+          .parent-logout svg {
+            width: 19px;
+            height: 19px;
+          }
+
+          .parent-main {
+            flex: 1;
+            width: auto;
+            margin-left: 0;
+          }
+
+          .parent-content {
+            padding: 22px 14px;
+          }
+
+          .parent-topbar {
+            padding: 0 16px;
+          }
+
+          .parent-section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .parent-section-heading h1 {
+            font-size: 23px;
+          }
+
+          .parent-stats-grid,
+          .children-grid,
+          .reports-cards-grid,
+          .snapshot-items {
+            grid-template-columns: 1fr;
+          }
+        }
+
         `}
       </style>
 
