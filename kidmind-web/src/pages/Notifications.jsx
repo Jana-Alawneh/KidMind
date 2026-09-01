@@ -1207,6 +1207,17 @@ export default function Notifications() {
   }
   
   if (
+  role ===
+  "parent"
+) {
+  return (
+    <Navigate
+      to="/parent?section=notifications"
+      replace
+    />
+  );
+}
+  if (
     role ===
     "therapist"
   ) {

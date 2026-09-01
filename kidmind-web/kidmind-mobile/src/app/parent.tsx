@@ -16,7 +16,10 @@ import {
 } from "react-native";
 
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { router } from "expo-router";
+import {
+  router,
+  useLocalSearchParams,
+} from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -27,6 +30,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
   Eye,
   FileText,
   LayoutDashboard,
@@ -54,6 +58,11 @@ import {
 import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
 import UserAvatar from "@/components/common/UserAvatar";
+import ParentNotificationsSection from "@/components/notifications/ParentNotificationsSection";
+
+import {
+  downloadParentReportPdf,
+} from "@/utils/reportPdf";
 
 import {
   calculateCognitiveScore,
@@ -285,6 +294,15 @@ const statusTheme = (status?: string | null) => {
 };
 
 export default function Parent() {
+
+  const params =
+    useLocalSearchParams<{
+      section?:
+        | string
+        | string[];
+    }>();
+
+
   const [activeSection, setActiveSection] =
     useState<SectionKey>("overview");
   const [children, setChildren] = useState<ParentChild[]>([]);
@@ -361,6 +379,38 @@ export default function Parent() {
   useEffect(() => {
     loadData();
   }, []);
+
+
+  useEffect(
+    () => {
+
+      const rawSection =
+        Array.isArray(
+          params.section
+        )
+          ? params.section[0]
+          : params.section;
+
+
+      if (
+        rawSection &&
+        menuItems.some(
+          item =>
+            item.key ===
+            rawSection
+        )
+      ) {
+        setActiveSection(
+          rawSection as SectionKey
+        );
+      }
+
+    },
+    [
+      params.section,
+    ]
+  );
+
 
   const selectedChild = useMemo(
     () =>
@@ -501,6 +551,10 @@ export default function Parent() {
   const changeSection = (section: SectionKey) => {
     setActiveSection(section);
     setDrawerVisible(false);
+
+    router.setParams({
+      section,
+    });
   };
 
   const renderHeader = (title: string, subtitle: string) => (
@@ -1195,13 +1249,7 @@ export default function Parent() {
         "Updates about reports, sessions, and care team activity."
       )}
 
-      <Panel>
-        <EmptyInsidePanel
-          icon={Bell}
-          title="Notifications are ready for the next step"
-          message="New report, completed session, and therapist-message notifications will appear here after the notification backend is connected."
-        />
-      </Panel>
+      <ParentNotificationsSection />
     </>
   );
 
@@ -1612,107 +1660,466 @@ function ReportModal({
   session: ParentSession;
   close: () => void;
 }) {
+
+  const [
+    downloading,
+    setDownloading,
+  ] =
+    useState(
+      false
+    );
+
+
+  const sessionScore =
+    getSessionScore(
+      session
+    );
+
+
+  const reportDate =
+    session.ended_at ||
+    session.started_at ||
+    session.created_at;
+
+
+  const handleDownload =
+    async () => {
+
+      try {
+
+        setDownloading(
+          true
+        );
+
+
+        await downloadParentReportPdf(
+          session
+        );
+
+      } catch (
+        downloadError
+      ) {
+
+        Alert.alert(
+          "PDF Error",
+          downloadError instanceof
+            Error
+            ? downloadError.message
+            : "Unable to create the PDF report."
+        );
+
+      } finally {
+
+        setDownloading(
+          false
+        );
+
+      }
+
+    };
+
+
   return (
     <Modal
       visible
       transparent
       animationType="fade"
       onRequestClose={close}
+      statusBarTranslucent
     >
       <View style={styles.modalBackdrop}>
-        <View style={styles.reportModal}>
-          <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.modalLabel}>Assessment Report</Text>
-              <Text style={styles.modalTitle}>
+
+        <View style={styles.parentReportModal}>
+
+          <View style={styles.parentReportToolbar}>
+
+            <View style={styles.parentReportToolbarCopy}>
+              <Text style={styles.parentReportToolbarLabel}>
+                KIDMIND REPORT
+              </Text>
+
+              <Text style={styles.parentReportToolbarTitle}>
+                Assessment Report
+              </Text>
+            </View>
+
+
+            <View style={styles.parentReportToolbarActions}>
+
+              <Pressable
+                onPress={() =>
+                  void handleDownload()
+                }
+                disabled={downloading}
+                style={[
+                  styles.parentReportDownloadButton,
+                  downloading &&
+                    styles.buttonDisabled,
+                ]}
+              >
+                {
+                  downloading
+                    ? (
+                      <ActivityIndicator
+                        size="small"
+                        color="#FFFFFF"
+                      />
+                    )
+                    : (
+                      <Download
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                    )
+                }
+              </Pressable>
+
+
+              <Pressable
+                onPress={close}
+                disabled={downloading}
+                style={styles.parentReportCloseButton}
+              >
+                <X
+                  size={20}
+                  color="#77788F"
+                />
+              </Pressable>
+
+            </View>
+
+          </View>
+
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.parentReportScrollContent}
+          >
+
+            <View style={styles.parentReportHero}>
+
+              <View style={styles.parentReportHeroCopy}>
+
+                <Text style={styles.parentReportEyebrow}>
+                  PARENT ASSESSMENT REPORT
+                </Text>
+
+                <Text style={styles.parentReportChildName}>
+                  {
+                    session.child_name ||
+                    "Child"
+                  }
+                </Text>
+
+                <Text style={styles.parentReportSessionId}>
+                  Session #{session.id}
+                </Text>
+
+              </View>
+
+
+              <View style={styles.parentReportScorePanel}>
+
+                <Text style={styles.parentReportScoreLabel}>
+                  Session Score
+                </Text>
+
+                <Text style={styles.parentReportScoreValue}>
+                  {
+                    sessionScore !== null
+                      ? `${sessionScore}%`
+                      : "—"
+                  }
+                </Text>
+
+                <Text style={styles.parentReportScoreCaption}>
+                  Recorded result
+                </Text>
+
+              </View>
+
+            </View>
+
+
+            <View style={styles.parentReportIdentityCard}>
+
+              <View style={styles.parentReportIdentityIcon}>
+                <UserRound
+                  size={22}
+                  color="#7465E8"
+                />
+              </View>
+
+
+              <View style={styles.parentReportIdentityCopy}>
+
+                <Text style={styles.parentReportFactLabel}>
+                  Child
+                </Text>
+
+                <Text style={styles.parentReportIdentityName}>
+                  {
+                    session.child_name ||
+                    "—"
+                  }
+                </Text>
+
+              </View>
+
+            </View>
+
+
+            <View style={styles.parentReportFactsCard}>
+
+              <View style={styles.parentReportFactRow}>
+                <Text style={styles.parentReportFactLabel}>
+                  Date
+                </Text>
+
+                <Text style={styles.parentReportFactValue}>
+                  {
+                    formatDate(
+                      reportDate
+                    )
+                  }
+                </Text>
+              </View>
+
+
+              <View style={styles.parentReportFactRow}>
+                <Text style={styles.parentReportFactLabel}>
+                  Status
+                </Text>
+
+                <View style={styles.parentReportFactValueWrap}>
+                  <StatusPill
+                    status={
+                      session.status
+                    }
+                  />
+                </View>
+              </View>
+
+
+              <View style={styles.parentReportFactRow}>
+                <Text style={styles.parentReportFactLabel}>
+                  Session
+                </Text>
+
+                <Text style={styles.parentReportFactValue}>
+                  #{session.id}
+                </Text>
+              </View>
+
+            </View>
+
+
+            <View style={styles.parentReportSectionHeader}>
+
+              <View style={styles.flexOne}>
+                <Text style={styles.parentReportSectionEyebrow}>
+                  SESSION BREAKDOWN
+                </Text>
+
+                <Text style={styles.parentReportSectionTitle}>
+                  Game Results
+                </Text>
+
+                <Text style={styles.parentReportSectionSubtitle}>
+                  Recorded results for each assessment game.
+                </Text>
+              </View>
+
+
+              <View style={styles.parentReportGameCount}>
+                <Text style={styles.parentReportGameCountText}>
+                  {
+                    Array.isArray(
+                      session.games
+                    )
+                      ? session.games.length
+                      : 0
+                  }{" "}
+                  Games
+                </Text>
+              </View>
+
+            </View>
+
+
+            {
+              Array.isArray(
+                session.games
+              ) &&
+              session.games.length
+                ? (
+                  <View style={styles.parentReportGamesList}>
+
+                    {
+                      session.games.map(
+                        (
+                          game,
+                          index
+                        ) => {
+
+                          const score =
+                            getGameScore(
+                              game
+                            );
+
+
+                          return (
+
+                            <View
+                              key={
+                                game.id ??
+                                index
+                              }
+                              style={styles.parentReportGameCard}
+                            >
+
+                              <View style={styles.parentReportGameHeader}>
+
+                                <View style={styles.parentReportGameIdentity}>
+
+                                  <View style={styles.parentReportGameNumber}>
+                                    <Text style={styles.parentReportGameNumberText}>
+                                      {
+                                        String(
+                                          index + 1
+                                        ).padStart(
+                                          2,
+                                          "0"
+                                        )
+                                      }
+                                    </Text>
+                                  </View>
+
+
+                                  <View style={styles.parentReportGameCopy}>
+
+                                    <Text style={styles.parentReportGameName}>
+                                      {
+                                        game.game_name ||
+                                        "Assessment Game"
+                                      }
+                                    </Text>
+
+                                    <Text style={styles.parentReportGameDomain}>
+                                      {
+                                        getDomainName(
+                                          game
+                                        ) ||
+                                        "Assessment Game"
+                                      }
+                                    </Text>
+
+                                  </View>
+
+                                </View>
+
+
+                                <StatusPill
+                                  status={
+                                    game.status
+                                  }
+                                />
+
+                              </View>
+
+
+                              <View style={styles.parentReportMetrics}>
+
+                                <View style={styles.parentReportMetricRow}>
+                                  <Text style={styles.parentReportMetricLabel}>
+                                    Score
+                                  </Text>
+
+                                  <Text style={styles.parentReportMetricValue}>
+                                    {
+                                      score !== null
+                                        ? `${score}%`
+                                        : "—"
+                                    }
+                                  </Text>
+                                </View>
+
+
+                                <View style={styles.parentReportMetricRow}>
+                                  <Text style={styles.parentReportMetricLabel}>
+                                    Accuracy
+                                  </Text>
+
+                                  <Text style={styles.parentReportMetricValue}>
+                                    {
+                                      game.accuracy !== null &&
+                                      game.accuracy !== undefined &&
+                                      game.accuracy !== ""
+                                        ? `${Math.round(
+                                            Number(
+                                              game.accuracy
+                                            )
+                                          )}%`
+                                        : "—"
+                                    }
+                                  </Text>
+                                </View>
+
+
+                                <View
+                                  style={[
+                                    styles.parentReportMetricRow,
+                                    styles.parentReportMetricRowLast,
+                                  ]}
+                                >
+                                  <Text style={styles.parentReportMetricLabel}>
+                                    Status
+                                  </Text>
+
+                                  <Text style={styles.parentReportMetricValue}>
+                                    {
+                                      game.status ||
+                                      "—"
+                                    }
+                                  </Text>
+                                </View>
+
+                              </View>
+
+                            </View>
+
+                          );
+
+                        }
+                      )
+                    }
+
+                  </View>
+                )
+                : (
+                  <View style={styles.parentReportEmpty}>
+                    <Text style={styles.parentReportEmptyText}>
+                      No game results are available for this session.
+                    </Text>
+                  </View>
+                )
+            }
+
+
+            <View style={styles.parentReportFooter}>
+              <Text style={styles.parentReportFooterText}>
+                KidMind Assessment Report
+              </Text>
+
+              <Text style={styles.parentReportFooterText}>
                 Session #{session.id}
               </Text>
             </View>
 
-            <Pressable onPress={close} style={styles.modalClose}>
-              <X size={20} color="#77788F" />
-            </Pressable>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.modalSummaryGrid}>
-              <InfoBlock
-                label="Child"
-                value={session.child_name || "—"}
-              />
-              <InfoBlock
-                label="Date"
-                value={formatDate(
-                  session.ended_at ||
-                    session.started_at ||
-                    session.created_at
-                )}
-              />
-              <InfoBlock
-                label="Status"
-                value={session.status || "—"}
-              />
-              <InfoBlock
-                label="Session Score"
-                value={
-                  getSessionScore(session) !== null
-                    ? `${getSessionScore(session)}%`
-                    : "—"
-                }
-              />
-            </View>
-
-            <Text style={styles.gamesTitle}>Game Results</Text>
-
-            {Array.isArray(session.games) && session.games.length ? (
-              session.games.map((game, index) => (
-                <View
-                  key={game.id ?? index}
-                  style={styles.gameCard}
-                >
-                  <View style={styles.gameHeader}>
-                    <View style={styles.flexOne}>
-                      <Text style={styles.gameName}>
-                        {game.game_name || "Assessment Game"}
-                      </Text>
-                      <Text style={styles.gameDomain}>
-                        {getDomainName(game) || "Assessment Game"}
-                      </Text>
-                    </View>
-
-                    <StatusPill status={game.status} />
-                  </View>
-
-                  <View style={styles.gameDetails}>
-                    <InfoItem
-                      label="Score"
-                      value={
-                        getGameScore(game) !== null
-                          ? `${getGameScore(game)}%`
-                          : "—"
-                      }
-                    />
-
-                    <InfoItem
-                      label="Accuracy"
-                      value={
-                        game.accuracy !== null &&
-                        game.accuracy !== undefined &&
-                        game.accuracy !== ""
-                          ? `${Math.round(Number(game.accuracy))}%`
-                          : "—"
-                      }
-                    />
-                  </View>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.miniEmpty}>
-                No game results are available for this session.
-              </Text>
-            )}
           </ScrollView>
+
         </View>
+
       </View>
     </Modal>
   );
@@ -3036,5 +3443,391 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+
+  parentReportModal: {
+    width: "100%",
+    maxHeight: "92%",
+    overflow: "hidden",
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7E7EF",
+  },
+
+  parentReportToolbar: {
+    minHeight: 67,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ECECF4",
+    backgroundColor: "#FFFFFF",
+  },
+
+  parentReportToolbarCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  parentReportToolbarLabel: {
+    color: "#8B7CE3",
+    fontSize: 8.5,
+    fontWeight: "800",
+    letterSpacing: 0.9,
+  },
+
+  parentReportToolbarTitle: {
+    marginTop: 3,
+    color: "#333554",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  parentReportToolbarActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  parentReportDownloadButton: {
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#7465E8",
+  },
+
+  parentReportCloseButton: {
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#F5F4F8",
+  },
+
+  parentReportScrollContent: {
+    paddingBottom: 18,
+  },
+
+  parentReportHero: {
+    padding: 19,
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 13,
+    backgroundColor: "#FCFCFF",
+  },
+
+  parentReportHeroCopy: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: "center",
+  },
+
+  parentReportEyebrow: {
+    color: "#8B7CE3",
+    fontSize: 8.5,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+
+  parentReportChildName: {
+    marginTop: 7,
+    color: "#2E3054",
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: "800",
+  },
+
+  parentReportSessionId: {
+    marginTop: 5,
+    color: "#999CAD",
+    fontSize: 9.5,
+    fontWeight: "600",
+  },
+
+  parentReportScorePanel: {
+    width: 118,
+    flexShrink: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 15,
+    justifyContent: "center",
+    borderRadius: 18,
+    backgroundColor: "#7968ED",
+  },
+
+  parentReportScoreLabel: {
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 8.5,
+    fontWeight: "700",
+  },
+
+  parentReportScoreValue: {
+    marginTop: 4,
+    color: "#FFFFFF",
+    fontSize: 29,
+    lineHeight: 33,
+    fontWeight: "800",
+  },
+
+  parentReportScoreCaption: {
+    marginTop: 5,
+    color: "rgba(255,255,255,0.66)",
+    fontSize: 7.5,
+  },
+
+  parentReportIdentityCard: {
+    marginHorizontal: 18,
+    marginTop: 15,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    borderWidth: 1,
+    borderColor: "#E9E7F2",
+    borderRadius: 16,
+    backgroundColor: "#F8F6FF",
+  },
+
+  parentReportIdentityIcon: {
+    width: 41,
+    height: 41,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E3DFFF",
+    backgroundColor: "#FFFFFF",
+  },
+
+  parentReportIdentityCopy: {
+    flex: 1,
+  },
+
+  parentReportIdentityName: {
+    marginTop: 4,
+    color: "#3C3E5B",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  parentReportFactsCard: {
+    marginHorizontal: 18,
+    marginTop: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E9E8F0",
+    borderRadius: 15,
+    backgroundColor: "#FFFFFF",
+  },
+
+  parentReportFactRow: {
+    minHeight: 49,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFEFF4",
+  },
+
+  parentReportFactLabel: {
+    color: "#999CAD",
+    fontSize: 9,
+    fontWeight: "600",
+  },
+
+  parentReportFactValueWrap: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+
+  parentReportFactValue: {
+    flex: 1,
+    color: "#454760",
+    fontSize: 10.5,
+    lineHeight: 15,
+    fontWeight: "700",
+    textAlign: "right",
+  },
+
+  parentReportSectionHeader: {
+    marginHorizontal: 18,
+    marginTop: 22,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+
+  parentReportSectionEyebrow: {
+    color: "#8B7CE3",
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+
+  parentReportSectionTitle: {
+    marginTop: 5,
+    color: "#343653",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+
+  parentReportSectionSubtitle: {
+    marginTop: 4,
+    color: "#999CAD",
+    fontSize: 9,
+    lineHeight: 14,
+  },
+
+  parentReportGameCount: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    backgroundColor: "#F0EDFF",
+  },
+
+  parentReportGameCountText: {
+    color: "#7465E8",
+    fontSize: 8.5,
+    fontWeight: "800",
+  },
+
+  parentReportGamesList: {
+    marginHorizontal: 18,
+    marginTop: 13,
+    gap: 10,
+  },
+
+  parentReportGameCard: {
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E8E8F0",
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+  },
+
+  parentReportGameHeader: {
+    padding: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFEFF4",
+    backgroundColor: "#FCFCFE",
+  },
+
+  parentReportGameIdentity: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  parentReportGameNumber: {
+    width: 34,
+    height: 34,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: "#F0EDFF",
+  },
+
+  parentReportGameNumberText: {
+    color: "#7465E8",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+
+  parentReportGameCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  parentReportGameName: {
+    color: "#3F415C",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  parentReportGameDomain: {
+    marginTop: 3,
+    color: "#999CAD",
+    fontSize: 8.5,
+  },
+
+  parentReportMetrics: {
+    paddingHorizontal: 13,
+  },
+
+  parentReportMetricRow: {
+    minHeight: 43,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F4",
+  },
+
+  parentReportMetricRowLast: {
+    borderBottomWidth: 0,
+  },
+
+  parentReportMetricLabel: {
+    color: "#999CAD",
+    fontSize: 9,
+  },
+
+  parentReportMetricValue: {
+    color: "#44465F",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  parentReportEmpty: {
+    marginHorizontal: 18,
+    marginTop: 13,
+    padding: 25,
+    alignItems: "center",
+    borderRadius: 15,
+    backgroundColor: "#F8F8FB",
+  },
+
+  parentReportEmptyText: {
+    color: "#999CAD",
+    fontSize: 10,
+    textAlign: "center",
+  },
+
+  parentReportFooter: {
+    minHeight: 49,
+    marginTop: 18,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#EEEEF4",
+    backgroundColor: "#FAFAFC",
+  },
+
+  parentReportFooterText: {
+    color: "#A0A3B4",
+    fontSize: 8,
+    fontWeight: "600",
   },
 });

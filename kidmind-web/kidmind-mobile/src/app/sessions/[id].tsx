@@ -26,6 +26,7 @@ import {
   ArrowLeft,
   Brain,
   Clock,
+  Download,
   Pause,
   Play,
   Square,
@@ -37,6 +38,10 @@ import Navbar from
 
 import Sidebar from
   "@/components/layout/Sidebar";
+
+import {
+  downloadTherapistReportPdf,
+} from "@/utils/reportPdf";
 
 import MemoryMatch from
   "@/components/games/memory/MemoryMatch";
@@ -467,6 +472,15 @@ export default function SessionPage() {
   ] =
     useState(
       ""
+    );
+
+
+  const [
+    reportDownloading,
+    setReportDownloading,
+  ] =
+    useState(
+      false
     );
 
 
@@ -1576,109 +1590,218 @@ export default function SessionPage() {
             : "This session was cancelled before completion. Any saved game results are shown below.";
 
 
+      const handleDownloadReport =
+        async () => {
+
+          try {
+
+            setReportDownloading(
+              true
+            );
+
+
+            await downloadTherapistReportPdf(
+              session,
+              elapsedSeconds
+            );
+
+          } catch (
+            downloadError
+          ) {
+
+            Alert.alert(
+              "PDF Error",
+              downloadError instanceof
+                Error
+                ? downloadError.message
+                : "Unable to create the PDF report."
+            );
+
+          } finally {
+
+            setReportDownloading(
+              false
+            );
+
+          }
+
+        };
+
+
       return (
 
         <View
           style={
-            styles.reportContainer
+            styles.finishedReportDocument
           }
         >
 
           <View
-            style={[
-              styles.reportHero,
-
-              completed
-                ? styles.reportHeroCompleted
-                : styles.reportHeroStopped,
-            ]}
+            style={
+              styles.finishedReportTopbar
+            }
           >
 
             <View
-              style={[
-                styles.reportIcon,
-
-                completed
-                  ? styles.reportIconCompleted
-                  : styles.reportIconStopped,
-              ]}
+              style={
+                styles.finishedReportBrand
+              }
             >
 
-              {completed ? (
+              <Text
+                style={
+                  styles.finishedReportBrandName
+                }
+              >
+                KIDMIND
+              </Text>
 
-                <Target
-                  size={36}
-                  color="#16A34A"
-                />
 
-              ) : (
-
-                <Square
-                  size={31}
-                  color="#EF4444"
-                />
-
-              )}
+              <Text
+                style={
+                  styles.finishedReportBrandSubtitle
+                }
+              >
+                Therapist Assessment Report
+              </Text>
 
             </View>
 
 
-            <Text
-              style={
-                styles.reportTitle
+            <TouchableOpacity
+              activeOpacity={
+                0.85
               }
+              style={[
+                styles.finishedReportDownloadButton,
+
+                reportDownloading &&
+                  styles.disabledButton,
+              ]}
+              disabled={
+                reportDownloading
+              }
+              onPress={() => {
+
+                void handleDownloadReport();
+
+              }}
             >
-              {reportTitle}
-            </Text>
+
+              {
+                reportDownloading
+                  ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+                  )
+                  : (
+                    <Download
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                  )
+              }
 
 
-            <Text
+              <Text
+                style={
+                  styles.finishedReportDownloadText
+                }
+              >
+                {
+                  reportDownloading
+                    ? "Preparing..."
+                    : "PDF"
+                }
+              </Text>
+
+            </TouchableOpacity>
+
+          </View>
+
+
+          <View
+            style={
+              styles.finishedReportHero
+            }
+          >
+
+            <View
               style={
-                styles.reportText
+                styles.finishedReportHeroCopy
               }
             >
-              {reportText}
-            </Text>
+
+              <Text
+                style={
+                  styles.finishedReportEyebrow
+                }
+              >
+                THERAPIST ASSESSMENT REPORT
+              </Text>
+
+
+              <Text
+                style={
+                  styles.finishedReportChildName
+                }
+              >
+                {
+                  session.child_name ||
+                  "Child"
+                }
+              </Text>
+
+
+              <Text
+                style={
+                  styles.finishedReportSessionId
+                }
+              >
+                Session #{session.id}
+              </Text>
+
+            </View>
 
 
             <View
               style={
-                styles.reportDateCard
+                styles.finishedReportScorePanel
               }
             >
 
-              <Clock
-                size={17}
-                color="#7B6EF6"
-              />
-
-
-              <View
+              <Text
                 style={
-                  styles.reportDateTextBox
+                  styles.finishedReportScoreLabel
                 }
               >
-
-                <Text
-                  style={
-                    styles.reportDateLabel
-                  }
-                >
-                  Session Date
-                </Text>
+                Overall Score
+              </Text>
 
 
-                <Text
-                  style={
-                    styles.reportDateValue
-                  }
-                >
-                  {formatDate(
-                    reportDate
-                  )}
-                </Text>
+              <Text
+                style={
+                  styles.finishedReportScoreValue
+                }
+              >
+                {
+                  displayedScore !==
+                  null
+                    ? `${displayedScore}%`
+                    : "—"
+                }
+              </Text>
 
-              </View>
+
+              <Text
+                style={
+                  styles.finishedReportScoreCaption
+                }
+              >
+                Recorded result
+              </Text>
 
             </View>
 
@@ -1687,353 +1810,618 @@ export default function SessionPage() {
 
           <View
             style={
-              styles.reportGamesSection
+              styles.finishedReportFacts
+            }
+          >
+
+            <View
+              style={
+                styles.finishedReportFactRow
+              }
+            >
+              <Text
+                style={
+                  styles.finishedReportFactLabel
+                }
+              >
+                Child
+              </Text>
+
+              <Text
+                style={
+                  styles.finishedReportFactValue
+                }
+              >
+                {
+                  session.child_name ||
+                  "—"
+                }
+              </Text>
+            </View>
+
+
+            <View
+              style={
+                styles.finishedReportFactRow
+              }
+            >
+              <Text
+                style={
+                  styles.finishedReportFactLabel
+                }
+              >
+                Session Duration
+              </Text>
+
+              <Text
+                style={
+                  styles.finishedReportFactValue
+                }
+              >
+                {
+                  formatTime(
+                    elapsedSeconds
+                  )
+                }
+              </Text>
+            </View>
+
+
+            <View
+              style={
+                styles.finishedReportFactRow
+              }
+            >
+              <Text
+                style={
+                  styles.finishedReportFactLabel
+                }
+              >
+                Difficulty
+              </Text>
+
+              <Text
+                style={
+                  styles.finishedReportFactValue
+                }
+              >
+                {
+                  displayedDifficulty
+                }
+              </Text>
+            </View>
+
+
+            <View
+              style={
+                styles.finishedReportFactRow
+              }
+            >
+              <Text
+                style={
+                  styles.finishedReportFactLabel
+                }
+              >
+                Games
+              </Text>
+
+              <Text
+                style={
+                  styles.finishedReportFactValue
+                }
+              >
+                {finishedGames.length}
+                /
+                {games.length}
+              </Text>
+            </View>
+
+
+            <View
+              style={[
+                styles.finishedReportFactRow,
+                styles.finishedReportFactRowLast,
+              ]}
+            >
+              <Text
+                style={
+                  styles.finishedReportFactLabel
+                }
+              >
+                Assessment Date
+              </Text>
+
+              <Text
+                style={
+                  styles.finishedReportFactValue
+                }
+              >
+                {
+                  formatDate(
+                    reportDate
+                  )
+                }
+              </Text>
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.finishedReportNarrative
+            }
+          >
+
+            <View
+              style={[
+                styles.finishedReportNarrativeIcon,
+
+                completed
+                  ? styles.finishedReportNarrativeIconCompleted
+                  : styles.finishedReportNarrativeIconStopped,
+              ]}
+            >
+
+              {
+                completed
+                  ? (
+                    <Target
+                      size={22}
+                      color="#4A9476"
+                    />
+                  )
+                  : (
+                    <Square
+                      size={19}
+                      color="#C15B6E"
+                    />
+                  )
+              }
+
+            </View>
+
+
+            <View
+              style={
+                styles.finishedReportNarrativeCopy
+              }
+            >
+
+              <Text
+                style={
+                  styles.finishedReportNarrativeTitle
+                }
+              >
+                {reportTitle}
+              </Text>
+
+
+              <Text
+                style={
+                  styles.finishedReportNarrativeText
+                }
+              >
+                {reportText}
+              </Text>
+
+            </View>
+
+          </View>
+
+
+          <View
+            style={
+              styles.finishedReportGamesSection
+            }
+          >
+
+            <View
+              style={
+                styles.finishedReportSectionHeading
+              }
+            >
+
+              <View
+                style={
+                  styles.finishedReportSectionCopy
+                }
+              >
+
+                <Text
+                  style={
+                    styles.finishedReportSectionEyebrow
+                  }
+                >
+                  SESSION BREAKDOWN
+                </Text>
+
+
+                <Text
+                  style={
+                    styles.finishedReportSectionTitle
+                  }
+                >
+                  Game Results
+                </Text>
+
+
+                <Text
+                  style={
+                    styles.finishedReportSectionSubtitle
+                  }
+                >
+                  Detailed results saved for each selected game.
+                </Text>
+
+              </View>
+
+
+              <View
+                style={
+                  styles.finishedReportGameCount
+                }
+              >
+                <Text
+                  style={
+                    styles.finishedReportGameCountText
+                  }
+                >
+                  {games.length} Games
+                </Text>
+              </View>
+
+            </View>
+
+
+            <View
+              style={
+                styles.finishedReportGamesList
+              }
+            >
+
+              {
+                games.map(
+                  (
+                    game,
+                    index
+                  ) => {
+
+                    const colors =
+                      getStatusColors(
+                        game.status
+                      );
+
+
+                    const reportGame =
+                      game as typeof game & {
+
+                        accuracy?:
+                          | number
+                          | string
+                          | null;
+
+                        mistakes?:
+                          | number
+                          | string
+                          | null;
+
+                        reaction_time?:
+                          | number
+                          | string
+                          | null;
+
+                      };
+
+
+                    return (
+
+                      <View
+                        key={
+                          game.id
+                        }
+                        style={
+                          styles.finishedReportGameCard
+                        }
+                      >
+
+                        <View
+                          style={
+                            styles.finishedReportGameHeader
+                          }
+                        >
+
+                          <View
+                            style={
+                              styles.finishedReportGameIdentity
+                            }
+                          >
+
+                            <View
+                              style={
+                                styles.finishedReportGameNumber
+                              }
+                            >
+                              <Text
+                                style={
+                                  styles.finishedReportGameNumberText
+                                }
+                              >
+                                {
+                                  String(
+                                    index + 1
+                                  ).padStart(
+                                    2,
+                                    "0"
+                                  )
+                                }
+                              </Text>
+                            </View>
+
+
+                            <View
+                              style={
+                                styles.finishedReportGameCopy
+                              }
+                            >
+
+                              <Text
+                                style={
+                                  styles.finishedReportGameName
+                                }
+                              >
+                                {game.game_name}
+                              </Text>
+
+
+                              <Text
+                                style={
+                                  styles.finishedReportGameDifficulty
+                                }
+                              >
+                                {
+                                  game.difficulty ||
+                                  "No difficulty"
+                                }
+                              </Text>
+
+                            </View>
+
+                          </View>
+
+
+                          <View
+                            style={[
+                              styles.finishedReportGameStatus,
+                              {
+                                backgroundColor:
+                                  colors.backgroundColor,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.finishedReportGameStatusText,
+                                {
+                                  color:
+                                    colors.color,
+                                },
+                              ]}
+                            >
+                              {game.status}
+                            </Text>
+                          </View>
+
+                        </View>
+
+
+                        <View
+                          style={
+                            styles.finishedReportMetrics
+                          }
+                        >
+
+                          <View
+                            style={
+                              styles.finishedReportMetricRow
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.finishedReportMetricLabel
+                              }
+                            >
+                              Score
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.finishedReportMetricValue
+                              }
+                            >
+                              {
+                                formatPercent(
+                                  game.score
+                                )
+                              }
+                            </Text>
+                          </View>
+
+
+                          <View
+                            style={
+                              styles.finishedReportMetricRow
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.finishedReportMetricLabel
+                              }
+                            >
+                              Accuracy
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.finishedReportMetricValue
+                              }
+                            >
+                              {
+                                formatPercent(
+                                  reportGame.accuracy
+                                )
+                              }
+                            </Text>
+                          </View>
+
+
+                          <View
+                            style={
+                              styles.finishedReportMetricRow
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.finishedReportMetricLabel
+                              }
+                            >
+                              Mistakes
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.finishedReportMetricValue
+                              }
+                            >
+                              {
+                                formatMetricNumber(
+                                  reportGame.mistakes
+                                )
+                              }
+                            </Text>
+                          </View>
+
+
+                          <View
+                            style={
+                              styles.finishedReportMetricRow
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.finishedReportMetricLabel
+                              }
+                            >
+                              Reaction Time
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.finishedReportMetricValue
+                              }
+                            >
+                              {
+                                formatReactionTime(
+                                  reportGame.reaction_time
+                                )
+                              }
+                            </Text>
+                          </View>
+
+
+                          <View
+                            style={[
+                              styles.finishedReportMetricRow,
+                              styles.finishedReportMetricRowLast,
+                            ]}
+                          >
+                            <Text
+                              style={
+                                styles.finishedReportMetricLabel
+                              }
+                            >
+                              Game Time
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.finishedReportMetricValue
+                              }
+                            >
+                              {
+                                formatTime(
+                                  game.duration_seconds
+                                )
+                              }
+                            </Text>
+                          </View>
+
+                        </View>
+
+                      </View>
+
+                    );
+
+                  }
+                )
+              }
+
+            </View>
+
+
+            {
+              games.length ===
+                0 && (
+
+                <View
+                  style={
+                    styles.finishedReportEmpty
+                  }
+                >
+                  <Text
+                    style={
+                      styles.finishedReportEmptyText
+                    }
+                  >
+                    No game results are available for this session.
+                  </Text>
+                </View>
+
+              )
+            }
+
+          </View>
+
+
+          <View
+            style={
+              styles.finishedReportFooter
             }
           >
 
             <Text
               style={
-                styles.reportSectionTitle
+                styles.finishedReportFooterText
               }
             >
-              Game Results
+              KidMind Therapist Assessment Report
             </Text>
 
 
             <Text
               style={
-                styles.reportSectionSubtitle
+                styles.finishedReportFooterText
               }
             >
-              Detailed results saved for each selected game.
+              Session #{session.id}
             </Text>
-
-
-            <View
-              style={
-                styles.reportGamesList
-              }
-            >
-
-              {games.map(
-                (
-                  game,
-                  index
-                ) => {
-
-                  const colors =
-                    getStatusColors(
-                      game.status
-                    );
-
-
-                  const reportGame =
-                    game as typeof game & {
-
-                      accuracy?:
-                        | number
-                        | string
-                        | null;
-
-                      mistakes?:
-                        | number
-                        | string
-                        | null;
-
-                      reaction_time?:
-                        | number
-                        | string
-                        | null;
-
-                    };
-
-
-                  return (
-
-                    <View
-                      key={
-                        game.id
-                      }
-                      style={
-                        styles.reportGameCard
-                      }
-                    >
-
-                      <View
-                        style={
-                          styles.reportGameHeader
-                        }
-                      >
-
-                        <View
-                          style={
-                            styles.reportGameIdentity
-                          }
-                        >
-
-                          <View
-                            style={
-                              styles.reportGameNumber
-                            }
-                          >
-
-                            <Text
-                              style={
-                                styles.reportGameNumberText
-                              }
-                            >
-                              {index + 1}
-                            </Text>
-
-                          </View>
-
-
-                          <View
-                            style={
-                              styles.reportGameTextBox
-                            }
-                          >
-
-                            <Text
-                              style={
-                                styles.reportGameName
-                              }
-                            >
-                              {game.game_name}
-                            </Text>
-
-
-                            <Text
-                              style={
-                                styles.reportGameDifficulty
-                              }
-                            >
-                              {
-                                game.difficulty ||
-                                "No difficulty"
-                              }
-                            </Text>
-
-                          </View>
-
-                        </View>
-
-
-                        <View
-                          style={[
-                            styles.reportGameStatus,
-
-                            {
-                              backgroundColor:
-                                colors.backgroundColor,
-                            },
-                          ]}
-                        >
-
-                          <Text
-                            style={[
-                              styles.reportGameStatusText,
-
-                              {
-                                color:
-                                  colors.color,
-                              },
-                            ]}
-                          >
-                            {game.status}
-                          </Text>
-
-                        </View>
-
-                      </View>
-
-
-                      <View
-                        style={
-                          styles.reportMetricsGrid
-                        }
-                      >
-
-                        <View
-                          style={
-                            styles.reportMetricCard
-                          }
-                        >
-
-                          <Text
-                            style={
-                              styles.reportMetricLabel
-                            }
-                          >
-                            Score
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.reportMetricValue
-                            }
-                          >
-                            {formatPercent(
-                              game.score
-                            )}
-                          </Text>
-
-                        </View>
-
-
-                        <View
-                          style={
-                            styles.reportMetricCard
-                          }
-                        >
-
-                          <Text
-                            style={
-                              styles.reportMetricLabel
-                            }
-                          >
-                            Accuracy
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.reportMetricValue
-                            }
-                          >
-                            {formatPercent(
-                              reportGame.accuracy
-                            )}
-                          </Text>
-
-                        </View>
-
-
-                        <View
-                          style={
-                            styles.reportMetricCard
-                          }
-                        >
-
-                          <Text
-                            style={
-                              styles.reportMetricLabel
-                            }
-                          >
-                            Mistakes
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.reportMetricValue
-                            }
-                          >
-                            {formatMetricNumber(
-                              reportGame.mistakes
-                            )}
-                          </Text>
-
-                        </View>
-
-
-                        <View
-                          style={
-                            styles.reportMetricCard
-                          }
-                        >
-
-                          <Text
-                            style={
-                              styles.reportMetricLabel
-                            }
-                          >
-                            Reaction Time
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.reportMetricValueSmall
-                            }
-                          >
-                            {formatReactionTime(
-                              reportGame
-                                .reaction_time
-                            )}
-                          </Text>
-
-                        </View>
-
-
-                        <View
-                          style={[
-                            styles.reportMetricCard,
-                            styles.reportMetricCardWide,
-                          ]}
-                        >
-
-                          <Text
-                            style={
-                              styles.reportMetricLabel
-                            }
-                          >
-                            Game Time
-                          </Text>
-
-
-                          <Text
-                            style={
-                              styles.reportMetricValueSmall
-                            }
-                          >
-                            {formatTime(
-                              game.duration_seconds
-                            )}
-                          </Text>
-
-                        </View>
-
-                      </View>
-
-                    </View>
-
-                  );
-
-                }
-              )}
-
-            </View>
-
-
-            {games.length ===
-              0 && (
-
-              <View
-                style={
-                  styles.reportEmptyBox
-                }
-              >
-
-                <Text
-                  style={
-                    styles.reportEmptyText
-                  }
-                >
-                  No game results are available for this session.
-                </Text>
-
-              </View>
-
-            )}
 
           </View>
 
 
           <View
             style={
-              styles.reportActions
+              styles.finishedReportActions
             }
           >
 
@@ -2987,6 +3375,10 @@ export default function SessionPage() {
 
             <>
 
+              {!isFinished && (
+
+                <>
+
               <View
                 style={
                   styles.headerCard
@@ -3269,6 +3661,11 @@ export default function SessionPage() {
                 </View>
 
               </View>
+
+
+                </>
+
+              )}
 
 
               {!isFinished && (
@@ -5972,6 +6369,1005 @@ const styles =
 
       marginTop:
         7,
+
+    },
+
+
+    finishedReportDocument: {
+
+      overflow:
+        "hidden",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E7E7EF",
+
+      borderRadius:
+        24,
+
+      backgroundColor:
+        "#FFFFFF",
+
+    },
+
+
+    finishedReportTopbar: {
+
+      minHeight:
+        66,
+
+      paddingHorizontal:
+        18,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        12,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#ECECF4",
+
+      backgroundColor:
+        "#FFFFFF",
+
+    },
+
+
+    finishedReportBrand: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    finishedReportBrandName: {
+
+      color:
+        "#7465E8",
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "800",
+
+      letterSpacing:
+        1,
+
+    },
+
+
+    finishedReportBrandSubtitle: {
+
+      marginTop:
+        3,
+
+      color:
+        "#7A7D91",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    finishedReportDownloadButton: {
+
+      minHeight:
+        41,
+
+      paddingHorizontal:
+        13,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      gap:
+        7,
+
+      borderRadius:
+        12,
+
+      backgroundColor:
+        "#7465E8",
+
+    },
+
+
+    finishedReportDownloadText: {
+
+      color:
+        "#FFFFFF",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportHero: {
+
+      padding:
+        18,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "stretch",
+
+      gap:
+        13,
+
+      backgroundColor:
+        "#FCFCFF",
+
+    },
+
+
+    finishedReportHeroCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      justifyContent:
+        "center",
+
+    },
+
+
+    finishedReportEyebrow: {
+
+      color:
+        "#8B7CE3",
+
+      fontSize:
+        8.5,
+
+      fontWeight:
+        "800",
+
+      letterSpacing:
+        0.8,
+
+    },
+
+
+    finishedReportChildName: {
+
+      marginTop:
+        7,
+
+      color:
+        "#2E3054",
+
+      fontSize:
+        22,
+
+      lineHeight:
+        27,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportSessionId: {
+
+      marginTop:
+        5,
+
+      color:
+        "#999CAD",
+
+      fontSize:
+        9.5,
+
+      fontWeight:
+        "600",
+
+    },
+
+
+    finishedReportScorePanel: {
+
+      width:
+        118,
+
+      flexShrink:
+        0,
+
+      paddingHorizontal:
+        14,
+
+      paddingVertical:
+        15,
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        18,
+
+      backgroundColor:
+        "#7968ED",
+
+    },
+
+
+    finishedReportScoreLabel: {
+
+      color:
+        "rgba(255,255,255,0.78)",
+
+      fontSize:
+        8.5,
+
+      fontWeight:
+        "700",
+
+    },
+
+
+    finishedReportScoreValue: {
+
+      marginTop:
+        4,
+
+      color:
+        "#FFFFFF",
+
+      fontSize:
+        29,
+
+      lineHeight:
+        33,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportScoreCaption: {
+
+      marginTop:
+        5,
+
+      color:
+        "rgba(255,255,255,0.66)",
+
+      fontSize:
+        7.5,
+
+    },
+
+
+    finishedReportFacts: {
+
+      marginHorizontal:
+        18,
+
+      marginTop:
+        15,
+
+      overflow:
+        "hidden",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E9E8F0",
+
+      borderRadius:
+        16,
+
+      backgroundColor:
+        "#FFFFFF",
+
+    },
+
+
+    finishedReportFactRow: {
+
+      minHeight:
+        49,
+
+      paddingHorizontal:
+        14,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        14,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#EFEFF4",
+
+    },
+
+
+    finishedReportFactRowLast: {
+
+      borderBottomWidth:
+        0,
+
+    },
+
+
+    finishedReportFactLabel: {
+
+      color:
+        "#999CAD",
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "650",
+
+    },
+
+
+    finishedReportFactValue: {
+
+      flex:
+        1,
+
+      color:
+        "#454760",
+
+      fontSize:
+        10.5,
+
+      lineHeight:
+        15,
+
+      fontWeight:
+        "700",
+
+      textAlign:
+        "right",
+
+    },
+
+
+    finishedReportNarrative: {
+
+      marginHorizontal:
+        18,
+
+      marginTop:
+        12,
+
+      padding:
+        14,
+
+      flexDirection:
+        "row",
+
+      gap:
+        11,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E9E5FA",
+
+      borderRadius:
+        16,
+
+      backgroundColor:
+        "#FAF9FF",
+
+    },
+
+
+    finishedReportNarrativeIcon: {
+
+      width:
+        42,
+
+      height:
+        42,
+
+      flexShrink:
+        0,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        13,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      borderWidth:
+        1,
+
+    },
+
+
+    finishedReportNarrativeIconCompleted: {
+
+      borderColor:
+        "#DCEFE7",
+
+    },
+
+
+    finishedReportNarrativeIconStopped: {
+
+      borderColor:
+        "#F1DDE1",
+
+    },
+
+
+    finishedReportNarrativeCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    finishedReportNarrativeTitle: {
+
+      color:
+        "#3D3F5C",
+
+      fontSize:
+        11.5,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportNarrativeText: {
+
+      marginTop:
+        5,
+
+      color:
+        "#74778C",
+
+      fontSize:
+        9.5,
+
+      lineHeight:
+        15,
+
+    },
+
+
+    finishedReportGamesSection: {
+
+      marginTop:
+        21,
+
+      paddingHorizontal:
+        18,
+
+      paddingBottom:
+        18,
+
+    },
+
+
+    finishedReportSectionHeading: {
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "flex-end",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        12,
+
+      marginBottom:
+        13,
+
+    },
+
+
+    finishedReportSectionCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    finishedReportSectionEyebrow: {
+
+      color:
+        "#8B7CE3",
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "800",
+
+      letterSpacing:
+        0.8,
+
+    },
+
+
+    finishedReportSectionTitle: {
+
+      marginTop:
+        5,
+
+      color:
+        "#343653",
+
+      fontSize:
+        17,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportSectionSubtitle: {
+
+      marginTop:
+        4,
+
+      color:
+        "#999CAD",
+
+      fontSize:
+        9,
+
+      lineHeight:
+        14,
+
+    },
+
+
+    finishedReportGameCount: {
+
+      minHeight:
+        30,
+
+      paddingHorizontal:
+        10,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        999,
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    finishedReportGameCountText: {
+
+      color:
+        "#7465E8",
+
+      fontSize:
+        8.5,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportGamesList: {
+
+      gap:
+        10,
+
+    },
+
+
+    finishedReportGameCard: {
+
+      overflow:
+        "hidden",
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#E8E8F0",
+
+      borderRadius:
+        16,
+
+      backgroundColor:
+        "#FFFFFF",
+
+    },
+
+
+    finishedReportGameHeader: {
+
+      padding:
+        13,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        10,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#EFEFF4",
+
+      backgroundColor:
+        "#FCFCFE",
+
+    },
+
+
+    finishedReportGameIdentity: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        10,
+
+    },
+
+
+    finishedReportGameNumber: {
+
+      width:
+        34,
+
+      height:
+        34,
+
+      flexShrink:
+        0,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderRadius:
+        10,
+
+      backgroundColor:
+        "#F0EDFF",
+
+    },
+
+
+    finishedReportGameNumberText: {
+
+      color:
+        "#7465E8",
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportGameCopy: {
+
+      flex:
+        1,
+
+      minWidth:
+        0,
+
+    },
+
+
+    finishedReportGameName: {
+
+      color:
+        "#3F415C",
+
+      fontSize:
+        11,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportGameDifficulty: {
+
+      marginTop:
+        3,
+
+      color:
+        "#999CAD",
+
+      fontSize:
+        8.5,
+
+    },
+
+
+    finishedReportGameStatus: {
+
+      paddingHorizontal:
+        8,
+
+      paddingVertical:
+        5,
+
+      borderRadius:
+        999,
+
+    },
+
+
+    finishedReportGameStatusText: {
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportMetrics: {
+
+      paddingHorizontal:
+        13,
+
+    },
+
+
+    finishedReportMetricRow: {
+
+      minHeight:
+        43,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        12,
+
+      borderBottomWidth:
+        1,
+
+      borderBottomColor:
+        "#F0F0F4",
+
+    },
+
+
+    finishedReportMetricRowLast: {
+
+      borderBottomWidth:
+        0,
+
+    },
+
+
+    finishedReportMetricLabel: {
+
+      color:
+        "#999CAD",
+
+      fontSize:
+        9,
+
+    },
+
+
+    finishedReportMetricValue: {
+
+      color:
+        "#44465F",
+
+      fontSize:
+        10,
+
+      fontWeight:
+        "800",
+
+    },
+
+
+    finishedReportEmpty: {
+
+      padding:
+        24,
+
+      alignItems:
+        "center",
+
+      borderRadius:
+        15,
+
+      backgroundColor:
+        "#F8F8FB",
+
+    },
+
+
+    finishedReportEmptyText: {
+
+      color:
+        "#999CAD",
+
+      fontSize:
+        10,
+
+      textAlign:
+        "center",
+
+    },
+
+
+    finishedReportFooter: {
+
+      minHeight:
+        49,
+
+      paddingHorizontal:
+        18,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "space-between",
+
+      gap:
+        12,
+
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#EEEEF4",
+
+      backgroundColor:
+        "#FAFAFC",
+
+    },
+
+
+    finishedReportFooterText: {
+
+      color:
+        "#A0A3B4",
+
+      fontSize:
+        8,
+
+      fontWeight:
+        "650",
+
+    },
+
+
+    finishedReportActions: {
+
+      padding:
+        16,
+
+      gap:
+        9,
+
+      borderTopWidth:
+        1,
+
+      borderTopColor:
+        "#EEEEF4",
+
+      backgroundColor:
+        "#FFFFFF",
 
     },
 

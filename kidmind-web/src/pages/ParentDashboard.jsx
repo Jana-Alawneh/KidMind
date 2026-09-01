@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   Clock3,
   ClipboardList,
+  Download,
   Eye,
   FileText,
   LayoutDashboard,
@@ -30,6 +32,7 @@ import {
 } from "lucide-react";
 
 import {
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -38,6 +41,12 @@ import EditChildModal from "../components/children/EditChildModal";
 import ParentSettings from "../components/parent/ParentSettings";
 import ParentFeedback from "../components/parent/ParentFeedback";
 import UserAvatar from "../components/common/UserAvatar";
+import {
+  NotificationsContent,
+} from "./Notifications";
+import {
+  downloadElementAsPdf,
+} from "../utils/downloadElementAsPdf";
 
 import {
   calculateCognitiveScore,
@@ -487,14 +496,78 @@ export default function ParentDashboard() {
   const navigate =
     useNavigate();
 
+  const location =
+    useLocation();
+
 
   const [
     activeSection,
     setActiveSection,
   ] =
     useState(
-      "overview"
+      () => {
+
+        const params =
+          new URLSearchParams(
+            window.location.search
+          );
+
+        const requestedSection =
+          params.get(
+            "section"
+          );
+
+        const validSection =
+          menu.some(
+            item =>
+              item.key ===
+              requestedSection
+          );
+
+        return validSection
+          ? requestedSection
+          : "overview";
+
+      }
     );
+
+
+  useEffect(
+    () => {
+
+      const params =
+        new URLSearchParams(
+          location.search
+        );
+
+      const requestedSection =
+        params.get(
+          "section"
+        );
+
+      const validSection =
+        menu.some(
+          item =>
+            item.key ===
+            requestedSection
+        );
+
+
+      if (
+        validSection
+      ) {
+
+        setActiveSection(
+          requestedSection
+        );
+
+      }
+
+    },
+    [
+      location.search,
+    ]
+  );
 
 
   const [
@@ -563,6 +636,22 @@ export default function ParentDashboard() {
     setSelectedReport,
   ] =
     useState(null);
+
+
+  const reportRef =
+    useRef(null);
+
+
+  const [
+    downloadingReport,
+    setDownloadingReport,
+  ] = useState(false);
+
+
+  const [
+    reportDownloadError,
+    setReportDownloadError,
+  ] = useState("");
 
 
   const [
@@ -1210,6 +1299,61 @@ export default function ParentDashboard() {
   const latestActivity =
     childSessions[0] ||
     null;
+
+
+  const handleDownloadParentReport =
+    async () => {
+
+      if (
+        !selectedReport ||
+        !reportRef.current ||
+        downloadingReport
+      ) {
+        return;
+      }
+
+
+      try {
+
+        setDownloadingReport(
+          true
+        );
+
+        setReportDownloadError(
+          ""
+        );
+
+
+        await downloadElementAsPdf({
+          element:
+            reportRef.current,
+          filename:
+            `KidMind-Parent-Assessment-Report-${selectedReport.child_name || "Child"}-Session-${selectedReport.id}.pdf`,
+        });
+
+      } catch (
+        downloadError
+      ) {
+
+        console.error(
+          "Failed to download parent report PDF:",
+          downloadError
+        );
+
+        setReportDownloadError(
+          downloadError?.message ||
+          "Unable to download the report PDF."
+        );
+
+      } finally {
+
+        setDownloadingReport(
+          false
+        );
+
+      }
+
+    };
 
 
   const handleLogout = () => {
@@ -2322,156 +2466,191 @@ export default function ParentDashboard() {
           }
 
 
-          <div className="reports-cards-grid">
+          <section className="parent-report-library">
+
+            <div className="parent-report-library-head">
+
+              <div>
+                <span>
+                  ASSESSMENT REPORTS
+                </span>
+
+                <h2>
+                  Report Library
+                </h2>
+
+                <p>
+                  Completed assessment reports for the selected child.
+                </p>
+              </div>
+
+              <div className="parent-report-library-count">
+                {
+                  reportableSessions.length
+                }
+              </div>
+
+            </div>
+
 
             {
-              reportableSessions.map(
-                session => {
+              reportableSessions.length > 0
+                ? (
+                  <div className="reports-cards-grid">
 
-                  const score =
-                    getSessionScore(
-                      session
-                    );
+                    {
+                      reportableSessions.map(
+                        session => {
 
-
-                  return (
-                    <article
-                      className="report-card"
-                      key={
-                        session.id
-                      }
-                    >
-
-                      <div className="report-card-top">
-
-                        <div className="report-icon">
-                          <FileText
-                            size={21}
-                          />
-                        </div>
-
-
-                        <span
-                          className={`status-pill ${getStatusClass(
-                            session.status
-                          )}`}
-                        >
-                          {
-                            session.status
-                          }
-                        </span>
-
-                      </div>
-
-
-                      <h2>
-                        Session #
-                        {
-                          session.id
-                        }
-                      </h2>
-
-
-                      <p>
-                        {
-                          formatDate(
-                            session.ended_at ||
-                            session.started_at ||
-                            session.created_at
-                          )
-                        }
-                      </p>
-
-
-                      <div className="report-score">
-
-                        <span>
-                          Session Score
-                        </span>
-
-                        <strong>
-                          {
-                            score !==
-                            null
-                              ? `${score}%`
-                              : "—"
-                          }
-                        </strong>
-
-                      </div>
-
-
-                      <div className="report-meta">
-
-                        <span>
-                          <Clock3
-                            size={15}
-                          />
-
-                          {
-                            formatDuration(
+                          const score =
+                            getSessionScore(
                               session
-                            )
-                          }
-                        </span>
-
-                        <span>
-                          <Brain
-                            size={15}
-                          />
-
-                          {
-                            Array.isArray(
-                              session.games
-                            )
-                              ? session.games.length
-                              : 0
-                          }
-                          {" "}games
-                        </span>
-
-                      </div>
+                            );
 
 
-                      <button
-                        className="primary-soft-button"
-                        onClick={() =>
-                          setSelectedReport(
-                            session
-                          )
+                          return (
+                            <article
+                              className="report-card"
+                              key={
+                                session.id
+                              }
+                            >
+
+                              <div className="report-card-top">
+
+                                <div className="report-icon">
+                                  <FileText
+                                    size={20}
+                                  />
+                                </div>
+
+                                <span
+                                  className={`status-pill ${getStatusClass(
+                                    session.status
+                                  )}`}
+                                >
+                                  {
+                                    session.status
+                                  }
+                                </span>
+
+                              </div>
+
+
+                              <div className="report-card-heading">
+
+                                <span>
+                                  ASSESSMENT REPORT
+                                </span>
+
+                                <h2>
+                                  Session #{session.id}
+                                </h2>
+
+                                <p>
+                                  {
+                                    formatDate(
+                                      session.ended_at ||
+                                      session.started_at ||
+                                      session.created_at
+                                    )
+                                  }
+                                </p>
+
+                              </div>
+
+
+                              <div className="report-score">
+
+                                <span>
+                                  Session Score
+                                </span>
+
+                                <strong>
+                                  {
+                                    score !== null
+                                      ? `${score}%`
+                                      : "—"
+                                  }
+                                </strong>
+
+                              </div>
+
+
+                              <div className="report-meta">
+
+                                <span>
+                                  <Clock3
+                                    size={15}
+                                  />
+
+                                  {
+                                    formatDuration(
+                                      session
+                                    )
+                                  }
+                                </span>
+
+                                <span>
+                                  <Brain
+                                    size={15}
+                                  />
+
+                                  {
+                                    Array.isArray(
+                                      session.games
+                                    )
+                                      ? session.games.length
+                                      : 0
+                                  }
+                                  {" "}games
+                                </span>
+
+                              </div>
+
+
+                              <button
+                                className="parent-report-view-button"
+                                onClick={() => {
+                                  setReportDownloadError(
+                                    ""
+                                  );
+                                  setSelectedReport(
+                                    session
+                                  );
+                                }}
+                              >
+                                <Eye size={16} />
+                                View Report
+                              </button>
+
+                            </article>
+                          );
+
                         }
-                      >
-                        <Eye size={17} />
-                        View Report
-                      </button>
+                      )
+                    }
 
-                    </article>
-                  );
+                  </div>
+                )
+                : (
+                  <div className="empty-state parent-report-empty">
+                    <FileText
+                      size={34}
+                    />
 
-                }
-              )
+                    <h2>
+                      No reports yet
+                    </h2>
+
+                    <p>
+                      Completed assessment reports will appear here.
+                    </p>
+                  </div>
+                )
             }
 
-          </div>
-
-
-          {
-            reportableSessions.length ===
-              0 &&
-            <div className="empty-state">
-              <FileText
-                size={34}
-              />
-
-              <h2>
-                No reports yet
-              </h2>
-
-              <p>
-                Completed assessment reports will appear here.
-              </p>
-            </div>
-          }
+          </section>
 
         </>
       );
@@ -2742,37 +2921,11 @@ export default function ParentDashboard() {
     () => {
 
       return (
-        <>
-
-          {
-            renderHeader(
-              "Notifications",
-              "Updates about reports, sessions, and care team activity."
-            )
+        <NotificationsContent
+          currentUser={
+            currentUser
           }
-
-
-          <section className="parent-panel">
-
-            <div className="empty-state small">
-
-              <Bell
-                size={34}
-              />
-
-              <h2>
-                Notifications are ready for the next step
-              </h2>
-
-              <p>
-                New report, completed session, and therapist-message notifications will appear here after the notification backend is connected.
-              </p>
-
-            </div>
-
-          </section>
-
-        </>
+        />
       );
 
     };
@@ -2958,8 +3111,12 @@ export default function ParentDashboard() {
                         "notifications"
                       ) {
 
+                        setActiveSection(
+                          "notifications"
+                        );
+
                         navigate(
-                          "/notifications"
+                          "/parent?section=notifications"
                         );
 
                         return;
@@ -2970,6 +3127,20 @@ export default function ParentDashboard() {
                       setActiveSection(
                         item.key
                       );
+
+
+                      if (
+                        location.search
+                      ) {
+
+                        navigate(
+                          "/parent",
+                          {
+                            replace: true,
+                          }
+                        );
+
+                      }
 
                     }}
                   >
@@ -3049,11 +3220,17 @@ export default function ParentDashboard() {
 
             <button
               className="parent-notification-button"
-              onClick={() =>
+              onClick={() => {
+
+                setActiveSection(
+                  "notifications"
+                );
+
                 navigate(
-                  "/notifications"
-                )
-              }
+                  "/parent?section=notifications"
+                );
+
+              }}
               aria-label="Open notifications"
             >
 
@@ -3130,11 +3307,14 @@ export default function ParentDashboard() {
         selectedReport &&
         <div
           className="parent-modal-backdrop"
-          onMouseDown={() =>
+          onMouseDown={() => {
             setSelectedReport(
               null
-            )
-          }
+            );
+            setReportDownloadError(
+              ""
+            );
+          }}
         >
 
           <div
@@ -3145,207 +3325,387 @@ export default function ParentDashboard() {
             }
           >
 
-            <div className="modal-header">
+            <div
+              className="parent-report-modal-actions"
+              data-pdf-ignore="true"
+            >
 
-              <div>
-                <span>
-                  Assessment Report
-                </span>
-
-                <h2>
-                  Session #
-                  {
-                    selectedReport.id
-                  }
-                </h2>
-              </div>
+              <button
+                type="button"
+                className="parent-report-download-button"
+                onClick={
+                  handleDownloadParentReport
+                }
+                disabled={
+                  downloadingReport
+                }
+              >
+                <Download size={16} />
+                {
+                  downloadingReport
+                    ? "Preparing PDF..."
+                    : "Download PDF"
+                }
+              </button>
 
 
               <button
-                onClick={() =>
+                type="button"
+                className="parent-report-close-button"
+                onClick={() => {
                   setSelectedReport(
                     null
-                  )
-                }
+                  );
+                  setReportDownloadError(
+                    ""
+                  );
+                }}
+                aria-label="Close report"
               >
-                <X
-                  size={20}
-                />
+                <X size={19} />
               </button>
 
             </div>
 
 
-            <div className="modal-summary">
-
-              <div>
-                <span>
-                  Child
-                </span>
-
-                <strong>
-                  {
-                    selectedReport.child_name
-                  }
-                </strong>
+            {
+              reportDownloadError &&
+              <div
+                className="parent-report-download-error"
+                data-pdf-ignore="true"
+              >
+                {
+                  reportDownloadError
+                }
               </div>
+            }
 
 
-              <div>
-                <span>
-                  Date
-                </span>
+            <div
+              ref={reportRef}
+              className="parent-report-document"
+            >
 
-                <strong>
-                  {
-                    formatDate(
-                      selectedReport.ended_at ||
-                      selectedReport.started_at ||
-                      selectedReport.created_at
-                    )
-                  }
-                </strong>
-              </div>
+              <div className="parent-report-brand-row">
+
+                <div className="parent-report-brand">
+
+                  <img
+                    src="/logo.png"
+                    alt="KidMind"
+                  />
+
+                  <div>
+                    <span>
+                      KIDMIND
+                    </span>
+
+                    <strong>
+                      Parent Assessment Report
+                    </strong>
+                  </div>
+
+                </div>
 
 
-              <div>
-                <span>
-                  Status
-                </span>
-
-                <strong>
+                <span
+                  className={`status-pill ${getStatusClass(
+                    selectedReport.status
+                  )}`}
+                >
                   {
                     selectedReport.status
                   }
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  Session Score
                 </span>
 
-                <strong>
-                  {
-                    getSessionScore(
-                      selectedReport
-                    ) !==
-                    null
-                      ? `${getSessionScore(
-                          selectedReport
-                        )}%`
-                      : "—"
-                  }
-                </strong>
               </div>
 
-            </div>
+
+              <div className="parent-report-hero">
+
+                <div className="parent-report-hero-copy">
+
+                  <span>
+                    ASSESSMENT REPORT
+                  </span>
+
+                  <h2>
+                    {
+                      selectedReport.child_name
+                    }
+                  </h2>
+
+                  <p>
+                    Session #{selectedReport.id}
+                  </p>
+
+                </div>
 
 
-            <h3 className="games-title">
-              Game Results
-            </h3>
+                <div className="parent-report-score-card">
+
+                  <span>
+                    Session Score
+                  </span>
+
+                  <strong>
+                    {
+                      getSessionScore(
+                        selectedReport
+                      ) !== null
+                        ? `${getSessionScore(
+                            selectedReport
+                          )}%`
+                        : "—"
+                    }
+                  </strong>
+
+                  <small>
+                    Recorded assessment result
+                  </small>
+
+                </div>
+
+              </div>
 
 
-            <div className="modal-games">
+              <div className="parent-report-session-card">
 
-              {
-                Array.isArray(
-                  selectedReport.games
-                ) &&
-                selectedReport.games
-                  .length
-                  ? selectedReport.games.map(
-                      game => (
-                        <div
-                          className="modal-game"
-                          key={
-                            game.id
-                          }
-                        >
+                <div className="parent-report-child-block">
 
-                          <div>
-                            <strong>
-                              {
-                                game.game_name
-                              }
-                            </strong>
+                  <div className="parent-report-child-icon">
+                    <UserRound size={22} />
+                  </div>
 
-                            <span>
-                              {
-                                getDomainName(
-                                  game
-                                ) ||
-                                "Assessment Game"
-                              }
-                            </span>
-                          </div>
+                  <div>
+                    <span>
+                      Child
+                    </span>
+
+                    <strong>
+                      {
+                        selectedReport.child_name
+                      }
+                    </strong>
+                  </div>
+
+                </div>
 
 
-                          <div>
-                            <span>
-                              Score
-                            </span>
+                <div className="parent-report-session-facts">
 
-                            <strong>
-                              {
-                                getGameScore(
-                                  game
-                                ) !==
-                                null
-                                  ? `${getGameScore(
-                                      game
-                                    )}%`
-                                  : "—"
-                              }
-                            </strong>
-                          </div>
+                  <div>
+                    <span>
+                      Date
+                    </span>
 
-
-                          <div>
-                            <span>
-                              Accuracy
-                            </span>
-
-                            <strong>
-                              {
-                                game.accuracy !==
-                                  null &&
-                                game.accuracy !==
-                                  undefined
-                                  ? `${Math.round(
-                                      Number(
-                                        game.accuracy
-                                      )
-                                    )}%`
-                                  : "—"
-                              }
-                            </strong>
-                          </div>
+                    <strong>
+                      {
+                        formatDate(
+                          selectedReport.ended_at ||
+                          selectedReport.started_at ||
+                          selectedReport.created_at
+                        )
+                      }
+                    </strong>
+                  </div>
 
 
-                          <div>
-                            <span>
-                              Status
-                            </span>
+                  <div>
+                    <span>
+                      Status
+                    </span>
 
-                            <strong>
-                              {
-                                game.status
-                              }
-                            </strong>
-                          </div>
+                    <strong>
+                      {
+                        selectedReport.status
+                      }
+                    </strong>
+                  </div>
 
+
+                  <div>
+                    <span>
+                      Session
+                    </span>
+
+                    <strong>
+                      #{selectedReport.id}
+                    </strong>
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <section className="parent-report-games-section">
+
+                <div className="parent-report-games-heading">
+
+                  <div>
+                    <span>
+                      SESSION BREAKDOWN
+                    </span>
+
+                    <h3 className="games-title">
+                      Game Results
+                    </h3>
+
+                    <p>
+                      Recorded results for each assessment game.
+                    </p>
+                  </div>
+
+
+                  <div className="parent-report-games-count">
+                    {
+                      Array.isArray(
+                        selectedReport.games
+                      )
+                        ? selectedReport.games.length
+                        : 0
+                    }
+                    {" "}Games
+                  </div>
+
+                </div>
+
+
+                <div className="modal-games">
+
+                  {
+                    Array.isArray(
+                      selectedReport.games
+                    ) &&
+                    selectedReport.games.length
+                      ? selectedReport.games.map(
+                          (
+                            game,
+                            index
+                          ) => (
+
+                            <div
+                              className="modal-game"
+                              key={game.id}
+                            >
+
+                              <div className="parent-report-game-main">
+
+                                <div className="parent-report-game-number">
+                                  {
+                                    String(
+                                      index + 1
+                                    ).padStart(
+                                      2,
+                                      "0"
+                                    )
+                                  }
+                                </div>
+
+
+                                <div>
+                                  <strong>
+                                    {
+                                      game.game_name
+                                    }
+                                  </strong>
+
+                                  <span>
+                                    {
+                                      getDomainName(
+                                        game
+                                      ) ||
+                                      "Assessment Game"
+                                    }
+                                  </span>
+                                </div>
+
+                              </div>
+
+
+                              <div className="parent-report-game-facts">
+
+                                <div>
+                                  <span>
+                                    Score
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      getGameScore(
+                                        game
+                                      ) !== null
+                                        ? `${getGameScore(
+                                            game
+                                          )}%`
+                                        : "—"
+                                    }
+                                  </strong>
+                                </div>
+
+
+                                <div>
+                                  <span>
+                                    Accuracy
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      game.accuracy !== null &&
+                                      game.accuracy !== undefined
+                                        ? `${Math.round(
+                                            Number(
+                                              game.accuracy
+                                            )
+                                          )}%`
+                                        : "—"
+                                    }
+                                  </strong>
+                                </div>
+
+
+                                <div>
+                                  <span>
+                                    Status
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      game.status
+                                    }
+                                  </strong>
+                                </div>
+
+                              </div>
+
+                            </div>
+
+                          )
+                        )
+                      : (
+                        <div className="mini-empty">
+                          No game results are available for this session.
                         </div>
                       )
-                    )
-                  : (
-                    <div className="mini-empty">
-                      No game results are available for this session.
-                    </div>
-                  )
-              }
+                  }
+
+                </div>
+
+              </section>
+
+
+              <div className="parent-report-document-footer">
+
+                <span>
+                  KidMind Assessment Report
+                </span>
+
+                <span>
+                  Session #{selectedReport.id}
+                </span>
+
+              </div>
 
             </div>
 
@@ -4675,6 +5035,633 @@ export default function ParentDashboard() {
           font-size: 11px;
         }
 
+
+
+        /* Parent reports — polished presentation */
+
+        .parent-report-library {
+          padding: 22px;
+          border-radius: 22px;
+          background: white;
+          border: 1px solid #ECECF4;
+          box-shadow: 0 9px 28px rgba(55, 54, 96, .035);
+        }
+
+        .parent-report-library-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          margin-bottom: 18px;
+          padding-bottom: 17px;
+          border-bottom: 1px solid #F0F0F5;
+        }
+
+        .parent-report-library-head > div:first-child > span,
+        .parent-report-games-heading > div > span {
+          color: #8B7CE3;
+          font-size: 9px;
+          font-weight: 850;
+          letter-spacing: .12em;
+        }
+
+        .parent-report-library-head h2 {
+          margin: 5px 0 0;
+          color: #333554;
+          font-size: 17px;
+        }
+
+        .parent-report-library-head p {
+          margin: 4px 0 0;
+          color: #A0A3B4;
+          font-size: 10.5px;
+        }
+
+        .parent-report-library-count,
+        .parent-report-games-count {
+          min-width: 38px;
+          height: 38px;
+          padding: 0 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          color: #7465E8;
+          background: #F0EDFF;
+          font-size: 11px;
+          font-weight: 850;
+        }
+
+        .reports-cards-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 15px;
+        }
+
+        .report-card {
+          padding: 18px;
+          border-radius: 18px;
+          border: 1px solid #EAEAF2;
+          background: linear-gradient(180deg, #FFFFFF 0%, #FDFCFF 100%);
+          box-shadow: 0 7px 20px rgba(55, 54, 96, .025);
+          transition: .18s ease;
+        }
+
+        .report-card:hover {
+          transform: translateY(-2px);
+          border-color: #DDD8F8;
+          box-shadow: 0 12px 28px rgba(82, 70, 160, .07);
+        }
+
+        .report-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 13px;
+          color: #7465E8;
+          background: #F0EDFF;
+        }
+
+        .report-card-heading {
+          margin-top: 15px;
+        }
+
+        .report-card-heading > span {
+          color: #9386E2;
+          font-size: 8.5px;
+          font-weight: 850;
+          letter-spacing: .1em;
+        }
+
+        .report-card-heading h2 {
+          margin: 5px 0 3px;
+          color: #3B3D5B;
+          font-size: 15px;
+        }
+
+        .report-card-heading p {
+          margin: 0;
+          color: #9C9FAF;
+          font-size: 9.5px;
+        }
+
+        .report-score {
+          margin: 15px 0 11px;
+          padding: 13px 14px;
+          border: 1px solid #EAE6FF;
+          border-radius: 13px;
+          background: #F7F5FF;
+        }
+
+        .report-score span {
+          color: #9598AA;
+          font-size: 9px;
+        }
+
+        .report-score strong {
+          margin-top: 4px;
+          color: #6657CC;
+          font-size: 21px;
+        }
+
+        .report-meta {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 14px;
+          color: #86899E;
+        }
+
+        .report-meta span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 9.5px;
+        }
+
+        .parent-report-view-button {
+          width: 100%;
+          min-height: 39px;
+          border: 0;
+          border-radius: 11px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          color: white;
+          background: #7465E8;
+          font-size: 10.5px;
+          font-weight: 800;
+          transition: .18s ease;
+        }
+
+        .parent-report-view-button:hover {
+          background: #6959DA;
+          box-shadow: 0 8px 18px rgba(116, 101, 232, .16);
+        }
+
+        .parent-report-empty {
+          min-height: 260px;
+        }
+
+        .report-modal {
+          width: min(920px, 100%);
+          max-height: 92vh;
+          padding: 14px;
+          overflow-y: auto;
+          border-radius: 24px;
+          background: #F7F8FC;
+          box-shadow: 0 28px 90px rgba(35, 29, 74, .24);
+        }
+
+        .parent-report-modal-actions {
+          position: sticky;
+          z-index: 3;
+          top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 9px;
+          margin-bottom: 10px;
+          padding: 4px;
+          border-radius: 14px;
+          background: rgba(247, 248, 252, .94);
+          backdrop-filter: blur(12px);
+        }
+
+        .parent-report-download-button,
+        .parent-report-close-button {
+          min-height: 38px;
+          border: 0;
+          border-radius: 11px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .parent-report-download-button {
+          padding: 0 13px;
+          color: white;
+          background: #7465E8;
+          box-shadow: 0 8px 18px rgba(116, 101, 232, .15);
+        }
+
+        .parent-report-download-button:disabled {
+          opacity: .65;
+          cursor: wait;
+        }
+
+        .parent-report-close-button {
+          width: 38px;
+          color: #777A90;
+          background: white;
+          border: 1px solid #E8E8F0;
+        }
+
+        .parent-report-download-error {
+          margin: 0 4px 10px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          color: #B7495F;
+          background: #FFF2F4;
+          border: 1px solid #F1DCE1;
+          font-size: 10px;
+        }
+
+        .parent-report-document {
+          overflow: hidden;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid #E7E7EF;
+          box-shadow: 0 14px 42px rgba(50, 49, 86, .07);
+        }
+
+        .parent-report-brand-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 18px 22px;
+          background:
+            linear-gradient(
+              180deg,
+              #FFFFFF 0%,
+              #FCFCFF 100%
+            );
+          border-bottom: 1px solid #ECECF4;
+        }
+
+        .parent-report-brand {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .parent-report-brand img {
+          width: 84px;
+          height: 44px;
+          object-fit: contain;
+        }
+
+        .parent-report-brand > div {
+          padding-left: 11px;
+          border-left: 1px solid #E5E1F4;
+        }
+
+        .parent-report-brand span,
+        .parent-report-brand strong {
+          display: block;
+        }
+
+        .parent-report-brand span {
+          color: #7465E8;
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: .13em;
+        }
+
+        .parent-report-brand strong {
+          margin-top: 3px;
+          color: #777A90;
+          font-size: 9.5px;
+        }
+
+        .parent-report-hero {
+          display: flex;
+          align-items: stretch;
+          justify-content: space-between;
+          gap: 24px;
+          padding: 24px 22px 21px;
+          background:
+            radial-gradient(
+              circle at 92% 18%,
+              rgba(116, 101, 232, .08),
+              transparent 28%
+            ),
+            #FFFFFF;
+        }
+
+        .parent-report-hero-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
+        .parent-report-hero-copy > span,
+        .parent-report-games-heading > div > span {
+          color: #8B7CE3;
+          font-size: 8.5px;
+          font-weight: 850;
+          letter-spacing: .12em;
+        }
+
+        .parent-report-hero h2 {
+          margin: 7px 0 4px;
+          color: #303252;
+          font-size: 25px;
+          line-height: 1.1;
+          letter-spacing: -.02em;
+        }
+
+        .parent-report-hero p {
+          margin: 0;
+          color: #999CAD;
+          font-size: 9.5px;
+          font-weight: 650;
+        }
+
+        .parent-report-score-card {
+          width: 170px;
+          flex: 0 0 170px;
+          padding: 16px 18px;
+          border-radius: 17px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          background:
+            linear-gradient(
+              145deg,
+              #7566EA,
+              #8C78F0
+            );
+          box-shadow: 0 12px 25px rgba(116, 101, 232, .17);
+        }
+
+        .parent-report-score-card span {
+          color: rgba(255,255,255,.78);
+          font-size: 8.5px;
+          font-weight: 750;
+        }
+
+        .parent-report-score-card strong {
+          margin-top: 4px;
+          color: white;
+          font-size: 29px;
+          line-height: 1;
+        }
+
+        .parent-report-score-card small {
+          margin-top: 7px;
+          color: rgba(255,255,255,.65);
+          font-size: 7.5px;
+        }
+
+        .parent-report-session-card {
+          display: grid;
+          grid-template-columns: minmax(190px, .9fr) minmax(0, 2.1fr);
+          margin: 0 22px 22px;
+          overflow: hidden;
+          border-radius: 16px;
+          background: white;
+          border: 1px solid #E8E8F0;
+        }
+
+        .parent-report-child-block {
+          min-height: 88px;
+          padding: 15px 16px;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          background: #F8F6FF;
+          border-right: 1px solid #EAE7F5;
+        }
+
+        .parent-report-child-icon {
+          width: 39px;
+          height: 39px;
+          flex: 0 0 39px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          color: #7465E8;
+          background: white;
+          border: 1px solid #E2DDFF;
+        }
+
+        .parent-report-child-block span,
+        .parent-report-session-facts span {
+          display: block;
+          color: #999CAD;
+          font-size: 8px;
+          font-weight: 650;
+        }
+
+        .parent-report-child-block strong {
+          display: block;
+          margin-top: 4px;
+          color: #3D3F5B;
+          font-size: 13px;
+        }
+
+        .parent-report-session-facts {
+          display: grid;
+          grid-template-columns: 1.55fr .9fr .7fr;
+        }
+
+        .parent-report-session-facts > div {
+          min-width: 0;
+          min-height: 88px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          border-left: 1px solid #EFEFF4;
+        }
+
+        .parent-report-session-facts > div:first-child {
+          border-left: 0;
+        }
+
+        .parent-report-session-facts strong {
+          margin-top: 5px;
+          color: #454760;
+          font-size: 10.5px;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+        }
+
+        .parent-report-games-section {
+          padding: 21px 22px 23px;
+          border-top: 1px solid #EEEEF4;
+        }
+
+        .parent-report-games-heading {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 15px;
+          margin-bottom: 14px;
+        }
+
+        .games-title {
+          margin: 5px 0 0;
+          color: #343653;
+          font-size: 16px;
+        }
+
+        .parent-report-games-heading p {
+          margin: 5px 0 0;
+          color: #999CAD;
+          font-size: 8.8px;
+        }
+
+        .parent-report-games-count {
+          min-height: 30px;
+          padding: 0 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          color: #7465E8;
+          background: #F0EDFF;
+          font-size: 8.8px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .modal-games {
+          gap: 10px;
+        }
+
+        .modal-game {
+          grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);
+          gap: 0;
+          padding: 0;
+          overflow: hidden;
+          border-radius: 14px;
+          background: #FFFFFF;
+          border: 1px solid #E8E8F0;
+        }
+
+        .parent-report-game-main {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          min-width: 0;
+          padding: 14px;
+          background: #FCFCFE;
+          border-right: 1px solid #EFEFF4;
+        }
+
+        .parent-report-game-number {
+          width: 34px;
+          height: 34px;
+          flex: 0 0 34px;
+          display: grid;
+          place-items: center;
+          border-radius: 10px;
+          color: #7465E8;
+          background: #F0EDFF;
+          font-size: 9px;
+          font-weight: 850;
+          letter-spacing: .04em;
+        }
+
+        .parent-report-game-main strong {
+          display: block;
+          color: #3F415C;
+          font-size: 10.5px;
+        }
+
+        .parent-report-game-main span {
+          display: block;
+          margin-top: 4px;
+          color: #999CAD;
+          font-size: 8.2px;
+        }
+
+        .parent-report-game-facts {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .parent-report-game-facts > div {
+          min-width: 0;
+          padding: 13px 11px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          border-left: 1px solid #EFEFF4;
+        }
+
+        .parent-report-game-facts > div:first-child {
+          border-left: 0;
+        }
+
+        .parent-report-game-facts span {
+          color: #999CAD;
+          font-size: 7.8px;
+        }
+
+        .parent-report-game-facts strong {
+          margin-top: 4px;
+          color: #484A62;
+          font-size: 10px;
+          overflow-wrap: anywhere;
+        }
+
+        .parent-report-document-footer {
+          min-height: 48px;
+          padding: 0 22px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          color: #A0A3B4;
+          background: #FAFAFC;
+          border-top: 1px solid #EEEEF4;
+          font-size: 8.5px;
+          font-weight: 650;
+        }
+
+
+
+        @media (max-width: 760px) {
+
+          .parent-report-hero {
+            flex-direction: column;
+          }
+
+          .parent-report-score-card {
+            width: 100%;
+            flex-basis: auto;
+          }
+
+          .parent-report-session-card {
+            grid-template-columns: 1fr;
+          }
+
+          .parent-report-child-block {
+            border-right: 0;
+            border-bottom: 1px solid #EAE7F5;
+          }
+
+          .parent-report-session-facts {
+            grid-template-columns: 1fr;
+          }
+
+          .parent-report-session-facts > div {
+            border-left: 0;
+            border-bottom: 1px solid #EFEFF4;
+          }
+
+          .parent-report-session-facts > div:last-child {
+            border-bottom: 0;
+          }
+
+          .modal-game {
+            grid-template-columns: 1fr;
+          }
+
+          .parent-report-game-main {
+            border-right: 0;
+            border-bottom: 1px solid #EFEFF4;
+          }
+
+        }
+
         @media (
           max-width: 1150px
         ) {
@@ -5359,6 +6346,34 @@ export default function ParentDashboard() {
           .reports-cards-grid,
           .snapshot-items {
             grid-template-columns: 1fr;
+          }
+        }
+
+
+
+        @media (max-width: 760px) {
+          .reports-cards-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .parent-report-library-head,
+          .parent-report-games-heading,
+          .parent-report-brand-row,
+          .parent-report-header {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .modal-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .modal-game {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .parent-report-game-main {
+            grid-column: 1 / -1;
           }
         }
 

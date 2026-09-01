@@ -2248,7 +2248,10 @@ const styles =
     content: {
 
       paddingHorizontal:
-        20,
+        18,
+
+      paddingTop:
+        16,
 
       paddingBottom:
         40,
@@ -2268,10 +2271,42 @@ const styles =
         13,
 
       marginTop:
-        26,
+        10,
 
       marginBottom:
-        25,
+        18,
+
+      padding:
+        18,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECECF4",
+
+      borderRadius:
+        22,
+
+      backgroundColor:
+        "#FFFFFF",
+
+      shadowColor:
+        "#34325B",
+
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+
+      shadowOpacity:
+        0.04,
+
+      shadowRadius:
+        16,
+
+      elevation:
+        2,
 
     },
 
@@ -2306,27 +2341,27 @@ const styles =
 
     pageTitle: {
 
-      fontSize: 29,
+      fontSize: 25,
 
       fontWeight:
         "800",
 
       color:
-        "#0F172A",
+        "#333554",
 
     },
 
 
     pageSubtitle: {
 
-      marginTop: 4,
+      marginTop: 5,
 
       color:
-        "#64748B",
+        "#989BAD",
 
-      fontSize: 13,
+      fontSize: 11.5,
 
-      lineHeight: 19,
+      lineHeight: 17,
 
     },
 
@@ -2351,20 +2386,37 @@ const styles =
 
       width: "48%",
 
-      minHeight: 145,
+      minHeight: 122,
 
       backgroundColor:
         "#FFFFFF",
 
       borderRadius:
-        20,
+        19,
 
       borderWidth: 1,
 
       borderColor:
-        "#F1F5F9",
+        "#ECECF4",
 
-      padding: 17,
+      padding: 16,
+
+      shadowColor:
+        "#34325B",
+
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+
+      shadowOpacity:
+        0.025,
+
+      shadowRadius:
+        12,
+
+      elevation:
+        1,
 
     },
 
@@ -2390,11 +2442,11 @@ const styles =
     summaryLabel: {
 
       color:
-        "#64748B",
+        "#8F92A6",
 
-      fontSize: 12,
+      fontSize: 10.5,
 
-      marginTop: 14,
+      marginTop: 12,
 
     },
 
@@ -2402,14 +2454,14 @@ const styles =
     summaryValue: {
 
       color:
-        "#0F172A",
+        "#303252",
 
-      fontSize: 24,
+      fontSize: 23,
 
       fontWeight:
         "800",
 
-      marginTop: 4,
+      marginTop: 3,
 
     },
 
@@ -2422,14 +2474,14 @@ const styles =
       borderWidth: 1,
 
       borderColor:
-        "#F1F5F9",
+        "#ECECF4",
 
       borderRadius:
-        22,
+        21,
 
-      padding: 19,
+      padding: 18,
 
-      marginTop: 22,
+      marginTop: 18,
 
     },
 
@@ -2462,12 +2514,12 @@ const styles =
     sectionTitle: {
 
       color:
-        "#0F172A",
+        "#333554",
 
-      fontSize: 19,
+      fontSize: 17,
 
       fontWeight:
-        "700",
+        "800",
 
     },
 
@@ -2475,13 +2527,13 @@ const styles =
     sectionSubtitle: {
 
       color:
-        "#64748B",
+        "#999CAD",
 
-      fontSize: 12,
+      fontSize: 10.5,
 
       marginTop: 4,
 
-      lineHeight: 18,
+      lineHeight: 16,
 
     },
 
@@ -2800,16 +2852,33 @@ const styles =
         "#FFFFFF",
 
       borderRadius:
-        22,
+        20,
 
       borderWidth: 1,
 
       borderColor:
-        "#F1F5F9",
+        "#E7E7EF",
 
-      padding: 18,
+      padding: 17,
 
-      marginBottom: 15,
+      marginBottom: 13,
+
+      shadowColor:
+        "#34325B",
+
+      shadowOffset: {
+        width: 0,
+        height: 6,
+      },
+
+      shadowOpacity:
+        0.03,
+
+      shadowRadius:
+        14,
+
+      elevation:
+        1,
 
     },
 
@@ -2985,12 +3054,12 @@ const styles =
     sessionNumber: {
 
       color:
-        "#475569",
+        "#42445F",
 
-      fontSize: 14,
+      fontSize: 13,
 
       fontWeight:
-        "700",
+        "800",
 
     },
 
@@ -3031,13 +3100,19 @@ const styles =
 
     assessmentBox: {
 
-      marginTop: 15,
+      marginTop: 14,
 
       borderRadius:
-        15,
+        14,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        "#ECE9F7",
 
       backgroundColor:
-        "#F8FAFC",
+        "#FAF9FF",
 
       padding: 13,
 
@@ -3129,15 +3204,15 @@ const styles =
 
     viewReportButton: {
 
-      minHeight: 48,
+      minHeight: 47,
 
-      marginTop: 17,
+      marginTop: 15,
 
       borderRadius:
-        14,
+        13,
 
       backgroundColor:
-        "#7B6EF6",
+        "#7465E8",
 
       flexDirection:
         "row",
