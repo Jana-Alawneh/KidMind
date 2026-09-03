@@ -29,6 +29,7 @@ import {
   Brain,
   CalendarDays,
   CheckCircle2,
+  ClipboardList,
   Clock3,
   Download,
   Eye,
@@ -59,6 +60,7 @@ import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
 import UserAvatar from "@/components/common/UserAvatar";
 import ParentNotificationsSection from "@/components/notifications/ParentNotificationsSection";
+import ParentFeedback from "@/components/parent/ParentFeedback";
 
 import {
   downloadParentReportPdf,
@@ -123,6 +125,7 @@ type SectionKey =
   | "progress"
   | "messages"
   | "notifications"
+  | "feedback"
   | "settings";
 
 type IconComponent = ComponentType<{
@@ -145,6 +148,7 @@ const menuItems: {
   { key: "progress", title: "Progress", icon: BarChart3 },
   { key: "messages", title: "Messages", icon: MessageCircle },
   { key: "notifications", title: "Notifications", icon: Bell },
+  { key: "feedback", title: "Feedback", icon: ClipboardList },
   { key: "settings", title: "Settings", icon: Settings },
 ];
 
@@ -1280,7 +1284,10 @@ export default function Parent() {
         return <MobileChat />;
       case "notifications":
         return renderNotifications();
-      case "settings":
+      
+      case "feedback":
+  return <ParentFeedback />;
+        case "settings":
         return renderSettings();
       default:
         return renderOverview();

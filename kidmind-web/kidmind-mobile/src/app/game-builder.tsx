@@ -19,6 +19,10 @@ import {
 } from "react";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
   router,
   useLocalSearchParams,
 } from "expo-router";
@@ -1714,37 +1718,45 @@ export default function GameBuilder() {
     };
 
 
-  if (
-    loading
-  ) {
-    return (
-      <View
+ if (
+  loading
+) {
+  return (
+    <SafeAreaView
+      style={
+        styles.center
+      }
+      edges={[
+        "top",
+        "bottom",
+      ]}
+    >
+      <ActivityIndicator
+        size="large"
+        color="#7C6CFF"
+      />
+
+      <Text
         style={
-          styles.center
+          styles.loadingText
         }
       >
-        <ActivityIndicator
-          size="large"
-          color="#7C6CFF"
-        />
-        <Text
-          style={
-            styles.loadingText
-          }
-        >
-          Loading game...
-        </Text>
-      </View>
-    );
-  }
+        Loading game...
+      </Text>
+    </SafeAreaView>
+  );
+}
 
 
-  return (
-    <View
-      style={
-        styles.page
-      }
-    >
+ return (
+  <SafeAreaView
+    style={
+      styles.page
+    }
+    edges={[
+      "top",
+    ]}
+  >
 
       <ScrollView
         contentContainerStyle={
@@ -3641,7 +3653,7 @@ export default function GameBuilder() {
 
       </Modal>
 
-    </View>
+    </SafeAreaView>
   );
 }
 

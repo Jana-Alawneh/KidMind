@@ -23,6 +23,7 @@ import {
 
 import {
   deleteChild,
+  getChildById,
   getChildren,
 } from "@/api/childrenApi";
 
@@ -744,15 +745,42 @@ export default function Children() {
                 children={
                   filteredChildren
                 }
-                onEdit={(
-                  child
-                ) => {
+               onEdit={async (
+  child
+) => {
 
-                  setEditingChild(
-                    child
-                  );
+  try {
 
-                }}
+    const fullChild =
+      await getChildById(
+        child.id
+      );
+
+
+    setEditingChild(
+      fullChild
+    );
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "Failed to load child details:",
+      error
+    );
+
+
+    Alert.alert(
+      "Error",
+      error instanceof Error
+        ? error.message
+        : "Unable to load child information."
+    );
+
+  }
+
+}}
                 onDelete={
                   handleDelete
                 }

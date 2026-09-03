@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   ScrollView,
@@ -11,14 +12,22 @@ import {
 
 import {
   UserPlus,
+  UserRound,
   X,
 } from "lucide-react-native";
 
-import { useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import {
   addChild,
 } from "@/api/childrenApi";
+
+import {
+  getCurrentUser,
+} from "@/api/authApi";
 
 import type {
   ChildPayload,
@@ -37,15 +46,25 @@ const AddChildModal = ({
   onSuccess,
 }: Props) => {
 
+  const currentUser =
+    useMemo(
+      () =>
+        getCurrentUser(),
+      []
+    );
+
+
   const [
     fullName,
     setFullName,
   ] = useState("");
 
+
   const [
     age,
     setAge,
   ] = useState("");
+
 
   const [
     gender,
@@ -54,20 +73,24 @@ const AddChildModal = ({
     "Female" | "Male"
   >("Female");
 
+
   const [
     parentName,
     setParentName,
   ] = useState("");
+
 
   const [
     region,
     setRegion,
   ] = useState("");
 
+
   const [
     notes,
     setNotes,
   ] = useState("");
+
 
   const [
     saving,
@@ -114,20 +137,6 @@ const AddChildModal = ({
 
 
       if (
-        !parentName.trim()
-      ) {
-
-        Alert.alert(
-          "Missing Information",
-          "Please enter the parent name."
-        );
-
-        return;
-
-      }
-
-
-      if (
         !region.trim()
       ) {
 
@@ -139,6 +148,16 @@ const AddChildModal = ({
         return;
 
       }
+
+
+      const therapistId =
+        currentUser?.role ===
+          "therapist" &&
+        currentUser?.id
+          ? Number(
+              currentUser.id
+            )
+          : null;
 
 
       const childData:
@@ -161,25 +180,34 @@ const AddChildModal = ({
         notes:
           notes.trim(),
 
+        therapist_id:
+          therapistId,
+
       };
 
 
       try {
 
-        setSaving(true);
+        setSaving(
+          true
+        );
+
 
         await addChild(
           childData
         );
 
+
+        await onSuccess();
+
+
+        close();
+
+
         Alert.alert(
           "Success",
           "Child added successfully"
         );
-
-        await onSuccess();
-
-        close();
 
       } catch (error) {
 
@@ -187,6 +215,7 @@ const AddChildModal = ({
           "Failed to add child:",
           error
         );
+
 
         Alert.alert(
           "Error",
@@ -197,7 +226,9 @@ const AddChildModal = ({
 
       } finally {
 
-        setSaving(false);
+        setSaving(
+          false
+        );
 
       }
 
@@ -209,6 +240,7 @@ const AddChildModal = ({
     <Modal
       transparent
       animationType="fade"
+      statusBarTranslucent
       onRequestClose={
         close
       }
@@ -245,21 +277,33 @@ const AddChildModal = ({
               >
 
                 <UserPlus
-                  size={24}
-                  color="#7B6EF6"
+                  size={22}
+                  color="#7465E8"
                 />
 
               </View>
 
 
-              <View>
+              <View
+                style={
+                  styles.headerCopy
+                }
+              >
+
+                <Text
+                  style={
+                    styles.eyebrow
+                  }
+                >
+                  ADD CHILD
+                </Text>
 
                 <Text
                   style={
                     styles.title
                   }
                 >
-                  Add Child
+                  New Child
                 </Text>
 
                 <Text
@@ -267,7 +311,7 @@ const AddChildModal = ({
                     styles.subtitle
                   }
                 >
-                  Create new child profile
+                  Create a new child profile
                 </Text>
 
               </View>
@@ -276,6 +320,9 @@ const AddChildModal = ({
 
 
             <TouchableOpacity
+              style={
+                styles.closeButton
+              }
               onPress={
                 close
               }
@@ -285,8 +332,8 @@ const AddChildModal = ({
             >
 
               <X
-                size={24}
-                color="#94A3B8"
+                size={20}
+                color="#85889B"
               />
 
             </TouchableOpacity>
@@ -294,9 +341,20 @@ const AddChildModal = ({
           </View>
 
 
+          <View
+            style={
+              styles.divider
+            }
+          />
+
+
           <ScrollView
             showsVerticalScrollIndicator={
               false
+            }
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={
+              styles.scrollContent
             }
           >
 
@@ -311,8 +369,9 @@ const AddChildModal = ({
                   styles.label
                 }
               >
-                Child Name
+                Full Name
               </Text>
+
 
               <TextInput
                 value={
@@ -321,7 +380,8 @@ const AddChildModal = ({
                 onChangeText={
                   setFullName
                 }
-                placeholder="Enter name"
+                placeholder="Child full name"
+                placeholderTextColor="#A4A6B4"
                 style={
                   styles.input
                 }
@@ -353,6 +413,7 @@ const AddChildModal = ({
                   Age
                 </Text>
 
+
                 <TextInput
                   value={
                     age
@@ -361,7 +422,8 @@ const AddChildModal = ({
                     setAge
                   }
                   placeholder="Age"
-                  keyboardType="numeric"
+                  placeholderTextColor="#A4A6B4"
+                  keyboardType="number-pad"
                   style={
                     styles.input
                   }
@@ -387,6 +449,7 @@ const AddChildModal = ({
                   Gender
                 </Text>
 
+
                 <View
                   style={
                     styles.genderRow
@@ -394,20 +457,20 @@ const AddChildModal = ({
                 >
 
                   <TouchableOpacity
-                    onPress={() => {
-                      setGender(
-                        "Female"
-                      );
-                    }}
                     disabled={
                       saving
+                    }
+                    onPress={() =>
+                      setGender(
+                        "Female"
+                      )
                     }
                     style={[
                       styles.genderButton,
 
                       gender ===
                         "Female" &&
-                        styles.genderButtonActive,
+                        styles.genderActive,
                     ]}
                   >
 
@@ -427,20 +490,20 @@ const AddChildModal = ({
 
 
                   <TouchableOpacity
-                    onPress={() => {
-                      setGender(
-                        "Male"
-                      );
-                    }}
                     disabled={
                       saving
+                    }
+                    onPress={() =>
+                      setGender(
+                        "Male"
+                      )
                     }
                     style={[
                       styles.genderButton,
 
                       gender ===
                         "Male" &&
-                        styles.genderButtonActive,
+                        styles.genderActive,
                     ]}
                   >
 
@@ -467,66 +530,78 @@ const AddChildModal = ({
 
             <View
               style={
-                styles.field
+                styles.row
               }
             >
 
-              <Text
+              <View
                 style={
-                  styles.label
+                  styles.half
                 }
               >
-                Parent Name
-              </Text>
 
-              <TextInput
-                value={
-                  parentName
-                }
-                onChangeText={
-                  setParentName
-                }
-                placeholder="Parent name"
+                <Text
+                  style={
+                    styles.label
+                  }
+                >
+                  Parent Name
+                </Text>
+
+
+                <TextInput
+                  value={
+                    parentName
+                  }
+                  onChangeText={
+                    setParentName
+                  }
+                  placeholder="Parent name"
+                  placeholderTextColor="#A4A6B4"
+                  style={
+                    styles.input
+                  }
+                  editable={
+                    !saving
+                  }
+                />
+
+              </View>
+
+
+              <View
                 style={
-                  styles.input
-                }
-                editable={
-                  !saving
-                }
-              />
-
-            </View>
-
-
-            <View
-              style={
-                styles.field
-              }
-            >
-
-              <Text
-                style={
-                  styles.label
+                  styles.half
                 }
               >
-                Region
-              </Text>
 
-              <TextInput
-                value={
-                  region
-                }
-                onChangeText={
-                  setRegion
-                }
-                placeholder="Enter region"
-                style={
-                  styles.input
-                }
-                editable={
-                  !saving
-                }
-              />
+                <Text
+                  style={
+                    styles.label
+                  }
+                >
+                  Region
+                </Text>
+
+
+                <TextInput
+                  value={
+                    region
+                  }
+                  onChangeText={
+                    setRegion
+                  }
+                  placeholder="Region"
+                  placeholderTextColor="#A4A6B4"
+                  style={
+                    styles.input
+                  }
+                  editable={
+                    !saving
+                  }
+                />
+
+              </View>
 
             </View>
 
@@ -545,6 +620,7 @@ const AddChildModal = ({
                 Notes
               </Text>
 
+
               <TextInput
                 value={
                   notes
@@ -552,9 +628,11 @@ const AddChildModal = ({
                 onChangeText={
                   setNotes
                 }
-                placeholder="Additional notes"
+                placeholder="Therapist notes"
+                placeholderTextColor="#A4A6B4"
                 multiline
-                numberOfLines={3}
+                numberOfLines={4}
+                textAlignVertical="top"
                 style={
                   styles.textArea
                 }
@@ -564,6 +642,71 @@ const AddChildModal = ({
               />
 
             </View>
+
+
+            {
+              currentUser?.role ===
+                "therapist" && (
+
+                <View
+                  style={
+                    styles.assignmentBox
+                  }
+                >
+
+                  <View
+                    style={
+                      styles.assignmentIcon
+                    }
+                  >
+
+                    <UserRound
+                      size={18}
+                      color="#7465E8"
+                    />
+
+                  </View>
+
+
+                  <View
+                    style={
+                      styles.assignmentCopy
+                    }
+                  >
+
+                    <Text
+                      style={
+                        styles.assignmentLabel
+                      }
+                    >
+                      THERAPIST ASSIGNMENT
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.assignmentName
+                      }
+                    >
+                      {
+                        currentUser.full_name ||
+                        "Current Therapist"
+                      }
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.assignmentHint
+                      }
+                    >
+                      This child will automatically be linked to your account.
+                    </Text>
+
+                  </View>
+
+                </View>
+
+              )
+            }
 
 
             <View
@@ -584,7 +727,11 @@ const AddChildModal = ({
                 }
               >
 
-                <Text>
+                <Text
+                  style={
+                    styles.cancelText
+                  }
+                >
                   Cancel
                 </Text>
 
@@ -606,18 +753,27 @@ const AddChildModal = ({
                 }
               >
 
+                {
+                  saving && (
+
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+
+                  )
+                }
+
                 <Text
                   style={
                     styles.saveText
                   }
                 >
-
                   {
                     saving
                       ? "Saving..."
-                      : "Save Child"
+                      : "Add Child"
                   }
-
                 </Text>
 
               </TouchableOpacity>
@@ -643,33 +799,37 @@ const styles =
     overlay: {
       flex: 1,
       backgroundColor:
-        "rgba(0,0,0,0.3)",
+        "rgba(37,35,64,0.42)",
       justifyContent:
         "center",
       alignItems:
         "center",
+      paddingHorizontal:
+        18,
     },
 
     container: {
-      width: "90%",
-      maxHeight: "90%",
+      width: "100%",
+      maxWidth: 650,
+      maxHeight: "88%",
       backgroundColor:
         "#FFFFFF",
       borderRadius: 24,
-      padding: 24,
+      padding: 20,
     },
 
     header: {
       flexDirection:
         "row",
-      justifyContent:
-        "space-between",
       alignItems:
         "center",
-      marginBottom: 25,
+      justifyContent:
+        "space-between",
+      gap: 12,
     },
 
     titleSection: {
+      flex: 1,
       flexDirection:
         "row",
       alignItems:
@@ -677,66 +837,126 @@ const styles =
       gap: 12,
     },
 
+    headerCopy: {
+      flex: 1,
+    },
+
     iconBox: {
-      width: 48,
-      height: 48,
-      borderRadius: 16,
+      width: 46,
+      height: 46,
+      borderRadius: 14,
       backgroundColor:
-        "#EEE9FF",
-      justifyContent:
-        "center",
+        "#F0EDFF",
       alignItems:
         "center",
+      justifyContent:
+        "center",
+    },
+
+    eyebrow: {
+      color:
+        "#7465E8",
+      fontSize: 9,
+      fontWeight:
+        "800",
+      letterSpacing: 1,
     },
 
     title: {
-      fontSize: 22,
+      marginTop: 2,
+      fontSize: 21,
       fontWeight:
-        "700",
+        "800",
+      color:
+        "#353754",
     },
 
     subtitle: {
-      fontSize: 14,
+      marginTop: 2,
       color:
-        "#64748B",
-      marginTop: 3,
+        "#9A9CAE",
+      fontSize: 10,
+    },
+
+    closeButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      backgroundColor:
+        "#F5F5F9",
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
+
+    divider: {
+      height: 1,
+      backgroundColor:
+        "#EFEFF5",
+      marginTop: 17,
+    },
+
+    scrollContent: {
+      paddingTop: 18,
+      paddingBottom: 4,
     },
 
     field: {
-      marginBottom: 18,
-    },
-
-    label: {
-      fontSize: 14,
-      color:
-        "#64748B",
-      marginBottom: 8,
-    },
-
-    input: {
-      height: 48,
-      borderWidth: 1,
-      borderColor:
-        "#E2E8F0",
-      borderRadius: 12,
-      paddingHorizontal: 15,
-      backgroundColor:
-        "#FFFFFF",
+      marginBottom: 14,
     },
 
     row: {
       flexDirection:
         "row",
-      gap: 12,
-      marginBottom: 18,
+      gap: 11,
+      marginBottom: 14,
     },
 
     half: {
       flex: 1,
     },
 
+    label: {
+      marginBottom: 7,
+      color:
+        "#65687D",
+      fontSize: 11,
+      fontWeight:
+        "700",
+    },
+
+    input: {
+      height: 46,
+      borderWidth: 1,
+      borderColor:
+        "#E2E2EB",
+      borderRadius: 12,
+      paddingHorizontal: 13,
+      backgroundColor:
+        "#FBFBFD",
+      color:
+        "#45475F",
+      fontSize: 12,
+    },
+
+    textArea: {
+      minHeight: 100,
+      borderWidth: 1,
+      borderColor:
+        "#E2E2EB",
+      borderRadius: 12,
+      paddingHorizontal: 13,
+      paddingVertical: 12,
+      backgroundColor:
+        "#FBFBFD",
+      color:
+        "#45475F",
+      fontSize: 12,
+    },
+
     genderRow: {
-      height: 48,
+      height: 46,
       flexDirection:
         "row",
       gap: 6,
@@ -746,86 +966,149 @@ const styles =
       flex: 1,
       borderWidth: 1,
       borderColor:
-        "#E2E8F0",
+        "#E2E2EB",
       borderRadius: 12,
-      justifyContent:
-        "center",
       alignItems:
         "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#FBFBFD",
     },
 
-    genderButtonActive: {
-      backgroundColor:
-        "#EEE9FF",
+    genderActive: {
       borderColor:
-        "#7B6EF6",
+        "#A89DF2",
+      backgroundColor:
+        "#F0EDFF",
     },
 
     genderText: {
-      fontSize: 12,
       color:
-        "#64748B",
+        "#77798D",
+      fontSize: 11,
+      fontWeight:
+        "600",
     },
 
     genderTextActive: {
       color:
-        "#7B6EF6",
+        "#6F5EDF",
       fontWeight:
-        "700",
+        "800",
     },
 
-    textArea: {
-      height: 90,
+    assignmentBox: {
+      flexDirection:
+        "row",
+      gap: 11,
+      marginBottom: 17,
+      padding: 13,
       borderWidth: 1,
       borderColor:
-        "#E2E8F0",
-      borderRadius: 12,
-      padding: 15,
-      textAlignVertical:
-        "top",
+        "#E6E1FF",
+      borderRadius: 14,
+      backgroundColor:
+        "#F8F6FF",
+    },
+
+    assignmentIcon: {
+      width: 37,
+      height: 37,
+      borderRadius: 11,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#FFFFFF",
+    },
+
+    assignmentCopy: {
+      flex: 1,
+    },
+
+    assignmentLabel: {
+      fontSize: 8,
+      letterSpacing: 0.7,
+      fontWeight:
+        "800",
+      color:
+        "#8477E5",
+    },
+
+    assignmentName: {
+      marginTop: 3,
+      color:
+        "#52546B",
+      fontSize: 11,
+      fontWeight:
+        "800",
+    },
+
+    assignmentHint: {
+      marginTop: 3,
+      color:
+        "#9597AA",
+      fontSize: 9,
+      lineHeight: 14,
     },
 
     buttons: {
       flexDirection:
         "row",
-      gap: 12,
-      marginTop: 10,
+      gap: 10,
+      marginTop: 5,
     },
 
     cancel: {
       flex: 1,
-      height: 48,
+      height: 44,
       borderWidth: 1,
       borderColor:
-        "#E2E8F0",
+        "#E3E3EC",
       borderRadius: 12,
-      justifyContent:
-        "center",
       alignItems:
         "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#FFFFFF",
+    },
+
+    cancelText: {
+      color:
+        "#737589",
+      fontWeight:
+        "700",
+      fontSize: 12,
     },
 
     save: {
       flex: 1,
-      height: 48,
-      backgroundColor:
-        "#7B6EF6",
+      height: 44,
       borderRadius: 12,
-      justifyContent:
-        "center",
+      flexDirection:
+        "row",
+      gap: 7,
       alignItems:
         "center",
-    },
-
-    disabledButton: {
-      opacity: 0.6,
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#7465E8",
     },
 
     saveText: {
       color:
         "#FFFFFF",
       fontWeight:
-        "600",
+        "800",
+      fontSize: 12,
+    },
+
+    disabledButton: {
+      opacity: 0.55,
     },
 
   });

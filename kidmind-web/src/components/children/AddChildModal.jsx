@@ -1,11 +1,16 @@
-import { useState } from "react";
+import {
+    useMemo,
+    useState
+} from "react";
 
 import {
-    X,
-    UserPlus
+    UserPlus,
+    X
 } from "lucide-react";
 
-import { addChild } from "../../api/childrenApi";
+import {
+    addChild
+} from "../../api/childrenApi";
 
 
 const AddChildModal = ({
@@ -13,17 +18,41 @@ const AddChildModal = ({
     onSuccess
 }) => {
 
+    const currentUser =
+        useMemo(
+            () => {
+
+                try {
+
+                    return JSON.parse(
+                        sessionStorage.getItem(
+                            "kidmind_user"
+                        ) || "{}"
+                    );
+
+                } catch {
+
+                    return {};
+
+                }
+
+            },
+            []
+        );
+
+
     const [
         formData,
         setFormData
     ] = useState({
         full_name: "",
         age: "",
-        gender: "Female",
+        gender: "",
         parent_name: "",
         region: "",
         notes: "",
     });
+
 
     const [
         saving,
@@ -31,128 +60,244 @@ const AddChildModal = ({
     ] = useState(false);
 
 
-    const handleChange = (e) => {
-
-        setFormData({
-            ...formData,
-            [e.target.name]:
-                e.target.value,
-        });
-
-    };
+    const [
+        error,
+        setError
+    ] = useState("");
 
 
-    const handleSubmit = async (e) => {
+    const handleChange =
+        event => {
 
-        e.preventDefault();
+            const {
+                name,
+                value
+            } =
+                event.target;
 
-        try {
 
-            setSaving(true);
-
-            await addChild({
-                ...formData,
-
-                full_name:
-                    formData.full_name.trim(),
-
-                age:
-                    Number(formData.age),
-
-                parent_name:
-                    formData.parent_name.trim(),
-
-                region:
-                    formData.region.trim(),
-
-                notes:
-                    formData.notes.trim(),
-            });
-
-            await onSuccess();
-
-            close();
-
-        } catch (error) {
-
-            console.error(
-                "Failed to add child:",
-                error
+            setFormData(
+                previous => ({
+                    ...previous,
+                    [name]:
+                        value,
+                })
             );
 
-            alert(
-                error?.message ||
-                "Failed to add child"
-            );
+        };
 
-        } finally {
 
-            setSaving(false);
+    const handleSubmit =
+        async event => {
 
-        }
+            event.preventDefault();
 
-    };
+
+            const fullName =
+                formData.full_name
+                    .trim();
+
+
+            const age =
+                Number(
+                    formData.age
+                );
+
+
+            const gender =
+                formData.gender
+                    .trim();
+
+
+            const region =
+                formData.region
+                    .trim();
+
+
+            if (
+                !fullName ||
+                !Number.isInteger(
+                    age
+                ) ||
+                age <= 0 ||
+                !gender ||
+                !region
+            ) {
+
+                setError(
+                    "Full name, age, gender and region are required."
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                setSaving(
+                    true
+                );
+
+                setError(
+                    ""
+                );
+
+
+                await addChild({
+                    full_name:
+                        fullName,
+
+                    age,
+
+                    gender,
+
+                    parent_name:
+                        formData.parent_name
+                            .trim(),
+
+                    region,
+
+                    notes:
+                        formData.notes
+                            .trim(),
+
+                    /*
+                     * A child created by
+                     * a therapist should
+                     * automatically stay
+                     * linked to that
+                     * therapist.
+                     */
+                    therapist_id:
+                        currentUser.role ===
+                            "therapist" &&
+                        currentUser.id
+                            ? Number(
+                                currentUser.id
+                            )
+                            : null,
+                });
+
+
+                await onSuccess?.();
+
+                close();
+
+            } catch (requestError) {
+
+                console.error(
+                    "Failed to add child:",
+                    requestError
+                );
+
+
+                setError(
+                    requestError
+                        ?.response
+                        ?.data
+                        ?.message ||
+                    requestError
+                        ?.message ||
+                    "Failed to add child."
+                );
+
+            } finally {
+
+                setSaving(
+                    false
+                );
+
+            }
+
+        };
 
 
     return (
 
         <div
             className="
-            fixed
-            inset-0
-            bg-black/30
-            flex
-            items-center
-            justify-center
-            z-50
+                fixed
+                inset-0
+                z-[1000]
+                flex
+                items-center
+                justify-center
+                bg-[#252340]/40
+                backdrop-blur-[5px]
+                p-5
             "
+            onMouseDown={
+                event => {
+
+                    if (
+                        event.target ===
+                        event.currentTarget &&
+                        !saving
+                    ) {
+
+                        close();
+
+                    }
+
+                }
+            }
         >
 
-            <div
+            <form
+                onSubmit={
+                    handleSubmit
+                }
                 className="
-                bg-white
-                w-[520px]
-                max-h-[90vh]
-                overflow-y-auto
-                rounded-3xl
-                p-8
-                shadow-xl
+                    w-full
+                    max-w-[720px]
+                    max-h-[90vh]
+                    overflow-y-auto
+                    rounded-[23px]
+                    bg-white
+                    p-6
+                    shadow-[0_25px_80px_rgba(38,35,75,.20)]
                 "
             >
 
+                {/* HEADER */}
+
                 <div
                     className="
-                    flex
-                    justify-between
-                    items-center
-                    mb-8
+                        flex
+                        items-start
+                        justify-between
+                        gap-5
+                        border-b
+                        border-[#EFEFF5]
+                        pb-[17px]
                     "
                 >
 
                     <div
                         className="
-                        flex
-                        items-center
-                        gap-3
+                            flex
+                            items-center
+                            gap-3
                         "
                     >
 
                         <div
                             className="
-                            w-12
-                            h-12
-                            rounded-2xl
-                            bg-[#EEE9FF]
-                            flex
-                            items-center
-                            justify-center
+                                flex
+                                h-[46px]
+                                w-[46px]
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-[14px]
+                                bg-[#F0EDFF]
+                                text-[#7969EA]
                             "
                         >
 
                             <UserPlus
-                                className="
-                                text-[#7B6EF6]
-                                "
+                                size={21}
                             />
 
                         </div>
@@ -160,22 +305,38 @@ const AddChildModal = ({
 
                         <div>
 
-                            <h2
+                            <span
                                 className="
-                                text-2xl
-                                font-bold
+                                    text-[9.5px]
+                                    font-extrabold
+                                    tracking-[.09em]
+                                    text-[#8070EA]
                                 "
                             >
-                                Add Child
+                                ADD CHILD
+                            </span>
+
+
+                            <h2
+                                className="
+                                    mt-1
+                                    text-[21px]
+                                    font-bold
+                                    text-[#353754]
+                                "
+                            >
+                                New Child
                             </h2>
+
 
                             <p
                                 className="
-                                text-sm
-                                text-slate-500
+                                    mt-1
+                                    text-[10px]
+                                    text-[#A0A2B2]
                                 "
                             >
-                                Create new child profile
+                                Create a new child profile
                             </p>
 
                         </div>
@@ -185,14 +346,30 @@ const AddChildModal = ({
 
                     <button
                         type="button"
-                        onClick={close}
-                        disabled={saving}
+                        onClick={
+                            close
+                        }
+                        disabled={
+                            saving
+                        }
+                        className="
+                            grid
+                            h-[37px]
+                            w-[37px]
+                            shrink-0
+                            place-items-center
+                            rounded-[11px]
+                            border-0
+                            bg-[#F5F5F9]
+                            text-[#85889B]
+                            transition
+                            hover:bg-[#EEEEF4]
+                            disabled:opacity-50
+                        "
                     >
 
                         <X
-                            className="
-                            text-slate-400
-                            "
+                            size={20}
                         />
 
                     </button>
@@ -200,305 +377,511 @@ const AddChildModal = ({
                 </div>
 
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="space-y-5"
-                >
+                {/* ERROR */}
 
-                    <div>
+                {
+                    error && (
 
-                        <label
+                        <div
                             className="
-                            text-sm
-                            text-slate-500
+                                mt-4
+                                rounded-[13px]
+                                border
+                                border-[#F5D5DD]
+                                bg-[#FFF1F4]
+                                px-4
+                                py-3
+                                text-[11px]
+                                text-[#B8445D]
                             "
                         >
-                            Child Name
-                        </label>
+                            {error}
+                        </div>
+
+                    )
+                }
+
+
+                {/* MAIN FORM */}
+
+                <div
+                    className="
+                        mt-5
+                        grid
+                        grid-cols-1
+                        gap-[13px]
+                        md:grid-cols-2
+                    "
+                >
+
+                    <label
+                        className="
+                            flex
+                            flex-col
+                            gap-[7px]
+                            md:col-span-2
+                        "
+                    >
+
+                        <span
+                            className="
+                                text-[10.5px]
+                                font-bold
+                                text-[#6B6E83]
+                            "
+                        >
+                            Full Name
+                        </span>
+
 
                         <input
-                            type="text"
                             name="full_name"
+                            type="text"
                             value={
                                 formData.full_name
                             }
                             onChange={
                                 handleChange
                             }
-                            placeholder="Enter child name"
-                            className="
-                            w-full
-                            mt-2
-                            h-12
-                            rounded-xl
-                            border
-                            px-4
-                            outline-none
-                            focus:border-[#7B6EF6]
-                            "
+                            placeholder="Child full name"
                             required
-                            disabled={saving}
+                            disabled={
+                                saving
+                            }
+                            className="
+                                h-[43px]
+                                w-full
+                                rounded-[12px]
+                                border
+                                border-[#E2E2EB]
+                                bg-[#FBFBFD]
+                                px-3
+                                text-[11.5px]
+                                text-[#45475F]
+                                outline-none
+                                transition
+                                focus:border-[#A99FF4]
+                                focus:bg-white
+                                focus:ring-4
+                                focus:ring-[#7B6EF6]/5
+                                disabled:opacity-60
+                            "
                         />
 
-                    </div>
+                    </label>
 
 
-                    <div
+                    <label
                         className="
-                        grid
-                        grid-cols-2
-                        gap-4
+                            flex
+                            flex-col
+                            gap-[7px]
                         "
                     >
 
-                        <div>
-
-                            <label
-                                className="
-                                text-sm
-                                text-slate-500
-                                "
-                            >
-                                Age
-                            </label>
-
-                            <input
-                                type="number"
-                                name="age"
-                                value={
-                                    formData.age
-                                }
-                                onChange={
-                                    handleChange
-                                }
-                                placeholder="Age"
-                                min="1"
-                                className="
-                                w-full
-                                mt-2
-                                h-12
-                                rounded-xl
-                                border
-                                px-4
-                                outline-none
-                                focus:border-[#7B6EF6]
-                                "
-                                required
-                                disabled={saving}
-                            />
-
-                        </div>
-
-
-                        <div>
-
-                            <label
-                                className="
-                                text-sm
-                                text-slate-500
-                                "
-                            >
-                                Gender
-                            </label>
-
-                            <select
-                                name="gender"
-                                value={
-                                    formData.gender
-                                }
-                                onChange={
-                                    handleChange
-                                }
-                                className="
-                                w-full
-                                mt-2
-                                h-12
-                                rounded-xl
-                                border
-                                px-4
-                                outline-none
-                                focus:border-[#7B6EF6]
-                                "
-                                disabled={saving}
-                            >
-
-                                <option value="Female">
-                                    Female
-                                </option>
-
-                                <option value="Male">
-                                    Male
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <label
+                        <span
                             className="
-                            text-sm
-                            text-slate-500
+                                text-[10.5px]
+                                font-bold
+                                text-[#6B6E83]
+                            "
+                        >
+                            Age
+                        </span>
+
+
+                        <input
+                            name="age"
+                            type="number"
+                            min="1"
+                            value={
+                                formData.age
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            placeholder="Age"
+                            required
+                            disabled={
+                                saving
+                            }
+                            className="
+                                h-[43px]
+                                w-full
+                                rounded-[12px]
+                                border
+                                border-[#E2E2EB]
+                                bg-[#FBFBFD]
+                                px-3
+                                text-[11.5px]
+                                text-[#45475F]
+                                outline-none
+                                focus:border-[#A99FF4]
+                                focus:bg-white
+                            "
+                        />
+
+                    </label>
+
+
+                    <label
+                        className="
+                            flex
+                            flex-col
+                            gap-[7px]
+                        "
+                    >
+
+                        <span
+                            className="
+                                text-[10.5px]
+                                font-bold
+                                text-[#6B6E83]
+                            "
+                        >
+                            Gender
+                        </span>
+
+
+                        <select
+                            name="gender"
+                            value={
+                                formData.gender
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            required
+                            disabled={
+                                saving
+                            }
+                            className="
+                                h-[43px]
+                                w-full
+                                rounded-[12px]
+                                border
+                                border-[#E2E2EB]
+                                bg-[#FBFBFD]
+                                px-3
+                                text-[11.5px]
+                                text-[#45475F]
+                                outline-none
+                                focus:border-[#A99FF4]
+                                focus:bg-white
+                            "
+                        >
+
+                            <option value="">
+                                Select gender
+                            </option>
+
+                            <option value="Female">
+                                Female
+                            </option>
+
+                            <option value="Male">
+                                Male
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label
+                        className="
+                            flex
+                            flex-col
+                            gap-[7px]
+                        "
+                    >
+
+                        <span
+                            className="
+                                text-[10.5px]
+                                font-bold
+                                text-[#6B6E83]
                             "
                         >
                             Parent Name
-                        </label>
+                        </span>
+
 
                         <input
-                            type="text"
                             name="parent_name"
+                            type="text"
                             value={
                                 formData.parent_name
                             }
                             onChange={
                                 handleChange
                             }
-                            placeholder="Enter parent name"
+                            placeholder="Parent name"
+                            disabled={
+                                saving
+                            }
                             className="
-                            w-full
-                            mt-2
-                            h-12
-                            rounded-xl
-                            border
-                            px-4
-                            outline-none
-                            focus:border-[#7B6EF6]
+                                h-[43px]
+                                w-full
+                                rounded-[12px]
+                                border
+                                border-[#E2E2EB]
+                                bg-[#FBFBFD]
+                                px-3
+                                text-[11.5px]
+                                text-[#45475F]
+                                outline-none
+                                focus:border-[#A99FF4]
+                                focus:bg-white
                             "
-                            required
-                            disabled={saving}
                         />
 
-                    </div>
+                    </label>
 
 
-                    <div>
+                    <label
+                        className="
+                            flex
+                            flex-col
+                            gap-[7px]
+                        "
+                    >
 
-                        <label
+                        <span
                             className="
-                            text-sm
-                            text-slate-500
+                                text-[10.5px]
+                                font-bold
+                                text-[#6B6E83]
                             "
                         >
                             Region
-                        </label>
+                        </span>
+
 
                         <input
-                            type="text"
                             name="region"
+                            type="text"
                             value={
                                 formData.region
                             }
                             onChange={
                                 handleChange
                             }
-                            placeholder="Enter region"
-                            className="
-                            w-full
-                            mt-2
-                            h-12
-                            rounded-xl
-                            border
-                            px-4
-                            outline-none
-                            focus:border-[#7B6EF6]
-                            "
+                            placeholder="Region"
                             required
-                            disabled={saving}
+                            disabled={
+                                saving
+                            }
+                            className="
+                                h-[43px]
+                                w-full
+                                rounded-[12px]
+                                border
+                                border-[#E2E2EB]
+                                bg-[#FBFBFD]
+                                px-3
+                                text-[11.5px]
+                                text-[#45475F]
+                                outline-none
+                                focus:border-[#A99FF4]
+                                focus:bg-white
+                            "
                         />
 
-                    </div>
+                    </label>
+
+                </div>
 
 
-                    <div>
-
-                        <label
-                            className="
-                            text-sm
-                            text-slate-500
-                            "
-                        >
-                            Notes
-                        </label>
-
-                        <textarea
-                            name="notes"
-                            value={
-                                formData.notes
-                            }
-                            onChange={
-                                handleChange
-                            }
-                            placeholder="Additional notes"
-                            rows="3"
-                            className="
-                            w-full
-                            mt-2
-                            rounded-xl
-                            border
-                            p-4
-                            resize-none
-                            outline-none
-                            focus:border-[#7B6EF6]
-                            "
-                            disabled={saving}
-                        />
-
-                    </div>
-
-
-                    <div
-                        className="
+                <label
+                    className="
+                        mt-[13px]
                         flex
-                        gap-4
-                        pt-4
+                        flex-col
+                        gap-[7px]
+                    "
+                >
+
+                    <span
+                        className="
+                            text-[10.5px]
+                            font-bold
+                            text-[#6B6E83]
                         "
                     >
+                        Notes
+                    </span>
 
-                        <button
-                            type="button"
-                            onClick={close}
-                            disabled={saving}
-                            className="
-                            flex-1
-                            h-12
-                            rounded-xl
+
+                    <textarea
+                        name="notes"
+                        value={
+                            formData.notes
+                        }
+                        onChange={
+                            handleChange
+                        }
+                        placeholder="Therapist notes"
+                        rows={4}
+                        disabled={
+                            saving
+                        }
+                        className="
+                            w-full
+                            resize-y
+                            rounded-[12px]
                             border
-                            disabled:opacity-50
-                            "
-                        >
-                            Cancel
-                        </button>
+                            border-[#E2E2EB]
+                            bg-[#FBFBFD]
+                            px-3
+                            py-3
+                            text-[11.5px]
+                            text-[#45475F]
+                            outline-none
+                            focus:border-[#A99FF4]
+                            focus:bg-white
+                        "
+                    />
+
+                </label>
 
 
-                        <button
-                            type="submit"
-                            disabled={saving}
+                {/* THERAPIST LINK */}
+
+                {
+                    currentUser.role ===
+                    "therapist" && (
+
+                        <div
                             className="
-                            flex-1
-                            h-12
-                            rounded-xl
-                            bg-[#7B6EF6]
-                            text-white
-                            hover:bg-[#6959F5]
-                            disabled:opacity-50
+                                mt-4
+                                rounded-[14px]
+                                border
+                                border-[#E7E3FF]
+                                bg-[#F8F6FF]
+                                px-4
+                                py-3
                             "
                         >
-                            {
-                                saving
-                                    ? "Saving..."
-                                    : "Save Child"
-                            }
-                        </button>
 
-                    </div>
+                            <span
+                                className="
+                                    block
+                                    text-[9px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[.06em]
+                                    text-[#897CE7]
+                                "
+                            >
+                                Therapist Assignment
+                            </span>
 
-                </form>
 
-            </div>
+                            <strong
+                                className="
+                                    mt-1
+                                    block
+                                    text-[11px]
+                                    text-[#52546B]
+                                "
+                            >
+                                {
+                                    currentUser.full_name ||
+                                    "Current Therapist"
+                                }
+                            </strong>
+
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-[9.5px]
+                                    leading-5
+                                    text-[#989AAD]
+                                "
+                            >
+                                This child will automatically be linked to your therapist account.
+                            </p>
+
+                        </div>
+
+                    )
+                }
+
+
+                {/* ACTIONS */}
+
+                <div
+                    className="
+                        mt-5
+                        flex
+                        justify-end
+                        gap-[9px]
+                    "
+                >
+
+                    <button
+                        type="button"
+                        onClick={
+                            close
+                        }
+                        disabled={
+                            saving
+                        }
+                        className="
+                            h-[41px]
+                            min-w-[110px]
+                            rounded-[12px]
+                            border
+                            border-[#E4E4EC]
+                            bg-white
+                            px-4
+                            text-[10.5px]
+                            font-bold
+                            text-[#777A8D]
+                            transition
+                            hover:bg-[#F8F8FB]
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                        "
+                    >
+                        Cancel
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        disabled={
+                            saving
+                        }
+                        className="
+                            h-[41px]
+                            min-w-[120px]
+                            rounded-[12px]
+                            border-0
+                            bg-[#7969EA]
+                            px-5
+                            text-[10.5px]
+                            font-bold
+                            text-white
+                            shadow-[0_8px_18px_rgba(121,105,234,.18)]
+                            transition
+                            hover:bg-[#6E5EE2]
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                        "
+                    >
+                        {
+                            saving
+                                ? "Saving..."
+                                : "Add Child"
+                        }
+                    </button>
+
+                </div>
+
+            </form>
 
         </div>
 

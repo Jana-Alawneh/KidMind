@@ -14,6 +14,10 @@ import {
 } from "react";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
   router,
   useFocusEffect,
 } from "expo-router";
@@ -372,11 +376,14 @@ export default function Sessions() {
 
   return (
 
-    <View
-      style={
-        styles.container
-      }
-    >
+  <SafeAreaView
+    style={
+      styles.container
+    }
+    edges={[
+      "top",
+    ]}
+  >
 
       <ScrollView
         showsVerticalScrollIndicator={
@@ -1003,10 +1010,9 @@ export default function Sessions() {
         }}
       />
 
-    </View>
+       </SafeAreaView>
 
   );
-
 }
 
 

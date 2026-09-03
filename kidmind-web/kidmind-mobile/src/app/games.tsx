@@ -15,6 +15,10 @@ import {
 } from "react";
 
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
   router,
   useFocusEffect,
 } from "expo-router";
@@ -404,11 +408,15 @@ export default function Games() {
   ) {
 
     return (
-      <View
-        style={
-          styles.centerPage
-        }
-      >
+  <SafeAreaView
+    style={
+      styles.centerPage
+    }
+    edges={[
+      "top",
+      "bottom",
+    ]}
+  >
 
         <View
           style={
@@ -437,18 +445,21 @@ export default function Games() {
           Game Builder is available to therapist accounts.
         </Text>
 
-      </View>
+     </SafeAreaView>
     );
 
   }
 
 
   return (
-    <View
-      style={
-        styles.page
-      }
-    >
+  <SafeAreaView
+    style={
+      styles.page
+    }
+    edges={[
+      "top",
+    ]}
+  >
 
       <ScrollView
         contentContainerStyle={
@@ -1027,7 +1038,7 @@ export default function Games() {
 
       </ScrollView>
 
-    </View>
+   </SafeAreaView>
   );
 
 }

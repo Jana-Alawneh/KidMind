@@ -10,6 +10,7 @@ import db from "../database/db";
 
 import {
   generatePersonalizedGame,
+  GeminiApiError,
   type ChildAssessment,
   type ChildAssessmentGame,
   type ChildAssessmentReport,
@@ -892,23 +893,69 @@ export async function generateGameWithAI(
 
   } catch (error) {
 
-    console.error(
-      "AI Game Generation Error:",
-      error
-    );
+  console.error(
+    "AI Game Generation Error:",
+    error
+  );
 
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to generate AI game.";
+  if (
+    error instanceof
+    GeminiApiError
+  ) {
+
+    const responseStatus =
+      error.status === 429
+        ? 429
+        : error.status >= 500
+          ? 503
+          : error.status;
 
 
-    return res.status(500).json({
-      success: false,
+    return res
+      .status(
+        responseStatus
+      )
+      .json({
+        success:
+          false,
+
+        code:
+          error.retryable
+            ? "AI_TEMPORARILY_UNAVAILABLE"
+            : "AI_PROVIDER_ERROR",
+
+        retryable:
+          error.retryable,
+
+        message:
+          error.message,
+      });
+
+  }
+
+
+  const message =
+    error instanceof Error
+      ? error.message
+      : "Failed to generate AI game.";
+
+
+  return res
+    .status(500)
+    .json({
+      success:
+        false,
+
+      code:
+        "AI_GENERATION_ERROR",
+
+      retryable:
+        false,
+
       message,
     });
 
-  }
+}
 
 }

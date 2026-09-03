@@ -68,6 +68,7 @@ import MobileSettings from "@/components/settings/MobileSettings";
 import MobileChat from "@/components/chat/MobileChat";
 import UserAvatar from "@/components/common/UserAvatar";
 import MobileNotificationsContent from "@/components/notifications/MobileNotificationsContent";
+import AdminFeedback from "@/components/admin/AdminFeedback";
 
 
 type UserRole =
@@ -2009,7 +2010,15 @@ export default function AdminDashboard() {
           />
         );
       }
-
+      
+      if (
+  activeSection ===
+  "feedback"
+) {
+  return (
+    <AdminFeedback />
+  );
+}
 
       if (
         activeSection ===

@@ -2,6 +2,390 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 
+const GEMINI_MAX_ATTEMPTS =
+  3;
+
+const GEMINI_RETRY_BASE_DELAY_MS =
+  1500;
+
+
+const RETRYABLE_GEMINI_STATUS_CODES =
+  new Set([
+    429,
+    500,
+    502,
+    503,
+    504,
+  ]);
+
+
+export class GeminiApiError
+  extends Error {
+
+  status: number;
+
+  retryable: boolean;
+
+
+  constructor(
+    status: number,
+    message: string
+  ) {
+
+    super(message);
+
+    this.name =
+      "GeminiApiError";
+
+    this.status =
+      status;
+
+    this.retryable =
+      RETRYABLE_GEMINI_STATUS_CODES
+        .has(status);
+
+  }
+
+}
+
+
+const sleep =
+  (
+    milliseconds: number
+  ) => {
+
+    return new Promise<void>(
+      resolve => {
+
+        setTimeout(
+          resolve,
+          milliseconds
+        );
+
+      }
+    );
+
+  };
+
+
+const getRetryAfterMs =
+  (
+    response: Response
+  ): number | null => {
+
+    const value =
+      response.headers.get(
+        "retry-after"
+      );
+
+
+    if (!value) {
+      return null;
+    }
+
+
+    const seconds =
+      Number(value);
+
+
+    if (
+      Number.isFinite(
+        seconds
+      )
+    ) {
+
+      return Math.max(
+        0,
+        seconds * 1000
+      );
+
+    }
+
+
+    const retryDate =
+      new Date(value);
+
+
+    if (
+      Number.isNaN(
+        retryDate.getTime()
+      )
+    ) {
+      return null;
+    }
+
+
+    return Math.max(
+      0,
+      retryDate.getTime() -
+        Date.now()
+    );
+
+  };
+
+
+const getGeminiErrorMessage =
+  (
+    status: number
+  ) => {
+
+    if (
+      status ===
+      503
+    ) {
+
+      return (
+        "The AI service is temporarily busy due to high demand. " +
+        "Please try again in a moment."
+      );
+
+    }
+
+
+    if (
+      status ===
+      429
+    ) {
+
+      return (
+        "The AI service is receiving too many requests right now. " +
+        "Please wait a moment and try again."
+      );
+
+    }
+
+
+    if (
+      status ===
+        401 ||
+      status ===
+        403
+    ) {
+
+      return (
+        "Gemini API authentication failed. " +
+        "Please check the backend API key."
+      );
+
+    }
+
+
+    if (
+      status >=
+      500
+    ) {
+
+      return (
+        "The AI service is temporarily unavailable. " +
+        "Please try again shortly."
+      );
+
+    }
+
+
+    return (
+      "The AI service could not complete the request."
+    );
+
+  };
+
+
+const requestGemini =
+  async (
+    prompt: string
+  ) => {
+
+    let lastError:
+      GeminiApiError | null =
+      null;
+
+
+    for (
+      let attempt = 1;
+      attempt <=
+        GEMINI_MAX_ATTEMPTS;
+      attempt += 1
+    ) {
+
+      let response:
+        Response;
+
+
+      try {
+
+        response =
+          await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(
+              GEMINI_API_KEY ||
+              ""
+            )}`,
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify({
+                  contents: [
+                    {
+                      parts: [
+                        {
+                          text:
+                            prompt,
+                        },
+                      ],
+                    },
+                  ],
+
+                  generationConfig: {
+                    temperature:
+                      0.35,
+
+                    responseMimeType:
+                      "application/json",
+                  },
+                }),
+            }
+          );
+
+      } catch (
+        networkError
+      ) {
+
+        console.error(
+          `Gemini network error on attempt ${attempt}:`,
+          networkError
+        );
+
+
+        lastError =
+          new GeminiApiError(
+            503,
+            "The AI service could not be reached. Please try again shortly."
+          );
+
+
+        if (
+          attempt >=
+          GEMINI_MAX_ATTEMPTS
+        ) {
+
+          throw lastError;
+
+        }
+
+
+        const delay =
+          GEMINI_RETRY_BASE_DELAY_MS *
+          Math.pow(
+            2,
+            attempt - 1
+          );
+
+
+        console.warn(
+          `Retrying Gemini request in ${delay}ms...`
+        );
+
+
+        await sleep(
+          delay
+        );
+
+
+        continue;
+
+      }
+
+
+      if (
+        response.ok
+      ) {
+
+        return await response.json();
+
+      }
+
+
+      const errorText =
+        await response.text();
+
+
+      console.error(
+        `Gemini API attempt ${attempt} failed with status ${response.status}:`,
+        errorText
+      );
+
+
+      const geminiError =
+        new GeminiApiError(
+          response.status,
+          getGeminiErrorMessage(
+            response.status
+          )
+        );
+
+
+      lastError =
+        geminiError;
+
+
+      if (
+        !geminiError.retryable ||
+        attempt >=
+          GEMINI_MAX_ATTEMPTS
+      ) {
+
+        throw geminiError;
+
+      }
+
+
+      const retryAfter =
+        getRetryAfterMs(
+          response
+        );
+
+
+      const exponentialDelay =
+        GEMINI_RETRY_BASE_DELAY_MS *
+        Math.pow(
+          2,
+          attempt - 1
+        );
+
+
+      const delay =
+        retryAfter ??
+        exponentialDelay;
+
+
+      console.warn(
+        `Gemini is temporarily unavailable. Attempt ${attempt}/${GEMINI_MAX_ATTEMPTS}. Retrying in ${delay}ms...`
+      );
+
+
+      await sleep(
+        delay
+      );
+
+    }
+
+
+    throw (
+      lastError ||
+      new GeminiApiError(
+        503,
+        "The AI service is temporarily unavailable."
+      )
+    );
+
+  };
+
 if (!GEMINI_API_KEY) {
   console.warn(
     "WARNING: GEMINI_API_KEY is not configured in environment variables."
@@ -1136,51 +1520,10 @@ Use exactly this structure:
 }
 `;
 
-  const response =
-    await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(
-        GEMINI_API_KEY
-      )}`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-
-          generationConfig: {
-            temperature: 0.35,
-
-            responseMimeType:
-              "application/json",
-          },
-        }),
-      }
-    );
-
-  if (!response.ok) {
-    const errorText =
-      await response.text();
-
-    throw new Error(
-      `Gemini API error (${response.status}): ${errorText}`
-    );
-  }
-
-  const data =
-    await response.json();
+ const data =
+  await requestGemini(
+    prompt
+  );
 
   const generatedText =
     data?.candidates?.[0]?.content?.parts?.[0]?.text;

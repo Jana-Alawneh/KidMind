@@ -1061,7 +1061,6 @@ export const getChildrenForUser =
 
   };
 
-
 export const getLinkedChildrenForUser =
   async (
     userId: number
@@ -1075,24 +1074,63 @@ export const getLinkedChildrenForUser =
           c.full_name,
           c.age,
           c.gender,
+
+          COALESCE(
+            NULLIF(
+              TRIM(
+                c.parent_name
+              ),
+              ''
+            ),
+            parent_user.full_name,
+            ''
+          )
+            AS parent_name,
+
           c.region,
+          c.notes,
           c.status,
+          c.image,
+          c.score,
+          c.last_assessment,
+          c.created_at,
+
           cu.id
             AS assignment_id,
+
           cu.link_type,
+
           cu.created_at
             AS assigned_at
+
         FROM child_users cu
+
         INNER JOIN children c
           ON c.id =
             cu.child_id
+
+        LEFT JOIN child_users parent_link
+          ON parent_link.child_id =
+            c.id
+          AND parent_link.link_type =
+            'parent'
+
+        LEFT JOIN users parent_user
+          ON parent_user.id =
+            parent_link.user_id
+          AND parent_user.role =
+            'parent'
+
         WHERE
           cu.user_id = ?
+
         ORDER BY
           c.full_name ASC,
           c.id ASC
         `,
-        [userId]
+        [
+          userId,
+        ]
       );
 
     return rows;

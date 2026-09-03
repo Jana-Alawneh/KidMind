@@ -3,38 +3,115 @@ import {
 } from "@/api/authApi";
 
 
+export type ChildAssignment = {
+  assignment_id?: number;
+  child_id?: number;
+  user_id?: number;
+  link_type?:
+    | "parent"
+    | "therapist";
+  assigned_at?:
+    | string
+    | null;
+  user_name?:
+    | string
+    | null;
+  user_email?:
+    | string
+    | null;
+  role?:
+    | "parent"
+    | "therapist";
+  user_region?:
+    | string
+    | null;
+};
+
+
 export type Child = {
   id: number;
+
   full_name: string;
+
   age: number;
-  gender: "Female" | "Male";
+
+  gender:
+    | "Female"
+    | "Male";
+
   parent_name: string;
-  region: string | null;
-  notes: string | null;
-  score?: number | string | null;
-  status?: string | null;
-  last_assessment?: string | null;
-  image?: string | null;
+
+  region:
+    | string
+    | null;
+
+  notes:
+    | string
+    | null;
+
+  score?:
+    | number
+    | string
+    | null;
+
+  status?:
+    | string
+    | null;
+
+  last_assessment?:
+    | string
+    | null;
+
+  lastAssessment?:
+    | string
+    | null;
+
+  image?:
+    | string
+    | null;
+
+  assignments?:
+    ChildAssignment[];
 };
 
 
 export type ChildPayload = {
   full_name: string;
+
   age: number;
-  gender: "Female" | "Male";
+
+  gender:
+    | "Female"
+    | "Male";
+
   parent_name: string;
+
   region: string;
+
   notes: string;
+
+  parent_id?:
+    | number
+    | null;
+
+  therapist_id?:
+    | number
+    | null;
 };
 
 
 export const getChildren =
-  async (): Promise<Child[]> => {
+  async (): Promise<
+    Child[]
+  > => {
 
     const data =
-      await authRequest<Child[]>(
+      await authRequest<
+        Child[]
+      >(
         "/children"
       );
+
 
     return Array.isArray(
       data
@@ -65,7 +142,14 @@ export const addChild =
     return authRequest(
       "/children",
       {
-        method: "POST",
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
         body:
           JSON.stringify(
             child
@@ -85,7 +169,14 @@ export const updateChild =
     return authRequest(
       `/children/${id}`,
       {
-        method: "PUT",
+        method:
+          "PUT",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
         body:
           JSON.stringify(
             child
@@ -104,7 +195,8 @@ export const deleteChild =
     return authRequest(
       `/children/${id}`,
       {
-        method: "DELETE",
+        method:
+          "DELETE",
       }
     );
 
